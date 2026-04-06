@@ -4,99 +4,207 @@ declare(strict_types=1);
 
 namespace Buildable\SerializerBundle\DependencyInjection\Compiler;
 
+use Buildable\SerializerBundle\Discovery\FinderClassDiscovery;
+use Buildable\SerializerBundle\Generator\NormalizerGenerator;
+use Buildable\SerializerBundle\Metadata\MetadataFactory;
 use Buildable\SerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
+use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
- * Registers generated normalizer classes as tagged Symfony Serializer services
- * AND directly injects them into the serializer service's constructor argument.
+ * Generates optimised normalizer classes at container compile time and wires
+ * them directly into the Symfony Serializer service.
  *
- * ### Why direct injection?
+ * ### Why generate during compilation?
  *
- * Symfony resolves the `tagged_iterator` for `serializer.normalizer` during the
- * TYPE_OPTIMIZE compilation phase and inlines all collected services directly
- * into the Serializer constructor.  Any service that was not yet referenced by
- * the time `RemoveUnusedDefinitionsPass` (TYPE_REMOVE) runs will be pruned as
- * "unused", even if it carries the correct tag.
+ * The previous approach relied on pre-existing generated files in `cache_dir`.
+ * This created a chicken-and-egg problem in production: the files only existed
+ * after a separate `buildable:generate-normalizers` command, yet the container
+ * needed them to exist *before* it was compiled by `cache:clear`.
  *
- * To guarantee our generated normalizers survive compilation and appear first
- * in the normalizer chain (before ObjectNormalizer), this pass:
+ * Generating during the compiler pass eliminates that dependency entirely:
  *
- *  1. Creates a DI Definition for every generated normalizer file found in the
- *     configured cache directory.
- *  2. Prepends a Reference to each generated normalizer directly into the
- *     Symfony Serializer service's first constructor argument (the normalizers
- *     array), so the compiler sees an explicit reference and never removes the
- *     service.
- *  3. Still adds the `serializer.normalizer` tag so the normalizer appears in
- *     `debug:container --tag=serializer.normalizer` output.
+ *   - **Production**: a single `cache:clear` (or `cache:warmup`) generates the
+ *     normalizer source files, registers them as services, and compiles the
+ *     container — all in one step.
+ *   - **Development**: the container is rebuilt whenever tracked resources
+ *     change; the pass re-generates the normalizers at that point.
+ *   - **No external step required**: `buildable:generate-normalizers` and the
+ *     `NormalizerCacheWarmer` remain available as convenience tools but are no
+ *     longer prerequisites for a working application.
+ *
+ * ### How it works
+ *
+ *  1. Reads `buildable_serializer.paths`, `cache_dir`, `generated_namespace`,
+ *     `features`, and `generation` from the container parameters.
+ *  2. Instantiates `FinderClassDiscovery`, `MetadataFactory`, and
+ *     `NormalizerGenerator` directly (without the DI container — all these
+ *     objects are pure PHP with no circular dependencies).
+ *  3. Discovers every class annotated with `#[Serializable]` inside the
+ *     configured paths.
+ *  4. Generates one PHP source file per class into `cache_dir` and creates a
+ *     classmap `autoload.php` for runtime bootstrapping.
+ *  5. Registers each generated normalizer as a private DI service tagged with
+ *     `serializer.normalizer`.
+ *  6. Prepends explicit `Reference` objects for the generated normalizers into
+ *     the Symfony Serializer's first constructor argument so that
+ *     `RemoveUnusedDefinitionsPass` cannot prune them (the `tagged_iterator`
+ *     used by the serializer creates only lazy closures, not hard references).
  *
  * ### Priority
  *
- * Generated normalizers are prepended in front of all existing normalizers.
- * Within the generated set, classes with a higher `NORMALIZER_PRIORITY` constant
- * are placed closer to the front.  The default priority is 200, which is well
- * above Symfony's ObjectNormalizer (-1000).
+ * The pass is registered at `TYPE_BEFORE_OPTIMIZATION` with priority **-1000**,
+ * meaning it runs last in that phase. All bundle extensions and higher-priority
+ * passes have already registered their services by then, so the call to
+ * `findTaggedServiceIds('serializer.normalizer')` captures a complete,
+ * race-condition-free snapshot of the normalizer chain.
+ *
+ * Generated normalizers receive priority **200** by default (well above
+ * `ObjectNormalizer` at -1000). A generated class may override this via a
+ * public `NORMALIZER_PRIORITY` integer constant.
  */
 final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 {
     private const CACHE_DIR_PARAM = "buildable_serializer.cache_dir";
     private const NAMESPACE_PARAM = "buildable_serializer.generated_namespace";
+    private const PATHS_PARAM = "buildable_serializer.paths";
+    private const FEATURES_PARAM = "buildable_serializer.features";
+    private const GENERATION_PARAM = "buildable_serializer.generation";
     private const NORMALIZER_TAG = "serializer.normalizer";
     private const SERIALIZER_SERVICE = "serializer";
     private const DEFAULT_PRIORITY = 200;
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // CompilerPassInterface
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     public function process(ContainerBuilder $container): void
     {
-        if (
-            !$container->hasParameter(self::CACHE_DIR_PARAM) ||
-            !$container->hasParameter(self::NAMESPACE_PARAM)
+        // ------------------------------------------------------------------
+        // 1. Read and resolve container parameters
+        // ------------------------------------------------------------------
+        foreach (
+            [self::CACHE_DIR_PARAM, self::NAMESPACE_PARAM, self::PATHS_PARAM]
+            as $param
         ) {
-            return;
+            if (!$container->hasParameter($param)) {
+                return;
+            }
         }
+
+        $bag = $container->getParameterBag();
 
         /** @var string $cacheDir */
-        $cacheDir = (string) $container
-            ->getParameterBag()
-            ->resolveValue($container->getParameter(self::CACHE_DIR_PARAM));
-
-        $resolved = realpath($cacheDir);
-        if ($resolved !== false) {
-            $cacheDir = $resolved;
-        }
+        $cacheDir = (string) $bag->resolveValue(
+            $container->getParameter(self::CACHE_DIR_PARAM),
+        );
+        $cacheDir = realpath($cacheDir) ?: $cacheDir;
 
         /** @var string $generatedNamespace */
         $generatedNamespace = (string) $container->getParameter(
             self::NAMESPACE_PARAM,
         );
 
-        if (!is_dir($cacheDir)) {
+        /** @var array<string, string> $rawPaths */
+        $rawPaths = $container->getParameter(self::PATHS_PARAM);
+
+        if ($rawPaths === []) {
             return;
         }
 
-        $files = $this->scanNormalizerFiles($cacheDir);
-        if ($files === []) {
+        // Resolve Symfony parameter placeholders (e.g. %kernel.project_dir%) in every path.
+        $resolvedPaths = [];
+        foreach ($rawPaths as $namespace => $directory) {
+            $resolvedPaths[$namespace] = (string) $bag->resolveValue(
+                $directory,
+            );
+        }
+
+        /** @var array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool} $features */
+        $features = $container->hasParameter(self::FEATURES_PARAM)
+            ? (array) $container->getParameter(self::FEATURES_PARAM)
+            : [
+                "groups" => true,
+                "max_depth" => true,
+                "circular_reference" => true,
+                "name_converter" => false,
+                "skip_null_values" => true,
+            ];
+
+        /** @var array{strict_types: bool, add_generated_tag: bool} $generation */
+        $generation = $container->hasParameter(self::GENERATION_PARAM)
+            ? (array) $container->getParameter(self::GENERATION_PARAM)
+            : ["strict_types" => true, "add_generated_tag" => true];
+
+        // ------------------------------------------------------------------
+        // 2. Ensure the cache directory exists
+        // ------------------------------------------------------------------
+        if (
+            !is_dir($cacheDir) &&
+            !mkdir($cacheDir, 0755, true) &&
+            !is_dir($cacheDir)
+        ) {
+            // Cannot create the output directory — skip silently so the
+            // application can still boot without generated normalizers.
             return;
         }
 
-        // ---- 1. Register every generated normalizer as a DI service ----------
+        // Re-resolve after potential mkdir (realpath now valid).
+        $cacheDir = realpath($cacheDir) ?: $cacheDir;
+
+        // ------------------------------------------------------------------
+        // 3. Instantiate discovery and generation objects directly
+        //    (no DI container needed — pure PHP objects)
+        // ------------------------------------------------------------------
+        $metadataFactory = $this->createMetadataFactory();
+
+        $generator = new NormalizerGenerator(
+            $metadataFactory,
+            $cacheDir,
+            $generatedNamespace,
+            $features,
+            $generation,
+        );
+
+        $discovery = new FinderClassDiscovery($resolvedPaths);
+
+        // ------------------------------------------------------------------
+        // 4. Discover #[Serializable] classes
+        // ------------------------------------------------------------------
+        try {
+            $classes = $discovery->discoverClasses();
+        } catch (\Throwable) {
+            // Discovery failure (e.g. a configured directory does not exist
+            // yet) must not abort container compilation.
+            return;
+        }
+
+        if ($classes === []) {
+            return;
+        }
+
+        // ------------------------------------------------------------------
+        // 5. Generate normalizer files and register DI services
+        // ------------------------------------------------------------------
+
         /** @var array<string, int> $registered  fqcn => priority */
         $registered = [];
 
-        foreach ($files as $filePath) {
-            $fqcn = $this->filePathToFqcn(
-                $cacheDir,
-                $filePath,
-                $generatedNamespace,
-            );
-            if ($fqcn === null) {
+        /** @var array<string, string> $classmap  fqcn => absolute file path */
+        $classmap = [];
+
+        foreach ($classes as $className) {
+            try {
+                $metadata = $metadataFactory->getMetadataFor($className);
+                $fqcn = $generator->resolveNormalizerFqcn($metadata);
+                $filePath = $generator->generateAndWrite($metadata);
+            } catch (\Throwable) {
+                // Skip classes that cannot be processed (e.g. missing deps).
                 continue;
             }
 
@@ -108,73 +216,150 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
                 continue;
             }
 
+            $priority = $this->resolvePriority($fqcn);
+
             if (
-                $container->hasDefinition($fqcn) ||
-                $container->hasAlias($fqcn)
+                !$container->hasDefinition($fqcn) &&
+                !$container->hasAlias($fqcn)
             ) {
-                $registered[$fqcn] = $this->resolvePriority($fqcn);
-                continue;
+                $definition = new Definition($fqcn);
+                $definition->setPublic(false);
+                $definition->setAutowired(false);
+                $definition->setAutoconfigured(false);
+                $definition->addTag(self::NORMALIZER_TAG, [
+                    "priority" => $priority,
+                ]);
+                // Tell PhpDumper to emit `include_once $filePath` before
+                // instantiating this service in the compiled container.
+                // This is required in production mode where the service is
+                // inlined directly into the Serializer constructor call and
+                // the class file would otherwise never be loaded (it lives
+                // outside Composer's autoload paths in var/buildable_serializer/).
+                $definition->setFile($filePath);
+
+                $container->setDefinition($fqcn, $definition);
             }
 
-            $priority = $this->resolvePriority($fqcn);
-            $arguments = $this->resolveConstructorArguments($fqcn, $container);
-
-            $definition = new Definition($fqcn, $arguments);
-            $definition->setPublic(false);
-            $definition->setAutowired(false);
-            $definition->setAutoconfigured(false);
-            $definition->addTag(self::NORMALIZER_TAG, [
-                "priority" => $priority,
-            ]);
-
-            $container->setDefinition($fqcn, $definition);
-
             $registered[$fqcn] = $priority;
+            $classmap[$fqcn] = $filePath;
         }
 
         if ($registered === []) {
             return;
         }
 
-        // ---- 2. Sort by priority descending (highest = first in chain) -------
-        arsort($registered);
+        // ------------------------------------------------------------------
+        // 6. Write classmap for runtime autoloading
+        // ------------------------------------------------------------------
+        $this->writeClassmap($cacheDir, $classmap);
 
-        // ---- 3. Inject References directly into the serializer definition ----
+        // ------------------------------------------------------------------
+        // 7. Sort and inject into the Symfony Serializer definition
+        // ------------------------------------------------------------------
+        arsort($registered);
         $this->injectIntoSerializer($container, array_keys($registered));
     }
 
-    // -------------------------------------------------------------------------
-    // Direct serializer injection
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // MetadataFactory bootstrap
+    // =========================================================================
 
     /**
-     * Prepend a Reference for each generated normalizer into the Symfony
+     * Create a standalone MetadataFactory suitable for use during container
+     * compilation (i.e. without the DI service container).
+     *
+     * `PhpDocExtractor` is used when `phpdocumentor/reflection-docblock` is
+     * installed (typically in development). In production deployments where
+     * dev dependencies are absent only `ReflectionExtractor` is used, which
+     * is sufficient for typed PHP 8.1+ properties.
+     */
+    private function createMetadataFactory(): MetadataFactory
+    {
+        $reflection = new ReflectionExtractor();
+        $typeExtractors = [$reflection];
+
+        // PhpDocExtractor enriches type resolution with @var / @return
+        // docblock annotations. It requires phpdocumentor/reflection-docblock
+        // which may not be present in production (require-dev only).
+        if (
+            class_exists(PhpDocExtractor::class) &&
+            class_exists(\phpDocumentor\Reflection\DocBlockFactory::class)
+        ) {
+            array_unshift($typeExtractors, new PhpDocExtractor());
+        }
+
+        $extractor = new PropertyInfoExtractor(
+            listExtractors: [$reflection],
+            typeExtractors: $typeExtractors,
+            accessExtractors: [$reflection],
+        );
+
+        return new MetadataFactory($extractor);
+    }
+
+    // =========================================================================
+    // Classmap writer
+    // =========================================================================
+
+    /**
+     * Write a PHP classmap file to `{cacheDir}/autoload.php`.
+     *
+     * The classmap is consumed by `RegisterGeneratedNormalizersPass` on the
+     * next boot (before service instantiation) and by the console command when
+     * it needs to report which files were generated.
+     *
+     * @param array<string, string> $classmap FQCN => absolute file path
+     */
+    private function writeClassmap(string $cacheDir, array $classmap): void
+    {
+        $lines = [];
+        foreach ($classmap as $fqcn => $filePath) {
+            $lines[] =
+                "    " .
+                var_export($fqcn, true) .
+                " => " .
+                var_export($filePath, true) .
+                ",";
+        }
+
+        $content =
+            "<?php\n\n// @generated by buildable/serializer-bundle\n\nreturn [\n" .
+            implode("\n", $lines) .
+            "\n];\n";
+
+        file_put_contents($cacheDir . "/autoload.php", $content);
+    }
+
+    // =========================================================================
+    // Direct serializer injection
+    // =========================================================================
+
+    /**
+     * Prepend a `Reference` for each generated normalizer into the Symfony
      * Serializer service's first constructor argument (the normalizers list).
      *
      * ### Why direct injection instead of relying on the tag alone?
      *
      * Symfony 6.4 resolves the `serializer.normalizer` tagged_iterator lazily
-     * (via a RewindableGenerator closure). Because no hard Reference objects are
-     * created at compile time, RemoveUnusedDefinitionsPass (TYPE_REMOVE) cannot
-     * see that our services are needed and prunes them as "unused".
+     * via a `RewindableGenerator` closure. Because no hard `Reference` objects
+     * are created at compile time, `RemoveUnusedDefinitionsPass` (TYPE_REMOVE)
+     * cannot see that our services are needed and prunes them as "unused".
      *
-     * By prepending explicit Reference objects to the Serializer's first
-     * constructor argument we create the hard references the pruning pass
-     * follows, while still keeping the serializer.normalizer tag for
-     * `debug:container` visibility.
+     * Prepending explicit `Reference` objects into the Serializer's first
+     * constructor argument creates the hard references the pruning pass follows,
+     * while the `serializer.normalizer` tag is retained for
+     * `debug:container --tag=serializer.normalizer` visibility.
      *
      * ### Complete-snapshot guarantee
      *
-     * This method is only called from process(), which is registered at
-     * TYPE_BEFORE_OPTIMIZATION priority -1000 — the very last pass in that
-     * phase. By that point every bundle extension (which all run before any
-     * compiler pass) and every other TYPE_BEFORE_OPTIMIZATION pass has already
-     * registered its services. findTaggedServiceIds() therefore returns a
-     * complete, stable list of normalizers; no later pass can add more services
-     * to the TYPE_BEFORE_OPTIMIZATION phase.
+     * This method is called from `process()` which is registered at
+     * `TYPE_BEFORE_OPTIMIZATION` priority `-1000` — the very last pass in that
+     * phase. Every bundle extension (which all run before any compiler pass)
+     * and every higher-priority TYPE_BEFORE_OPTIMIZATION pass has already
+     * registered its services by then. `findTaggedServiceIds()` therefore
+     * returns the complete, final set of normalizers.
      *
-     * @param string[] $fqcns Ordered list of our generated normalizer FQCNs
-     *                        (highest priority first).
+     * @param string[] $fqcns Generated normalizer FQCNs, highest priority first.
      */
     private function injectIntoSerializer(
         ContainerBuilder $container,
@@ -189,7 +374,6 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         try {
             $existing = $serializerDef->getArgument(0);
         } catch (\OutOfBoundsException) {
-            // Serializer has no arguments yet — skip.
             return;
         }
 
@@ -200,123 +384,50 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
             $ourRefs[] = new Reference($fqcn);
         }
 
-        // Build a set of our own FQCNs for O(1) deduplication below.
+        // O(1) set for deduplication when iterating tagged services below.
         $ownFqcns = array_flip($fqcns);
 
-        // Merge with existing normalizer argument.
-        // The existing argument may be:
-        //   - an array of References (already resolved by a prior pass)
-        //   - a TaggedIteratorArgument / IteratorArgument (not yet resolved)
-        //   - something else (e.g. a ServiceLocatorArgument)
         if (is_array($existing)) {
-            // Already a plain array of References — prepend ours.
+            // Argument is already a plain array of References (resolved by a
+            // prior pass) — simply prepend ours.
             $serializerDef->replaceArgument(
                 0,
                 array_merge($ourRefs, $existing),
             );
-        } else {
-            // Dynamic argument (TaggedIteratorArgument or similar): replace it
-            // with a flat array that includes our References first, followed by
-            // every other serializer.normalizer tagged service sorted by
-            // priority. Because this pass runs last in TYPE_BEFORE_OPTIMIZATION
-            // (priority -1000), findTaggedServiceIds() returns the complete,
-            // final set of normalizers — no later pass can add more.
-            $taggedIds = $container->findTaggedServiceIds(self::NORMALIZER_TAG);
 
-            // Collect and sort non-generated normalizers by priority (desc).
-            $taggedWithPriority = [];
-            foreach ($taggedIds as $id => $tags) {
-                // Skip our own services — they are already in $ourRefs.
-                if (isset($ownFqcns[$id])) {
-                    continue;
-                }
-                $taggedWithPriority[$id] = (int) ($tags[0]["priority"] ?? 0);
-            }
-            arsort($taggedWithPriority);
-
-            $allRefs = $ourRefs;
-            foreach (array_keys($taggedWithPriority) as $id) {
-                $allRefs[] = new Reference($id);
-            }
-
-            $serializerDef->replaceArgument(0, $allRefs);
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // File scanning
-    // -------------------------------------------------------------------------
-
-    /** @return list<string> */
-    private function scanNormalizerFiles(string $cacheDir): array
-    {
-        $files = [];
-
-        try {
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator(
-                    $cacheDir,
-                    \FilesystemIterator::SKIP_DOTS |
-                        \FilesystemIterator::UNIX_PATHS,
-                ),
-                \RecursiveIteratorIterator::LEAVES_ONLY,
-            );
-        } catch (\UnexpectedValueException) {
-            return [];
+            return;
         }
 
-        /** @var \SplFileInfo $fileInfo */
-        foreach ($iterator as $fileInfo) {
-            if (!$fileInfo->isFile()) {
+        // Argument is a TaggedIteratorArgument or similar dynamic type.
+        // Replace it with a fully-resolved flat array:
+        //   [generated normalizers (priority desc)] + [all other tagged normalizers (priority desc)]
+        $taggedIds = $container->findTaggedServiceIds(self::NORMALIZER_TAG);
+
+        $otherWithPriority = [];
+        foreach ($taggedIds as $id => $tags) {
+            if (isset($ownFqcns[$id])) {
+                // Already in $ourRefs — skip to avoid duplication.
                 continue;
             }
-            if ($fileInfo->getExtension() !== "php") {
-                continue;
-            }
-            if (!str_ends_with($fileInfo->getFilename(), "Normalizer.php")) {
-                continue;
-            }
-            $realPath = $fileInfo->getRealPath();
-            if ($realPath !== false) {
-                $files[] = $realPath;
-            }
+            $otherWithPriority[$id] = (int) ($tags[0]["priority"] ?? 0);
+        }
+        arsort($otherWithPriority);
+
+        $allRefs = $ourRefs;
+        foreach (array_keys($otherWithPriority) as $id) {
+            $allRefs[] = new Reference($id);
         }
 
-        sort($files);
-
-        return $files;
+        $serializerDef->replaceArgument(0, $allRefs);
     }
 
-    // -------------------------------------------------------------------------
-    // Path ↔ FQCN conversion
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Helpers
+    // =========================================================================
 
-    private function filePathToFqcn(
-        string $cacheDir,
-        string $filePath,
-        string $generatedNamespace,
-    ): ?string {
-        $cacheDir = rtrim(str_replace("\\", "/", $cacheDir), "/");
-        $filePath = str_replace("\\", "/", $filePath);
-        $prefix = $cacheDir . "/";
-
-        if (!str_starts_with($filePath, $prefix)) {
-            return null;
-        }
-
-        $relative = substr($filePath, \strlen($prefix));
-        $relative = substr($relative, 0, -\strlen(".php"));
-        $relative = str_replace("/", "\\", $relative);
-
-        $ns = rtrim($generatedNamespace, "\\");
-
-        return $ns === "" ? $relative : $ns . "\\" . $relative;
-    }
-
-    // -------------------------------------------------------------------------
-    // Class loading
-    // -------------------------------------------------------------------------
-
+    /**
+     * Require a generated PHP file and verify the expected class is available.
+     */
     private function loadClass(string $fqcn, string $filePath): bool
     {
         if (class_exists($fqcn, false)) {
@@ -333,82 +444,23 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         return class_exists($fqcn, false);
     }
 
-    // -------------------------------------------------------------------------
-    // Priority resolution
-    // -------------------------------------------------------------------------
-
+    /**
+     * Return the `NORMALIZER_PRIORITY` constant from a generated class, or the
+     * default priority when the constant is absent.
+     */
     private function resolvePriority(string $fqcn): int
     {
         try {
             $ref = new \ReflectionClass($fqcn);
             if ($ref->hasConstant("NORMALIZER_PRIORITY")) {
-                $val = $ref->getConstant("NORMALIZER_PRIORITY");
-                if (\is_int($val)) {
-                    return $val;
+                $value = $ref->getConstant("NORMALIZER_PRIORITY");
+                if (\is_int($value)) {
+                    return $value;
                 }
             }
         } catch (\ReflectionException) {
         }
 
         return self::DEFAULT_PRIORITY;
-    }
-
-    // -------------------------------------------------------------------------
-    // Constructor argument resolution
-    // -------------------------------------------------------------------------
-
-    /** @return list<Reference|null> */
-    private function resolveConstructorArguments(
-        string $fqcn,
-        ContainerBuilder $container,
-    ): array {
-        try {
-            $ref = new \ReflectionClass($fqcn);
-            $constructor = $ref->getConstructor();
-        } catch (\ReflectionException) {
-            return [];
-        }
-
-        if (
-            $constructor === null ||
-            $constructor->getNumberOfParameters() === 0
-        ) {
-            return [];
-        }
-
-        $serializerInterfaces = [
-            "Symfony\Component\Serializer\Normalizer\NormalizerInterface",
-            "Symfony\Component\Serializer\Normalizer\DenormalizerInterface",
-            "Symfony\Component\Serializer\SerializerInterface",
-        ];
-
-        $args = [];
-        foreach ($constructor->getParameters() as $param) {
-            $type = $param->getType();
-
-            if (!$type instanceof \ReflectionNamedType || $type->isBuiltin()) {
-                $args[] = null;
-                continue;
-            }
-
-            $typeName = $type->getName();
-
-            if (\in_array($typeName, $serializerInterfaces, true)) {
-                $args[] = new Reference("serializer");
-                continue;
-            }
-
-            if (
-                $container->hasDefinition($typeName) ||
-                $container->hasAlias($typeName)
-            ) {
-                $args[] = new Reference($typeName);
-                continue;
-            }
-
-            $args[] = null;
-        }
-
-        return $args;
     }
 }

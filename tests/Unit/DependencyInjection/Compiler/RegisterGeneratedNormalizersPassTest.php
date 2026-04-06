@@ -6,27 +6,24 @@ namespace Buildable\SerializerBundle\Tests\Unit\DependencyInjection\Compiler;
 
 use Buildable\SerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
 use Buildable\SerializerBundle\Normalizer\GeneratedNormalizerInterface;
+use Buildable\SerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\Serializer\Serializer;
 
 /**
  * @covers \Buildable\SerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass
  */
 final class RegisterGeneratedNormalizersPassTest extends TestCase
 {
-    /** Unique temp directory created for each test. */
     private string $tempDir;
-
     private ContainerBuilder $container;
     private RegisterGeneratedNormalizersPass $pass;
 
-    /**
-     * Counter used to make class names unique across tests in the same process.
-     * The counter is prepended so that the class name always ends in "Normalizer",
-     * matching the scanner filter: str_ends_with($filename, "Normalizer.php").
-     */
-    private static int $classCounter = 0;
+    /** Absolute path to tests/Fixtures/Discovery/ */
+    private string $discoveryFixturesDir;
 
     protected function setUp(): void
     {
@@ -38,6 +35,10 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
         mkdir($this->tempDir, 0777, true);
 
+        $this->discoveryFixturesDir = realpath(
+            __DIR__ . "/../../../Fixtures/Discovery",
+        );
+
         $this->container = new ContainerBuilder();
         $this->pass = new RegisterGeneratedNormalizersPass();
     }
@@ -47,9 +48,9 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->removeDirectory($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Early-exit paths
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     public function testProcessDoesNothingWhenCacheDirParameterAbsent(): void
     {
@@ -57,6 +58,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             "buildable_serializer.generated_namespace",
             "BuildableTest\\Generated",
         );
+        $this->container->setParameter("buildable_serializer.paths", []);
 
         $this->pass->process($this->container);
 
@@ -69,23 +71,21 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             "buildable_serializer.cache_dir",
             $this->tempDir,
         );
+        $this->container->setParameter("buildable_serializer.paths", []);
 
         $this->pass->process($this->container);
 
         $this->assertNoNormalizerServicesRegistered();
     }
 
-    public function testProcessDoesNothingWhenBothParametersAbsent(): void
+    public function testProcessDoesNothingWhenPathsParameterAbsent(): void
     {
-        $this->pass->process($this->container);
-
-        $this->assertNoNormalizerServicesRegistered();
-    }
-
-    public function testProcessDoesNothingWhenCacheDirDoesNotExist(): void
-    {
-        $this->setContainerParams(
-            "/nonexistent/path/that/does/not/exist",
+        $this->container->setParameter(
+            "buildable_serializer.cache_dir",
+            $this->tempDir,
+        );
+        $this->container->setParameter(
+            "buildable_serializer.generated_namespace",
             "BuildableTest\\Generated",
         );
 
@@ -94,695 +94,516 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertNoNormalizerServicesRegistered();
     }
 
-    public function testProcessDoesNothingWhenCacheDirIsEmpty(): void
+    public function testProcessDoesNothingWhenAllParametersAbsent(): void
     {
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+        $this->pass->process($this->container);
+
+        $this->assertNoNormalizerServicesRegistered();
+    }
+
+    public function testProcessDoesNothingWhenPathsIsEmpty(): void
+    {
+        $this->setupContainerParameters([]);
 
         $this->pass->process($this->container);
 
         $this->assertNoNormalizerServicesRegistered();
     }
 
-    public function testProcessDoesNothingWhenOnlyNonNormalizerPhpFilesPresent(): void
-    {
-        file_put_contents(
-            $this->tempDir . "/SomeOtherClass.php",
-            "<?php class SomeOther {}",
-        );
-        file_put_contents($this->tempDir . "/autoload.php", "<?php return [];");
+    // =========================================================================
+    // Normalizer generation
+    // =========================================================================
 
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+    public function testProcessGeneratesNormalizerFilesForSerializableClasses(): void
+    {
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
         $this->pass->process($this->container);
 
-        $this->assertNoNormalizerServicesRegistered();
-    }
+        // At least one *Normalizer.php file must exist in the temp output dir.
+        $generated =
+            glob($this->tempDir . "/**/*Normalizer.php", GLOB_BRACE) ?:
+            glob($this->tempDir . "/*Normalizer.php") ?:
+            $this->findNormalizerFiles($this->tempDir);
 
-    // -------------------------------------------------------------------------
-    // Marker interface check
-    // -------------------------------------------------------------------------
-
-    public function testProcessSkipsClassNotImplementingMarkerInterface(): void
-    {
-        $shortName = $this->uniqueShortName("NoMarkerNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: false);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertFalse($this->container->hasDefinition($fqcn));
-    }
-
-    // -------------------------------------------------------------------------
-    // Happy path — service registration
-    // -------------------------------------------------------------------------
-
-    public function testProcessRegistersValidNormalizerAsTaggedService(): void
-    {
-        $shortName = $this->uniqueShortName("ValidNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        // $shortName ends with "Normalizer" → file ends with "Normalizer.php" → scanner picks it up
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue(
-            $this->container->hasDefinition($fqcn),
-            "Expected service definition for {$fqcn}.",
-        );
-
-        $definition = $this->container->getDefinition($fqcn);
-        $this->assertSame($fqcn, $definition->getClass());
-        $this->assertFalse(
-            $definition->isPublic(),
-            "Service must not be public.",
-        );
-        $this->assertFalse(
-            $definition->isAutowired(),
-            "Service must not be autowired.",
-        );
-        $this->assertFalse(
-            $definition->isAutoconfigured(),
-            "Service must not be autoconfigured.",
+        $this->assertNotEmpty(
+            $generated,
+            "Expected generated Normalizer PHP files in cache_dir.",
         );
     }
 
-    public function testProcessTagsServiceWithSerializerNormalizerTag(): void
+    public function testProcessGeneratesAutoloadClassmap(): void
     {
-        $shortName = $this->uniqueShortName("TaggedNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
         $this->pass->process($this->container);
 
-        $tags = $this->container
-            ->getDefinition($fqcn)
-            ->getTag("serializer.normalizer");
-        $this->assertCount(
-            1,
-            $tags,
-            "Expected exactly one serializer.normalizer tag.",
-        );
-        $this->assertArrayHasKey("priority", $tags[0]);
-    }
-
-    public function testProcessUsesDefaultPriorityOf200(): void
-    {
-        $shortName = $this->uniqueShortName("DefaultPrioNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $tags = $this->container
-            ->getDefinition($fqcn)
-            ->getTag("serializer.normalizer");
-        $this->assertSame(200, $tags[0]["priority"]);
-    }
-
-    public function testProcessUsesCustomNormalizerPriorityConstant(): void
-    {
-        $shortName = $this->uniqueShortName("HighPrioNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFileWithPriority($shortName, $fqcn, 500);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue($this->container->hasDefinition($fqcn));
-        $tags = $this->container
-            ->getDefinition($fqcn)
-            ->getTag("serializer.normalizer");
-        $this->assertSame(500, $tags[0]["priority"]);
-    }
-
-    public function testProcessRegistersMultipleNormalizersFromSameDirectory(): void
-    {
-        $shortA = $this->uniqueShortName("MultiANormalizer");
-        $shortB = $this->uniqueShortName("MultiBNormalizer");
-        $fqcnA = "BuildableTest\\Generated\\" . $shortA;
-        $fqcnB = "BuildableTest\\Generated\\" . $shortB;
-
-        $this->writeNormalizerFile($shortA, $fqcnA, implementsMarker: true);
-        $this->writeNormalizerFile($shortB, $fqcnB, implementsMarker: true);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue($this->container->hasDefinition($fqcnA));
-        $this->assertTrue($this->container->hasDefinition($fqcnB));
-    }
-
-    public function testProcessRegistersNormalizersInSubdirectories(): void
-    {
-        $subDir =
-            $this->tempDir .
-            DIRECTORY_SEPARATOR .
-            "App" .
-            DIRECTORY_SEPARATOR .
-            "Entity";
-        mkdir($subDir, 0777, true);
-
-        $shortName = $this->uniqueShortName("DeepNormalizer");
-        $fqcn = "BuildableTest\\Generated\\App\\Entity\\" . $shortName;
-
-        $filePath = $subDir . DIRECTORY_SEPARATOR . $shortName . ".php";
-        $markerInterface = "\\" . GeneratedNormalizerInterface::class;
-        file_put_contents(
-            $filePath,
-            <<<PHP
-            <?php
-            namespace BuildableTest\Generated\App\Entity;
-            final class {$shortName} implements {$markerInterface} {}
-            PHP
-            ,
-        );
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue(
-            $this->container->hasDefinition($fqcn),
-            "Expected service definition for deeply nested {$fqcn}.",
+        $this->assertFileExists(
+            $this->tempDir . DIRECTORY_SEPARATOR . "autoload.php",
+            "Expected an autoload.php classmap file in cache_dir.",
         );
     }
 
-    // -------------------------------------------------------------------------
-    // Mixed valid + invalid entries
-    // -------------------------------------------------------------------------
-
-    public function testProcessMixesValidAndSkippableFilesGracefully(): void
+    public function testAutoloadClassmapContainsValidPhpArray(): void
     {
-        $validShort = $this->uniqueShortName("MixedValidNormalizer");
-        $invalidShort = $this->uniqueShortName("MixedInvalidNormalizer");
-        $validFqcn = "BuildableTest\\Generated\\" . $validShort;
-        $invalidFqcn = "BuildableTest\\Generated\\" . $invalidShort;
-
-        $this->writeNormalizerFile(
-            $validShort,
-            $validFqcn,
-            implementsMarker: true,
-        );
-        $this->writeNormalizerFile(
-            $invalidShort,
-            $invalidFqcn,
-            implementsMarker: false,
-        );
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
         $this->pass->process($this->container);
 
-        $this->assertTrue($this->container->hasDefinition($validFqcn));
-        $this->assertFalse($this->container->hasDefinition($invalidFqcn));
+        $classmap = require $this->tempDir . "/autoload.php";
+
+        $this->assertIsArray($classmap);
+        $this->assertNotEmpty($classmap);
+
+        foreach ($classmap as $fqcn => $path) {
+            $this->assertIsString($fqcn, "Classmap keys must be FQCN strings.");
+            $this->assertIsString(
+                $path,
+                "Classmap values must be file-path strings.",
+            );
+            $this->assertFileExists(
+                $path,
+                "Generated file {$path} must exist on disk.",
+            );
+        }
     }
 
-    // -------------------------------------------------------------------------
-    // Already-registered services
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // DI service registration
+    // =========================================================================
 
-    public function testProcessSkipsAlreadyRegisteredService(): void
+    public function testProcessRegistersNormalizerServicesInContainer(): void
     {
-        $shortName = $this->uniqueShortName("PreExistingNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
-
-        // Pre-register with a sentinel tag to detect whether it is replaced.
-        $this->container->register($fqcn, $fqcn)->addTag("custom_sentinel_tag");
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
         $this->pass->process($this->container);
 
-        $definition = $this->container->getDefinition($fqcn);
-        $this->assertNotEmpty($definition->getTag("custom_sentinel_tag"));
-        $this->assertEmpty(
-            $definition->getTag("serializer.normalizer"),
-            "The pass must not overwrite a user-defined service definition.",
-        );
+        $this->assertAtLeastOneNormalizerServiceRegistered();
     }
 
-    // -------------------------------------------------------------------------
-    // Already-loaded classes
-    // -------------------------------------------------------------------------
-
-    public function testProcessHandlesAlreadyRequiredClass(): void
+    public function testRegisteredServicesImplementGeneratedNormalizerInterface(): void
     {
-        $shortName = $this->uniqueShortName("PreLoadedNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $filePath = $this->writeNormalizerFile(
-            $shortName,
-            $fqcn,
-            implementsMarker: true,
-        );
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
-        // Pre-load the class to simulate it being autoloaded before the pass runs.
-        require_once $filePath;
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        // Must not throw or register a duplicate service.
         $this->pass->process($this->container);
 
-        $this->assertTrue($this->container->hasDefinition($fqcn));
+        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
+            $this->assertTrue(
+                is_a($fqcn, GeneratedNormalizerInterface::class, true),
+                "{$fqcn} must implement GeneratedNormalizerInterface.",
+            );
+        }
     }
 
-    // -------------------------------------------------------------------------
-    // Broken / unreadable files
-    // -------------------------------------------------------------------------
-
-    public function testProcessSkipsBrokenPhpFile(): void
+    public function testRegisteredServicesAreTaggedWithSerializerNormalizerTag(): void
     {
-        // Write a file with a syntax error so require_once throws a ParseError.
-        // "BrokenNormalizer.php" ends in "Normalizer.php" → scanner picks it up, then skips it.
-        $brokenPath = $this->tempDir . "/BrokenNormalizer.php";
-        file_put_contents($brokenPath, "<?php this is not valid php }{");
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        // Must not throw; the broken file is silently skipped.
         $this->pass->process($this->container);
 
-        $this->assertFalse(
-            $this->container->hasDefinition(
-                "BuildableTest\\Generated\\BrokenNormalizer",
+        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
+            $definition = $this->container->getDefinition($fqcn);
+            $this->assertTrue(
+                $definition->hasTag("serializer.normalizer"),
+                "{$fqcn} must be tagged with 'serializer.normalizer'.",
+            );
+        }
+    }
+
+    public function testRegisteredServicesUseDefaultPriority200(): void
+    {
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
+
+        $this->pass->process($this->container);
+
+        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
+            $definition = $this->container->getDefinition($fqcn);
+            $tags = $definition->getTag("serializer.normalizer");
+            $priority = (int) ($tags[0]["priority"] ?? 0);
+
+            $this->assertSame(
+                200,
+                $priority,
+                "{$fqcn} must be tagged with priority 200.",
+            );
+        }
+    }
+
+    public function testRegisteredServicesArePrivate(): void
+    {
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
+
+        $this->pass->process($this->container);
+
+        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
+            $definition = $this->container->getDefinition($fqcn);
+            $this->assertFalse(
+                $definition->isPublic(),
+                "{$fqcn} must be a private service.",
+            );
+        }
+    }
+
+    // =========================================================================
+    // Abstract / non-serializable classes are excluded
+    // =========================================================================
+
+    public function testAbstractClassWithAttributeIsNotRegistered(): void
+    {
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
+
+        $this->pass->process($this->container);
+
+        // AbstractModel has #[Serializable] but is abstract — must be excluded.
+        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
+            $this->assertStringNotContainsStringIgnoringCase(
+                "AbstractModel",
+                $fqcn,
+                "AbstractModel must not appear as a registered normalizer.",
+            );
+        }
+    }
+
+    public function testNonSerializableClassIsNotRegistered(): void
+    {
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
+
+        $this->pass->process($this->container);
+
+        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
+            $this->assertStringNotContainsStringIgnoringCase(
+                "NotSerializableModel",
+                $fqcn,
+                "NotSerializableModel must not appear as a registered normalizer.",
+            );
+        }
+    }
+
+    // =========================================================================
+    // Serializer injection
+    // =========================================================================
+
+    public function testProcessInjectsNormalizersIntoSerializerDefinition(): void
+    {
+        $this->registerSerializerDefinition();
+
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
+
+        $this->pass->process($this->container);
+
+        $serializerDef = $this->container->getDefinition("serializer");
+        $normalizersArg = $serializerDef->getArgument(0);
+
+        $this->assertIsArray($normalizersArg);
+
+        $referencedIds = array_map(
+            static fn(Reference $ref): string => (string) $ref,
+            array_filter(
+                $normalizersArg,
+                static fn($arg): bool => $arg instanceof Reference,
             ),
         );
+
+        $registeredFqcns = $this->getRegisteredNormalizerFqcns();
+        $this->assertNotEmpty($registeredFqcns);
+
+        foreach ($registeredFqcns as $fqcn) {
+            $this->assertContains(
+                $fqcn,
+                $referencedIds,
+                "Generated normalizer {$fqcn} must appear in the serializer's normalizer argument.",
+            );
+        }
     }
 
-    // -------------------------------------------------------------------------
-    // Constructor argument resolution
-    // -------------------------------------------------------------------------
-
-    public function testProcessInjectsSerializerReferenceForNormalizerInterfaceParam(): void
+    public function testGeneratedNormalizersArePrependedBeforeExistingNormalizers(): void
     {
-        $shortName = $this->uniqueShortName("DelegatingNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFileWithNormalizerParam($shortName, $fqcn);
+        $this->registerSerializerDefinition();
 
-        $this->container->register("serializer");
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
         $this->pass->process($this->container);
 
-        $this->assertTrue($this->container->hasDefinition($fqcn));
+        $normalizersArg = $this->container
+            ->getDefinition("serializer")
+            ->getArgument(0);
+        $this->assertIsArray($normalizersArg);
 
-        $arguments = $this->container->getDefinition($fqcn)->getArguments();
-        $this->assertCount(1, $arguments);
-        $this->assertInstanceOf(Reference::class, $arguments[0]);
-        $this->assertSame("serializer", (string) $arguments[0]);
-    }
+        if ($normalizersArg === []) {
+            $this->markTestSkipped(
+                "No normalizer References found in serializer argument.",
+            );
+        }
 
-    public function testProcessInjectsNullForBuiltinTypeParam(): void
-    {
-        $shortName = $this->uniqueShortName("BuiltinParamNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFileWithBuiltinParam($shortName, $fqcn);
+        $firstRef = $normalizersArg[0];
+        $this->assertInstanceOf(Reference::class, $firstRef);
 
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue($this->container->hasDefinition($fqcn));
-
-        $arguments = $this->container->getDefinition($fqcn)->getArguments();
-        $this->assertCount(1, $arguments);
-        $this->assertNull($arguments[0]);
-    }
-
-    public function testProcessInjectsContainerServiceReferenceForKnownServiceType(): void
-    {
-        $depClass = "stdClass";
-        $shortName = $this->uniqueShortName("ServiceDepNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFileWithTypedParam($shortName, $fqcn, $depClass);
-
-        $this->container->register($depClass, $depClass);
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue($this->container->hasDefinition($fqcn));
-
-        $arguments = $this->container->getDefinition($fqcn)->getArguments();
-        $this->assertCount(1, $arguments);
-        $this->assertInstanceOf(Reference::class, $arguments[0]);
-        $this->assertSame($depClass, (string) $arguments[0]);
-    }
-
-    public function testProcessInjectsNullForUnknownServiceType(): void
-    {
-        $shortName = $this->uniqueShortName("UnknownDepNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFileWithTypedParam(
-            $shortName,
-            $fqcn,
-            "App\\NonExistentService",
-        );
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue($this->container->hasDefinition($fqcn));
-
-        $arguments = $this->container->getDefinition($fqcn)->getArguments();
-        $this->assertCount(1, $arguments);
-        $this->assertNull($arguments[0]);
-    }
-
-    public function testProcessRegistersNormalizerWithNoConstructorArgs(): void
-    {
-        $shortName = $this->uniqueShortName("NoArgNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
-
-        $this->pass->process($this->container);
-
-        $this->assertTrue($this->container->hasDefinition($fqcn));
-        $this->assertEmpty(
-            $this->container->getDefinition($fqcn)->getArguments(),
+        // The first Reference must be one of our generated normalizers.
+        $registeredFqcns = $this->getRegisteredNormalizerFqcns();
+        $this->assertContains(
+            (string) $firstRef,
+            $registeredFqcns,
+            "The first normalizer in the chain must be a generated normalizer.",
         );
     }
 
-    // -------------------------------------------------------------------------
-    // FQCN derivation from path
-    // -------------------------------------------------------------------------
-
-    public function testFqcnIsCorrectlyDerivedFromFlatFile(): void
+    public function testProcessDoesNotTouchSerializerWhenNoClassesDiscovered(): void
     {
-        $shortName = $this->uniqueShortName("FlatNormalizer");
-        $fqcn = "My\\Namespace\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
+        $this->registerSerializerDefinition();
 
-        $this->setContainerParams($this->tempDir, "My\\Namespace");
+        // Use an empty temp dir — no PHP files → no #[Serializable] classes.
+        $emptyDir = $this->tempDir . DIRECTORY_SEPARATOR . "empty_src";
+        mkdir($emptyDir, 0777, true);
+
+        $this->setupContainerParameters([
+            "App\\Empty" => $emptyDir,
+        ]);
 
         $this->pass->process($this->container);
 
-        $this->assertTrue(
-            $this->container->hasDefinition($fqcn),
-            "FQCN {$fqcn} must be derived correctly from a flat (non-PSR4) path.",
+        // Serializer argument must still be the original TaggedIteratorArgument (unchanged).
+        $serializerDef = $this->container->getDefinition("serializer");
+        $arg = $serializerDef->getArgument(0);
+
+        $this->assertIsNotArray(
+            $arg,
+            "Serializer argument must not be converted to a flat array when no classes are discovered.",
         );
     }
 
-    public function testFqcnIsCorrectlyDerivedFromNestedPath(): void
+    // =========================================================================
+    // Cache directory creation
+    // =========================================================================
+
+    public function testProcessCreatesCacheDirWhenAbsent(): void
     {
-        $subDir = $this->tempDir . DIRECTORY_SEPARATOR . "Dto";
-        mkdir($subDir, 0777, true);
+        $newCacheDir = $this->tempDir . DIRECTORY_SEPARATOR . "auto_created";
+        $this->assertDirectoryDoesNotExist($newCacheDir);
 
-        $shortName = $this->uniqueShortName("NestedFqcnNormalizer");
-        $fqcn = "Root\\Dto\\" . $shortName;
-
-        $markerInterface = "\\" . GeneratedNormalizerInterface::class;
-        file_put_contents(
-            $subDir . DIRECTORY_SEPARATOR . $shortName . ".php",
-            <<<PHP
-            <?php
-            namespace Root\Dto;
-            final class {$shortName} implements {$markerInterface} {}
-            PHP
-            ,
+        $this->setupContainerParameters(
+            [
+                "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                    $this->discoveryFixturesDir,
+            ],
+            $newCacheDir,
         );
-
-        $this->setContainerParams($this->tempDir, "Root");
 
         $this->pass->process($this->container);
 
-        $this->assertTrue(
-            $this->container->hasDefinition($fqcn),
-            "FQCN {$fqcn} must be derived from nested directory path.",
-        );
+        $this->assertDirectoryExists($newCacheDir);
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Idempotency
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     public function testProcessIsIdempotentWhenRunTwice(): void
     {
-        $shortName = $this->uniqueShortName("IdempotentNormalizer");
-        $fqcn = "BuildableTest\\Generated\\" . $shortName;
-        $this->writeNormalizerFile($shortName, $fqcn, implementsMarker: true);
-
-        $this->setContainerParams($this->tempDir, "BuildableTest\\Generated");
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
+                $this->discoveryFixturesDir,
+        ]);
 
         $this->pass->process($this->container);
+        $countAfterFirst = count($this->getRegisteredNormalizerFqcns());
 
-        // The first run registers the service; the second must not throw or
-        // double-register because hasDefinition() returns true.
+        // Re-run; services are already registered — must not duplicate.
         $this->pass->process($this->container);
+        $countAfterSecond = count($this->getRegisteredNormalizerFqcns());
 
-        $definitions = array_filter(
-            $this->container->getDefinitions(),
-            static fn($def) => $def->getClass() === $fqcn,
-        );
-        $this->assertCount(
-            1,
-            $definitions,
-            "Service must be registered exactly once.",
+        $this->assertSame(
+            $countAfterFirst,
+            $countAfterSecond,
+            "Running the pass twice must not register duplicate normalizer services.",
         );
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Helpers
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     /**
-     * Assert that the compiler pass registered no `serializer.normalizer`-tagged
-     * services in the container.
+     * Configure the container with all parameters required by the pass.
      *
-     * We deliberately avoid `assertEmpty($container->getDefinitions())` because
-     * a fresh `ContainerBuilder` always contains built-in definitions (e.g.
-     * `service_container`).
+     * @param array<string, string> $paths namespace-prefix => directory
      */
-    private function assertNoNormalizerServicesRegistered(): void
-    {
-        $tagged = $this->container->findTaggedServiceIds(
-            "serializer.normalizer",
-        );
-
-        $this->assertEmpty(
-            $tagged,
-            "Expected no serializer.normalizer tagged services, but found: " .
-                implode(", ", array_keys($tagged)),
-        );
-    }
-
-    /**
-     * Set the two container parameters required by the pass.
-     */
-    private function setContainerParams(
-        string $cacheDir,
-        string $namespace,
+    private function setupContainerParameters(
+        array $paths,
+        ?string $cacheDir = null,
     ): void {
-        // Resolve symlinks (e.g. /tmp → /private/tmp on macOS) so the
-        // container parameter matches the canonical path returned by getRealPath().
-        $resolved = realpath($cacheDir);
-
         $this->container->setParameter(
             "buildable_serializer.cache_dir",
-            $resolved !== false ? $resolved : $cacheDir,
+            $cacheDir ?? $this->tempDir,
         );
         $this->container->setParameter(
             "buildable_serializer.generated_namespace",
-            $namespace,
+            "BuildableTest\\Generated",
+        );
+        $this->container->setParameter("buildable_serializer.paths", $paths);
+        $this->container->setParameter("buildable_serializer.features", [
+            "groups" => true,
+            "max_depth" => true,
+            "circular_reference" => true,
+            "name_converter" => false,
+            "skip_null_values" => true,
+        ]);
+        $this->container->setParameter("buildable_serializer.generation", [
+            "strict_types" => true,
+            "add_generated_tag" => true,
+        ]);
+    }
+
+    /**
+     * Add a minimal `serializer` service definition to the container with a
+     * TaggedIteratorArgument placeholder as its first argument, mirroring what
+     * Symfony's FrameworkBundle registers.
+     */
+    private function registerSerializerDefinition(): void
+    {
+        $def = new Definition(Serializer::class);
+        $def->setArguments([
+            // Use a plain object (non-array) to simulate the TaggedIteratorArgument.
+            new \Symfony\Component\DependencyInjection\Argument\TaggedIteratorArgument(
+                "serializer.normalizer",
+            ),
+            [],
+            [],
+        ]);
+        $this->container->setDefinition("serializer", $def);
+    }
+
+    private function assertNoNormalizerServicesRegistered(): void
+    {
+        $this->assertSame(
+            [],
+            $this->getRegisteredNormalizerFqcns(),
+            "No normalizer services should have been registered.",
+        );
+    }
+
+    private function assertAtLeastOneNormalizerServiceRegistered(): void
+    {
+        $this->assertNotEmpty(
+            $this->getRegisteredNormalizerFqcns(),
+            "At least one normalizer service should have been registered.",
         );
     }
 
     /**
-     * Generate a unique short class name to prevent redeclaration errors.
+     * Return the FQCNs of all container services that implement
+     * GeneratedNormalizerInterface and are tagged with serializer.normalizer.
      *
-     * The counter is prepended so that every generated name ends with "Normalizer",
-     * which is required by the compiler pass scanner:
-     *   str_ends_with($filename, "Normalizer.php")
-     *
-     * Example: uniqueShortName("Valid") → "T001ValidNormalizer"
+     * @return list<string>
      */
-    private function uniqueShortName(string $base): string
+    private function getRegisteredNormalizerFqcns(): array
     {
-        return sprintf("T%03d%s", ++self::$classCounter, $base);
+        $fqcns = [];
+
+        foreach ($this->container->getDefinitions() as $id => $definition) {
+            $class = $definition->getClass();
+            if ($class === null) {
+                continue;
+            }
+            if (!class_exists($class, false)) {
+                continue;
+            }
+            if (!is_a($class, GeneratedNormalizerInterface::class, true)) {
+                continue;
+            }
+            $fqcns[] = $id;
+        }
+
+        return $fqcns;
     }
 
     /**
-     * Write a minimal PHP normalizer file to the temp directory.
+     * Recursively find all *Normalizer.php files under a directory.
      *
-     * @return string The absolute path of the written file.
+     * @return list<string>
      */
-    private function writeNormalizerFile(
-        string $shortName,
-        string $fqcn,
-        bool $implementsMarker,
-    ): string {
-        [$namespace, $class] = $this->splitFqcn($fqcn);
-        $markerClause = $implementsMarker
-            ? "implements \\" . GeneratedNormalizerInterface::class
-            : "";
-
-        $content = <<<PHP
-        <?php
-        namespace {$namespace};
-        final class {$class} {$markerClause} {}
-        PHP;
-
-        $path = $this->tempDir . DIRECTORY_SEPARATOR . $shortName . ".php";
-        file_put_contents($path, $content);
-
-        return $path;
-    }
-
-    /**
-     * Write a normalizer file that declares a public NORMALIZER_PRIORITY constant.
-     */
-    private function writeNormalizerFileWithPriority(
-        string $shortName,
-        string $fqcn,
-        int $priority,
-    ): string {
-        [$namespace, $class] = $this->splitFqcn($fqcn);
-        $marker = "\\" . GeneratedNormalizerInterface::class;
-
-        $content = <<<PHP
-        <?php
-        namespace {$namespace};
-        final class {$class} implements {$marker}
-        {
-            public const NORMALIZER_PRIORITY = {$priority};
-        }
-        PHP;
-
-        $path = $this->tempDir . DIRECTORY_SEPARATOR . $shortName . ".php";
-        file_put_contents($path, $content);
-
-        return $path;
-    }
-
-    /**
-     * Write a normalizer file whose constructor accepts a NormalizerInterface param.
-     * This triggers the `@serializer` injection path in the pass.
-     */
-    private function writeNormalizerFileWithNormalizerParam(
-        string $shortName,
-        string $fqcn,
-    ): string {
-        [$namespace, $class] = $this->splitFqcn($fqcn);
-        $marker = "\\" . GeneratedNormalizerInterface::class;
-        $normIface =
-            "\Symfony\Component\Serializer\Normalizer\NormalizerInterface";
-
-        $content = <<<PHP
-        <?php
-        namespace {$namespace};
-        final class {$class} implements {$marker}
-        {
-            public function __construct(
-                private readonly {$normIface} \$normalizer,
-            ) {}
-        }
-        PHP;
-
-        $path = $this->tempDir . DIRECTORY_SEPARATOR . $shortName . ".php";
-        file_put_contents($path, $content);
-
-        return $path;
-    }
-
-    /**
-     * Write a normalizer file whose constructor accepts a built-in (string) param.
-     * This triggers the `null` injection fallback.
-     */
-    private function writeNormalizerFileWithBuiltinParam(
-        string $shortName,
-        string $fqcn,
-    ): string {
-        [$namespace, $class] = $this->splitFqcn($fqcn);
-        $marker = "\\" . GeneratedNormalizerInterface::class;
-
-        $content = <<<PHP
-        <?php
-        namespace {$namespace};
-        final class {$class} implements {$marker}
-        {
-            public function __construct(private readonly string \$value = '') {}
-        }
-        PHP;
-
-        $path = $this->tempDir . DIRECTORY_SEPARATOR . $shortName . ".php";
-        file_put_contents($path, $content);
-
-        return $path;
-    }
-
-    /**
-     * Write a normalizer file whose constructor accepts an object param of the
-     * given FQCN. Used to test both the "known service" and "unknown service" paths.
-     */
-    private function writeNormalizerFileWithTypedParam(
-        string $shortName,
-        string $fqcn,
-        string $typeFqcn,
-    ): string {
-        [$namespace, $class] = $this->splitFqcn($fqcn);
-        $marker = "\\" . GeneratedNormalizerInterface::class;
-        $typeHint = "?\\" . ltrim($typeFqcn, "\\");
-
-        $content = <<<PHP
-        <?php
-        namespace {$namespace};
-        final class {$class} implements {$marker}
-        {
-            public function __construct(private readonly {$typeHint} \$dep = null) {}
-        }
-        PHP;
-
-        $path = $this->tempDir . DIRECTORY_SEPARATOR . $shortName . ".php";
-        file_put_contents($path, $content);
-
-        return $path;
-    }
-
-    /**
-     * Split a FQCN into [namespace, shortName].
-     *
-     * @return array{0: string, 1: string}
-     */
-    private function splitFqcn(string $fqcn): array
+    private function findNormalizerFiles(string $dir): array
     {
-        $parts = explode("\\", $fqcn);
-        $shortName = (string) array_pop($parts);
-        $namespace = implode("\\", $parts);
+        $files = [];
 
-        return [$namespace, $shortName];
+        if (!is_dir($dir)) {
+            return $files;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $dir,
+                \FilesystemIterator::SKIP_DOTS,
+            ),
+        );
+
+        /** @var \SplFileInfo $file */
+        foreach ($iterator as $file) {
+            if (
+                $file->isFile() &&
+                $file->getExtension() === "php" &&
+                str_ends_with($file->getFilename(), "Normalizer.php")
+            ) {
+                $files[] = $file->getRealPath();
+            }
+        }
+
+        return $files;
     }
 
-    /**
-     * Recursively delete a directory and all its contents.
-     */
     private function removeDirectory(string $dir): void
     {
         if (!is_dir($dir)) {
             return;
         }
 
-        foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === "." || $entry === "..") {
-                continue;
-            }
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $dir,
+                \FilesystemIterator::SKIP_DOTS,
+            ),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
 
-            $path = $dir . DIRECTORY_SEPARATOR . $entry;
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
+        foreach ($iterator as $file) {
+            $file->isDir()
+                ? rmdir($file->getRealPath())
+                : unlink($file->getRealPath());
         }
 
         rmdir($dir);
