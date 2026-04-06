@@ -1,0 +1,67 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }} / Symfony ${{ matrix.symfony }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+        symfony: ['^6.4', '^7.0']
+        exclude:
+          # Symfony 7.x requires PHP 8.2+
+          - php: '8.1'
+            symfony: '^7.0'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, xml, ctype, iconv
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Pin Symfony version
+        run: composer require "symfony/framework-bundle:${{ matrix.symfony }}" --no-update --no-interaction
+
+      - name: Cache Composer packages
+        id: composer-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-symfony-${{ matrix.symfony }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-symfony-${{ matrix.symfony }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run test suite
+        run: vendor/bin/phpunit --testdox
+
+      - name: Run test suite with coverage
+        if: matrix.php == '8.3' && matrix.symfony == '^7.0'
+        run: vendor/bin/phpunit --coverage-clover=var/coverage/clover.xml --coverage-text
+
+      - name: Upload coverage report
+        if: matrix.php == '8.3' && matrix.symfony == '^7.0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: var/coverage/
+          retention-days: 7

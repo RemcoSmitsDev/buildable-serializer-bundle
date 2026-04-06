@@ -1,0 +1,71 @@
+services:
+  _defaults:
+    autowire: false
+    autoconfigure: false
+    public: false
+
+  # ---------------------------------------------------------------------------
+  # Metadata
+  # ---------------------------------------------------------------------------
+
+  Buildable\SerializerBundle\Metadata\MetadataFactory:
+    arguments:
+      $propertyInfoExtractor: "@property_info"
+    tags:
+      - { name: buildable_serializer.metadata_factory }
+
+  # ---------------------------------------------------------------------------
+  # Discovery
+  # ---------------------------------------------------------------------------
+
+  Buildable\SerializerBundle\Discovery\FinderClassDiscovery:
+    arguments:
+      $paths: "%buildable_serializer.paths%"
+    tags:
+      - { name: buildable_serializer.discovery }
+
+  Buildable\SerializerBundle\Discovery\ClassDiscoveryInterface:
+    alias: 'Buildable\SerializerBundle\Discovery\FinderClassDiscovery'
+    public: false
+
+  # ---------------------------------------------------------------------------
+  # Generator
+  # ---------------------------------------------------------------------------
+
+  Buildable\SerializerBundle\Generator\NormalizerGenerator:
+    arguments:
+      $metadataFactory: '@Buildable\SerializerBundle\Metadata\MetadataFactory'
+      $cacheDir: "%buildable_serializer.cache_dir%"
+      $generatedNamespace: "%buildable_serializer.generated_namespace%"
+      $features: "%buildable_serializer.features%"
+      $generation: "%buildable_serializer.generation%"
+
+  # Alias so consumers that type-hint against the interface receive the concrete service.
+  Buildable\SerializerBundle\Generator\NormalizerGeneratorInterface:
+    alias: 'Buildable\SerializerBundle\Generator\NormalizerGenerator'
+    public: false
+
+  # ---------------------------------------------------------------------------
+  # Cache Warmer
+  # ---------------------------------------------------------------------------
+
+  Buildable\SerializerBundle\CacheWarmer\NormalizerCacheWarmer:
+    arguments:
+      $generator: '@Buildable\SerializerBundle\Generator\NormalizerGenerator'
+      $discovery: '@Buildable\SerializerBundle\Discovery\FinderClassDiscovery'
+      $cacheDir: "%buildable_serializer.cache_dir%"
+    tags:
+      - { name: kernel.cache_warmer, priority: 10 }
+
+  # ---------------------------------------------------------------------------
+  # Console Command
+  # ---------------------------------------------------------------------------
+
+  Buildable\SerializerBundle\Command\GenerateNormalizersCommand:
+    arguments:
+      $generator: '@Buildable\SerializerBundle\Generator\NormalizerGenerator'
+      $discovery: '@Buildable\SerializerBundle\Discovery\FinderClassDiscovery'
+      $cacheDir: "%buildable_serializer.cache_dir%"
+      $generatedNamespace: "%buildable_serializer.generated_namespace%"
+    tags:
+      - { name: console.command }
