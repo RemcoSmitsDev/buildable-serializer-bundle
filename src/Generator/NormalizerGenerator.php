@@ -8,76 +8,7 @@ use Buildable\SerializerBundle\Metadata\AccessorType;
 use Buildable\SerializerBundle\Metadata\ClassMetadata;
 use Buildable\SerializerBundle\Metadata\MetadataFactoryInterface;
 use Buildable\SerializerBundle\Metadata\PropertyMetadata;
-
-/**
- * Lightweight indentation-aware line buffer for PHP source generation.
- *
- * This class is package-internal and intentionally co-located with
- * {@see NormalizerGenerator} to keep the generator entirely self-contained.
- * It must not be used outside of the Generator namespace.
- *
- * @internal
- */
-final class CodeBuffer
-{
-    private const INDENT = "    ";
-
-    /** @var list<string> */
-    private array $lines = [];
-
-    private int $depth = 0;
-
-    /**
-     * Append a single line at the current indentation depth.
-     * An empty $text value produces a blank line without leading whitespace.
-     */
-    public function line(string $text): self
-    {
-        $this->lines[] =
-            $text !== "" ? str_repeat(self::INDENT, $this->depth) . $text : "";
-
-        return $this;
-    }
-
-    /**
-     * Append a blank / empty line (no leading whitespace).
-     */
-    public function blank(): self
-    {
-        $this->lines[] = "";
-
-        return $this;
-    }
-
-    /**
-     * Increase the indentation level by one step.
-     */
-    public function indent(): self
-    {
-        ++$this->depth;
-
-        return $this;
-    }
-
-    /**
-     * Decrease the indentation level by one step (clamped to zero).
-     */
-    public function outdent(): self
-    {
-        $this->depth = max(0, $this->depth - 1);
-
-        return $this;
-    }
-
-    /**
-     * Return all accumulated lines joined with newlines, terminated by a final
-     * newline character.
-     */
-    public function toString(): string
-    {
-        return implode("\n", $this->lines) . "\n";
-    }
-}
+use Buildable\SerializerBundle\Generator\CodeBuffer;
 
 /**
  * Generates optimised PHP normalizer source files from {@see ClassMetadata}.
@@ -357,7 +288,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $buf->outdent();
         $buf->line("}");
 
-        return $buf->toString();
+        return (string) $buf;
     }
 
     /**
