@@ -134,9 +134,10 @@ final class MetadataFactory implements MetadataFactoryInterface
         \ReflectionClass $reflectionClass,
     ): ClassMetadata {
         /** @var ClassMetadata<T> $metadata */
-        $metadata = new ClassMetadata();
-        $metadata->className = $reflectionClass->getName();
-        $metadata->reflectionClass = $reflectionClass;
+        $metadata = new ClassMetadata(
+            reflectionClass: $reflectionClass,
+            className: $reflectionClass->getName(),
+        );
 
         /** @var array<string, true> $registered Tracks which property names have already been added */
         $registered = [];

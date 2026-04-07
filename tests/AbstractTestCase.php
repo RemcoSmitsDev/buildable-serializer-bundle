@@ -15,7 +15,7 @@ abstract class AbstractTestCase extends TestCase
 {
     protected function createTempDir(): string
     {
-        $dir = sys_get_temp_dir() . '/buildable_test_' . uniqid('', true);
+        $dir = sys_get_temp_dir() . "/buildable_test_" . uniqid("", true);
         mkdir($dir, 0777, true);
 
         return $dir;
@@ -28,7 +28,7 @@ abstract class AbstractTestCase extends TestCase
         }
 
         foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..') {
+            if ($entry === "." || $entry === "..") {
                 continue;
             }
 
@@ -41,9 +41,9 @@ abstract class AbstractTestCase extends TestCase
 
     protected function makeMetadataFactory(): MetadataFactory
     {
-        $phpDoc     = new PhpDocExtractor();
+        $phpDoc = new PhpDocExtractor();
         $reflection = new ReflectionExtractor();
-        $extractor  = new PropertyInfoExtractor(
+        $extractor = new PropertyInfoExtractor(
             listExtractors: [$reflection],
             typeExtractors: [$phpDoc, $reflection],
             accessExtractors: [$reflection],
@@ -54,23 +54,22 @@ abstract class AbstractTestCase extends TestCase
 
     protected function makeGenerator(
         string $tempDir,
-        string $namespace = 'BuildableTest\Generated',
+        string $namespace = "BuildableTest\Generated",
     ): NormalizerGenerator {
         return new NormalizerGenerator(
             metadataFactory: $this->makeMetadataFactory(),
             cacheDir: $tempDir,
             generatedNamespace: $namespace,
             features: [
-                'groups'             => true,
-                'max_depth'          => true,
-                'circular_reference' => true,
-                'name_converter'     => false,
-                'skip_null_values'   => true,
+                "groups" => true,
+                "max_depth" => true,
+                "circular_reference" => true,
+                "name_converter" => false,
+                "skip_null_values" => true,
             ],
             generation: [
-                'psr4'            => false,
-                'strict_types'    => true,
-                'add_generated_tag' => true,
+                "psr4" => false,
+                "strict_types" => true,
             ],
         );
     }

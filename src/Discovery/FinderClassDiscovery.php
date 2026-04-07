@@ -37,7 +37,7 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
         foreach ($this->paths as $namespacePrefix => $directory) {
             $realDir = realpath($directory);
 
-            if ($realDir === false || !is_dir($realDir)) {
+            if ($realDir === false || is_dir($realDir) === false) {
                 throw new \InvalidArgumentException(
                     sprintf(
                         'The directory "%s" configured for namespace prefix "%s" does not exist or is not a directory.',
@@ -47,16 +47,20 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
                 );
             }
 
-            $finder = (new Finder())->files()->in($realDir)->name("*.php");
+            $finder = Finder::create()->files()->in($realDir)->name("*.php");
 
             foreach ($finder as $file) {
+                if ($file->getRealPath() === false) {
+                    continue;
+                }
+
                 $fqcn = $this->pathToFqcn(
                     $file->getRealPath(),
                     $realDir,
                     $namespacePrefix,
                 );
 
-                if (!class_exists($fqcn)) {
+                if (class_exists($fqcn) === false) {
                     require_once $file->getRealPath();
                 }
 

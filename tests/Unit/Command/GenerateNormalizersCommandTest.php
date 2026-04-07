@@ -608,11 +608,10 @@ final class GenerateNormalizersCommandTest extends TestCase
      */
     private function makeMeta(): \Buildable\SerializerBundle\Metadata\ClassMetadata
     {
-        $meta = new \Buildable\SerializerBundle\Metadata\ClassMetadata();
-        $meta->className = "App\\Entity\\User";
-        $meta->reflectionClass = new \ReflectionClass(\stdClass::class);
-
-        return $meta;
+        return new \Buildable\SerializerBundle\Metadata\ClassMetadata(
+            reflectionClass: new \ReflectionClass(\stdClass::class),
+            className: "App\\Entity\\User",
+        );
     }
 
     /**

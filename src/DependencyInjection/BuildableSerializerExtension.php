@@ -25,7 +25,7 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
  *   - buildable_serializer.features.skip_null_values   (bool)
  *   - buildable_serializer.generation           (array{...})
  *   - buildable_serializer.generation.strict_types     (bool)
- *   - buildable_serializer.generation.add_generated_tag (bool)
+
  */
 final class BuildableSerializerExtension extends Extension
 {
@@ -51,7 +51,7 @@ final class BuildableSerializerExtension extends Extension
          *     generated_namespace: string,
          *     paths: array<string, string>,
          *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
-         *     generation: array{strict_types: bool, add_generated_tag: bool}
+         *     generation: array{strict_types: bool}
          * } $config
          */
         $config = $this->processConfiguration($configuration, $configs);
@@ -70,7 +70,7 @@ final class BuildableSerializerExtension extends Extension
      *     generated_namespace: string,
      *     paths: array<string, string>,
      *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
-     *     generation: array{strict_types: bool, add_generated_tag: bool}
+     *     generation: array{strict_types: bool}
      * } $config
      */
     private function registerParameters(
@@ -116,10 +116,6 @@ final class BuildableSerializerExtension extends Extension
         $container->setParameter(
             "{$prefix}.generation.strict_types",
             $config["generation"]["strict_types"],
-        );
-        $container->setParameter(
-            "{$prefix}.generation.add_generated_tag",
-            $config["generation"]["add_generated_tag"],
         );
     }
 

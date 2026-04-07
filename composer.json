@@ -16,6 +16,7 @@
     "symfony/property-info": "^6.4"
   },
   "require-dev": {
+    "carthage-software/mago": "^1.18",
     "phpdocumentor/reflection-docblock": "^5.2",
     "phpdocumentor/type-resolver": "^1.7",
     "phpstan/phpstan": "^1.10",
@@ -50,6 +51,7 @@
     "test:unit": "phpunit --testsuite=Unit",
     "test:integration": "phpunit --testsuite=Integration",
     "test:coverage": "phpunit --coverage-text",
-    "phpstan": "phpstan analyse src tests"
+    "phpstan": "phpstan analyse src tests",
+    "mago": "mago format"
   }
 }

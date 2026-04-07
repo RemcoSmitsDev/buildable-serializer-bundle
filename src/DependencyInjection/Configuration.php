@@ -26,7 +26,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *             skip_null_values: true
  *         generation:
  *             strict_types: true
- *             add_generated_tag: true
+
  */
 final class Configuration implements ConfigurationInterface
 {
@@ -126,13 +126,6 @@ final class Configuration implements ConfigurationInterface
             )
             ->end()
 
-            ->booleanNode("add_generated_tag")
-            ->defaultTrue()
-            ->info(
-                'Add a "@generated" PHPDoc tag to every generated class, ' .
-                    "indicating the file must not be edited by hand.",
-            )
-            ->end()
             ->end()
             ->end()
             ->end();

@@ -136,10 +136,10 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
                 "skip_null_values" => true,
             ];
 
-        /** @var array{strict_types: bool, add_generated_tag: bool} $generation */
+        /** @var array{strict_types: bool} $generation */
         $generation = $container->hasParameter(self::GENERATION_PARAM)
             ? (array) $container->getParameter(self::GENERATION_PARAM)
-            : ["strict_types" => true, "add_generated_tag" => true];
+            : ["strict_types" => true];
 
         // ------------------------------------------------------------------
         // 2. Ensure the cache directory exists

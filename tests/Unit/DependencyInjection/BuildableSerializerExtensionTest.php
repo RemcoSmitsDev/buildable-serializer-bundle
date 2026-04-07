@@ -372,7 +372,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertIsArray($generation);
         $this->assertArrayNotHasKey("psr4", $generation);
         $this->assertArrayHasKey("strict_types", $generation);
-        $this->assertArrayHasKey("add_generated_tag", $generation);
     }
 
     public function testLoadRegistersGenerationParametersWithDefaultValues(): void
@@ -383,7 +382,6 @@ final class BuildableSerializerExtensionTest extends TestCase
             "buildable_serializer.generation",
         );
         $this->assertTrue($generation["strict_types"]);
-        $this->assertTrue($generation["add_generated_tag"]);
     }
 
     public function testLoadRegistersGenerationFlatAliases(): void
@@ -398,11 +396,6 @@ final class BuildableSerializerExtensionTest extends TestCase
                 "buildable_serializer.generation.strict_types",
             ),
         );
-        $this->assertTrue(
-            $container->hasParameter(
-                "buildable_serializer.generation.add_generated_tag",
-            ),
-        );
     }
 
     public function testLoadRegistersGenerationWithOverriddenValues(): void
@@ -410,8 +403,7 @@ final class BuildableSerializerExtensionTest extends TestCase
         $container = $this->loadExtension([
             [
                 "generation" => [
-                    "strict_types" => true,
-                    "add_generated_tag" => false,
+                    "strict_types" => false,
                 ],
             ],
         ]);
@@ -419,14 +411,7 @@ final class BuildableSerializerExtensionTest extends TestCase
         $generation = $container->getParameter(
             "buildable_serializer.generation",
         );
-        $this->assertTrue($generation["strict_types"]);
-        $this->assertFalse($generation["add_generated_tag"]);
-
-        $this->assertFalse(
-            $container->getParameter(
-                "buildable_serializer.generation.add_generated_tag",
-            ),
-        );
+        $this->assertFalse($generation["strict_types"]);
     }
 
     // -------------------------------------------------------------------------

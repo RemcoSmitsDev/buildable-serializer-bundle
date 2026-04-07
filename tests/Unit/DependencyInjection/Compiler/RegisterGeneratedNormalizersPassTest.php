@@ -485,7 +485,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         ]);
         $this->container->setParameter("buildable_serializer.generation", [
             "strict_types" => true,
-            "add_generated_tag" => true,
         ]);
     }
 

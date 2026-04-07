@@ -15,31 +15,14 @@ namespace Buildable\SerializerBundle\Metadata;
  */
 final class ClassMetadata implements \Stringable
 {
-    /**
-     * The fully-qualified class name this metadata describes.
-     *
-     * @var class-string<T>
-     */
-    public string $className = "";
-
-    /**
-     * A ReflectionClass instance for the described class.
-     * Kept as a reference to avoid re-instantiating it during generation.
-     *
-     * @var \ReflectionClass<T>
-     */
-    public \ReflectionClass $reflectionClass;
-
-    /**
-     * Ordered list of property metadata objects for every serializable
-     * property discovered on the class.
-     *
-     * Properties marked with {@see PropertyMetadata::$ignored} are excluded
-     * from this list during the metadata-building phase.
-     *
-     * @var PropertyMetadata[]
-     */
-    public array $properties = [];
+    public function __construct(
+        /** @var \ReflectionClass<T> */
+        public \ReflectionClass $reflectionClass,
+        /** @var class-string<T> */
+        public string $className = "",
+        /** @var PropertyMetadata[] */
+        public array $properties = [],
+    ) {}
 
     // -------------------------------------------------------------------------
     // Convenience helpers

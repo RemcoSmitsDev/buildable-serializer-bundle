@@ -65,7 +65,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      * } $features Active code-generation feature flags.
      * @param array{
      *     strict_types: bool,
-     *     add_generated_tag: bool,
+
      * } $generation Code style / output options.
      */
     public function __construct(
@@ -225,18 +225,16 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         }
 
         // ---- Class PHPDoc ---------------------------------------------------
-        if ($this->generation["add_generated_tag"]) {
-            $buf->line("/**");
-            $buf->line(" * @generated");
-            $buf->line(" *");
-            $buf->line(" * Normalizer for \\" . $targetFqcn . ".");
-            $buf->line(" *");
-            $buf->line(" * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.");
-            $buf->line(
-                " * Regenerate by running: bin/console buildable:generate-normalizers",
-            );
-            $buf->line(" */");
-        }
+        $buf->line("/**");
+        $buf->line(" * @generated");
+        $buf->line(" *");
+        $buf->line(" * Normalizer for \\" . $targetFqcn . ".");
+        $buf->line(" *");
+        $buf->line(" * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.");
+        $buf->line(
+            " * Regenerate by running: bin/console buildable:generate-normalizers",
+        );
+        $buf->line(" */");
 
         // ---- Class declaration ----------------------------------------------
         $implements = ["NormalizerInterface", "GeneratedNormalizerInterface"];

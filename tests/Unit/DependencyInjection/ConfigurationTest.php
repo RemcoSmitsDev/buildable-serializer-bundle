@@ -19,7 +19,9 @@ final class ConfigurationTest extends TestCase
 
     private function processConfig(array $config): array
     {
-        return (new Processor())->processConfiguration(new Configuration(), [$config]);
+        return (new Processor())->processConfiguration(new Configuration(), [
+            $config,
+        ]);
     }
 
     // -------------------------------------------------------------------------
@@ -60,7 +62,6 @@ final class ConfigurationTest extends TestCase
         $config = $this->processConfig([]);
 
         $this->assertTrue($config["generation"]["strict_types"]);
-        $this->assertTrue($config["generation"]["add_generated_tag"]);
         $this->assertArrayNotHasKey("psr4", $config["generation"]);
     }
 
@@ -233,21 +234,11 @@ final class ConfigurationTest extends TestCase
         $this->assertFalse($config["generation"]["strict_types"]);
     }
 
-    public function testCanDisableAddGeneratedTag(): void
-    {
-        $config = $this->processConfig([
-            "generation" => ["add_generated_tag" => false],
-        ]);
-
-        $this->assertFalse($config["generation"]["add_generated_tag"]);
-    }
-
     public function testGenerationDefaults(): void
     {
         $config = $this->processConfig([]);
 
         $this->assertTrue($config["generation"]["strict_types"]);
-        $this->assertTrue($config["generation"]["add_generated_tag"]);
         $this->assertArrayNotHasKey("psr4", $config["generation"]);
     }
 
@@ -273,7 +264,6 @@ final class ConfigurationTest extends TestCase
             ],
             "generation" => [
                 "strict_types" => true,
-                "add_generated_tag" => false,
             ],
         ]);
 
@@ -288,7 +278,6 @@ final class ConfigurationTest extends TestCase
         $this->assertFalse($config["features"]["name_converter"]);
         $this->assertTrue($config["features"]["skip_null_values"]);
         $this->assertTrue($config["generation"]["strict_types"]);
-        $this->assertFalse($config["generation"]["add_generated_tag"]);
         $this->assertArrayNotHasKey("psr4", $config["generation"]);
     }
 }
