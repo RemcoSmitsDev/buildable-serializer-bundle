@@ -53,6 +53,6 @@
     "test:integration": "phpunit --testsuite=Integration",
     "test:coverage": "phpunit --coverage-text",
     "phpstan": "phpstan analyse src tests",
-    "mago": "mago format src tests"
+    "mago": "mago format"
   }
 }
