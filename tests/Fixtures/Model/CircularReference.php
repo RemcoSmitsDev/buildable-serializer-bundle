@@ -9,7 +9,9 @@ class CircularReference
     private ?CircularReference $parent = null;
     private ?CircularReference $child = null;
 
-    public function __construct(private string $name) {}
+    public function __construct(
+        private string $name,
+    ) {}
 
     public function getName(): string
     {

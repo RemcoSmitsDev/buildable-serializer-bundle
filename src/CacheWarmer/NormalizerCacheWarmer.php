@@ -108,13 +108,11 @@ final class NormalizerCacheWarmer implements CacheWarmerInterface
         }
 
         if (!mkdir($this->cacheDir, 0755, true) && !is_dir($this->cacheDir)) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Failed to create the buildable serializer cache directory "%s". ' .
-                        "Please check that the parent directory is writable.",
-                    $this->cacheDir,
-                ),
-            );
+            throw new \RuntimeException(sprintf(
+                'Failed to create the buildable serializer cache directory "%s". '
+                . 'Please check that the parent directory is writable.',
+                $this->cacheDir,
+            ));
         }
     }
 }

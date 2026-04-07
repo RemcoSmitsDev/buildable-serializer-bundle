@@ -32,9 +32,9 @@ final class CircularReferenceTest extends AbstractTestCase
     protected function setUp(): void
     {
         $this->tempDir = $this->createTempDir();
-        $generator     = $this->makeGenerator($this->tempDir);
-        $factory       = $generator->getMetadataFactory();
-        $metadata      = $factory->getMetadataFor(CircularReference::class);
+        $generator = $this->makeGenerator($this->tempDir);
+        $factory = $generator->getMetadataFactory();
+        $metadata = $factory->getMetadataFor(CircularReference::class);
 
         $this->normalizerFqcn = $generator->resolveNormalizerFqcn($metadata);
 
@@ -49,8 +49,10 @@ final class CircularReferenceTest extends AbstractTestCase
         // the generated normalizer, simulating how Symfony's Serializer would
         // dispatch to the correct normalizer for recursive calls.
         $generatedNormalizer = $this->normalizer;
-        $delegate = new class ($generatedNormalizer) implements NormalizerInterface {
-            public function __construct(private readonly object $gen) {}
+        $delegate = new class($generatedNormalizer) implements NormalizerInterface {
+            public function __construct(
+                private readonly object $gen,
+            ) {}
 
             public function normalize(
                 mixed $data,
@@ -66,11 +68,8 @@ final class CircularReferenceTest extends AbstractTestCase
                 return null;
             }
 
-            public function supportsNormalization(
-                mixed $data,
-                ?string $format = null,
-                array $context = [],
-            ): bool {
+            public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
+            {
                 return $data instanceof CircularReference;
             }
 
@@ -119,7 +118,7 @@ final class CircularReferenceTest extends AbstractTestCase
 
     public function testNormalizeNonCircularObjectReturnsData(): void
     {
-        $node   = new CircularReference('standalone');
+        $node = new CircularReference('standalone');
         $result = $this->normalizer->normalize($node, 'json', []);
 
         $this->assertIsArray($result);
@@ -128,7 +127,7 @@ final class CircularReferenceTest extends AbstractTestCase
 
     public function testNormalizeNonCircularObjectWithNullNestedReturnsNull(): void
     {
-        $node   = new CircularReference('root');
+        $node = new CircularReference('root');
         $result = $this->normalizer->normalize($node, 'json', []);
 
         $this->assertArrayHasKey('parent', $result);
@@ -142,7 +141,7 @@ final class CircularReferenceTest extends AbstractTestCase
     {
         // parent → child (no back-reference)
         $parent = new CircularReference('parent');
-        $child  = new CircularReference('child');
+        $child = new CircularReference('child');
         $parent->setChild($child);
 
         // The mock delegate routes CircularReference back to the generated normalizer.
@@ -164,12 +163,10 @@ final class CircularReferenceTest extends AbstractTestCase
 
         $handlerCalled = false;
         $context = [
-            AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => function (
-                object $obj,
-            ) use (&$handlerCalled): array {
+            AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => function (object $obj) use (&$handlerCalled): array {
                 $handlerCalled = true;
 
-                return ['circular' => true, 'name' => ($obj instanceof CircularReference) ? $obj->getName() : '?'];
+                return ['circular' => true, 'name' => $obj instanceof CircularReference ? $obj->getName() : '?'];
             },
         ];
 

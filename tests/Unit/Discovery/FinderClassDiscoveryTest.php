@@ -91,7 +91,7 @@ final class FinderClassDiscoveryTest extends TestCase
         ]);
 
         $classes = $discovery->discoverClasses();
-        $unique   = array_unique($classes);
+        $unique = array_unique($classes);
 
         $this->assertCount(\count($unique), $classes, 'Result must not contain duplicates.');
     }
@@ -120,10 +120,7 @@ final class FinderClassDiscoveryTest extends TestCase
         $classes = $discovery->discoverClasses();
 
         // AbstractModel carries #[Serializable] but is abstract — must be skipped.
-        $this->assertNotContains(
-            'Buildable\SerializerBundle\Tests\Fixtures\Discovery\AbstractModel',
-            $classes,
-        );
+        $this->assertNotContains('Buildable\SerializerBundle\Tests\Fixtures\Discovery\AbstractModel', $classes);
     }
 
     // -------------------------------------------------------------------------
@@ -151,8 +148,8 @@ final class FinderClassDiscoveryTest extends TestCase
         $subDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Sub';
 
         $discovery = new FinderClassDiscovery([
-            'Buildable\SerializerBundle\Tests\Fixtures\Discovery'      => $this->fixturesDir,
-            'Buildable\SerializerBundle\Tests\Fixtures\Discovery\Sub'  => $subDir,
+            'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
+            'Buildable\SerializerBundle\Tests\Fixtures\Discovery\Sub' => $subDir,
         ]);
 
         $classes = $discovery->discoverClasses();

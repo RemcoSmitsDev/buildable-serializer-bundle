@@ -39,9 +39,7 @@ final class CodeBuffer implements \Stringable
      */
     public function line(string $text): self
     {
-        $this->lines[] = $text !== ''
-            ? str_repeat(self::INDENT, $this->depth) . $text
-            : '';
+        $this->lines[] = $text !== '' ? str_repeat(self::INDENT, $this->depth) . $text : '';
 
         return $this;
     }

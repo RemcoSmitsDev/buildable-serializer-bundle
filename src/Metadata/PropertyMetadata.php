@@ -16,7 +16,7 @@ final class PropertyMetadata implements \Stringable
     /**
      * The property's original name as declared in the PHP class.
      */
-    public string $name = "";
+    public string $name = '';
 
     /**
      * The name to use in the serialized output.
@@ -78,7 +78,7 @@ final class PropertyMetadata implements \Stringable
      * The name of the method or property used to read the value during
      * normalization (e.g. "getName", "isActive", "publicField").
      */
-    public string $accessor = "";
+    public string $accessor = '';
 
     /**
      * How the accessor is resolved at runtime.
@@ -169,9 +169,9 @@ final class PropertyMetadata implements \Stringable
     public function __toString(): string
     {
         return sprintf(
-            "PropertyMetadata(%s %s%s, accessor=%s::%s)",
-            $this->type ?? "mixed",
-            $this->nullable ? "?" : "",
+            'PropertyMetadata(%s %s%s, accessor=%s::%s)',
+            $this->type ?? 'mixed',
+            $this->nullable ? '?' : '',
             $this->name,
             $this->accessorType->value,
             $this->accessor,

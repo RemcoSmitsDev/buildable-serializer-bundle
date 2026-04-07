@@ -5,15 +5,16 @@
   "type": "symfony-bundle",
   "license": "MIT",
   "require": {
-    "php": ">=8.1",
-    "symfony/serializer": "^6.4",
-    "symfony/dependency-injection": "^6.4",
+    "php": "8.1.*",
     "symfony/config": "^6.4",
-    "symfony/http-kernel": "^6.4",
     "symfony/console": "^6.4",
+    "symfony/dependency-injection": "^6.4",
     "symfony/finder": "^6.4",
+    "symfony/http-kernel": "^6.4",
     "symfony/property-access": "^6.4",
-    "symfony/property-info": "^6.4"
+    "symfony/property-info": "^6.4",
+    "symfony/serializer": "^6.4",
+    "symfony/yaml": "^6.4"
   },
   "require-dev": {
     "carthage-software/mago": "^1.18",
@@ -52,6 +53,6 @@
     "test:integration": "phpunit --testsuite=Integration",
     "test:coverage": "phpunit --coverage-text",
     "phpstan": "phpstan analyse src tests",
-    "mago": "mago format"
+    "mago": "mago format src tests"
   }
 }

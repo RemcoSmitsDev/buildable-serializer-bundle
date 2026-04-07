@@ -25,14 +25,14 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
  *   - buildable_serializer.features.skip_null_values   (bool)
  *   - buildable_serializer.generation           (array{...})
  *   - buildable_serializer.generation.strict_types     (bool)
-
+ *
  */
 final class BuildableSerializerExtension extends Extension
 {
     /**
      * The container parameter prefix used for every value exported by this bundle.
      */
-    private const PARAMETER_PREFIX = "buildable_serializer";
+    private const PARAMETER_PREFIX = 'buildable_serializer';
 
     /**
      * {@inheritDoc}
@@ -73,50 +73,27 @@ final class BuildableSerializerExtension extends Extension
      *     generation: array{strict_types: bool}
      * } $config
      */
-    private function registerParameters(
-        ContainerBuilder $container,
-        array $config,
-    ): void {
+    private function registerParameters(ContainerBuilder $container, array $config): void
+    {
         $prefix = self::PARAMETER_PREFIX;
 
         // ---- Top-level scalar parameters ----------------------------------------
-        $container->setParameter("{$prefix}.cache_dir", $config["cache_dir"]);
-        $container->setParameter(
-            "{$prefix}.generated_namespace",
-            $config["generated_namespace"],
-        );
-        $container->setParameter("{$prefix}.paths", $config["paths"]);
+        $container->setParameter("{$prefix}.cache_dir", $config['cache_dir']);
+        $container->setParameter("{$prefix}.generated_namespace", $config['generated_namespace']);
+        $container->setParameter("{$prefix}.paths", $config['paths']);
 
         // ---- Structured sub-tree parameters (whole arrays) ----------------------
-        $container->setParameter("{$prefix}.features", $config["features"]);
-        $container->setParameter("{$prefix}.generation", $config["generation"]);
+        $container->setParameter("{$prefix}.features", $config['features']);
+        $container->setParameter("{$prefix}.generation", $config['generation']);
 
         // ---- Convenience flat aliases for frequently-used nested values ----------
-        $container->setParameter(
-            "{$prefix}.features.groups",
-            $config["features"]["groups"],
-        );
-        $container->setParameter(
-            "{$prefix}.features.max_depth",
-            $config["features"]["max_depth"],
-        );
-        $container->setParameter(
-            "{$prefix}.features.circular_reference",
-            $config["features"]["circular_reference"],
-        );
-        $container->setParameter(
-            "{$prefix}.features.name_converter",
-            $config["features"]["name_converter"],
-        );
-        $container->setParameter(
-            "{$prefix}.features.skip_null_values",
-            $config["features"]["skip_null_values"],
-        );
+        $container->setParameter("{$prefix}.features.groups", $config['features']['groups']);
+        $container->setParameter("{$prefix}.features.max_depth", $config['features']['max_depth']);
+        $container->setParameter("{$prefix}.features.circular_reference", $config['features']['circular_reference']);
+        $container->setParameter("{$prefix}.features.name_converter", $config['features']['name_converter']);
+        $container->setParameter("{$prefix}.features.skip_null_values", $config['features']['skip_null_values']);
 
-        $container->setParameter(
-            "{$prefix}.generation.strict_types",
-            $config["generation"]["strict_types"],
-        );
+        $container->setParameter("{$prefix}.generation.strict_types", $config['generation']['strict_types']);
     }
 
     /**
@@ -124,12 +101,9 @@ final class BuildableSerializerExtension extends Extension
      */
     private function loadServices(ContainerBuilder $container): void
     {
-        $loader = new YamlFileLoader(
-            $container,
-            new FileLocator(\dirname(__DIR__, 2) . "/config"),
-        );
+        $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__, 2) . '/config'));
 
-        $loader->load("services.yaml");
+        $loader->load('services.yaml');
     }
 
     /**
@@ -140,6 +114,6 @@ final class BuildableSerializerExtension extends Extension
      */
     public function getAlias(): string
     {
-        return "buildable_serializer";
+        return 'buildable_serializer';
     }
 }

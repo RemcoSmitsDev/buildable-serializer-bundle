@@ -125,13 +125,12 @@ final class MaxDepthTest extends AbstractTestCase
         //   $_depthKey = AbstractObjectNormalizer::DEPTH_KEY_PREFIX . '...';
         //   $_currentDepth = (int) ($context[$_depthKey] ?? 0);
         $this->assertTrue(
-            str_contains($source, "_depthKey") ||
-                str_contains($source, "DEPTH_KEY_PREFIX"),
+            str_contains($source, '_depthKey') || str_contains($source, 'DEPTH_KEY_PREFIX'),
             'Generated source must reference DEPTH_KEY_PREFIX or $_depthKey for the max-depth guard.',
         );
 
         $this->assertTrue(
-            str_contains($source, "_currentDepth"),
+            str_contains($source, '_currentDepth'),
             'Generated source must track the current depth in a $_currentDepth variable.',
         );
     }
@@ -150,7 +149,7 @@ final class MaxDepthTest extends AbstractTestCase
 
         // The generator emits: `if ($_currentDepth < 1) {`  for MaxDepth(1)
         $this->assertTrue(
-            str_contains($source, "< 1"),
+            str_contains($source, '< 1'),
             'Generated source must contain the literal max-depth comparison "< 1" for MaxDepth(1).',
         );
     }
@@ -169,7 +168,7 @@ final class MaxDepthTest extends AbstractTestCase
 
         // Generator emits: `} // max-depth: author (limit=1)`
         $this->assertTrue(
-            str_contains($source, "max-depth"),
+            str_contains($source, 'max-depth'),
             'Generated source must contain a "max-depth" comment to aid readability.',
         );
     }
@@ -182,22 +181,19 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testMaxDepthAllowsNormalizationWithNoDepthContext(): void
     {
-        $author = new Author(3, "Carol", "carol@example.com");
-        $blog = new MaxDepthBlog("Fresh Blog", $author);
+        $author = new Author(3, 'Carol', 'carol@example.com');
+        $blog = new MaxDepthBlog('Fresh Blog', $author);
 
         $mockData = [
-            "id" => 3,
-            "name" => "Carol",
-            "email" => "carol@example.com",
+            'id' => 3,
+            'name' => 'Carol',
+            'email' => 'carol@example.com',
         ];
         $normalizeCalls = 0;
         $mockNormalizer = $this->createMock(NormalizerInterface::class);
         $mockNormalizer
-            ->method("normalize")
-            ->willReturnCallback(static function () use (
-                $mockData,
-                &$normalizeCalls,
-            ): array {
+            ->method('normalize')
+            ->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
                 ++$normalizeCalls;
                 return $mockData;
             });
@@ -211,9 +207,9 @@ final class MaxDepthTest extends AbstractTestCase
         $undefinedConst = false;
 
         try {
-            $result = $this->normalizer->normalize($blog, "json", []);
+            $result = $this->normalizer->normalize($blog, 'json', []);
         } catch (\Error $e) {
-            if (str_contains($e->getMessage(), "DEPTH_KEY_PREFIX")) {
+            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
                 $undefinedConst = true;
             } else {
                 throw $e;
@@ -222,9 +218,9 @@ final class MaxDepthTest extends AbstractTestCase
 
         if ($undefinedConst) {
             $this->markTestIncomplete(
-                "Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined " .
-                    "in this Symfony version. Cannot exercise depth-zero delegation until the " .
-                    "generator is updated to use DEPTH_KEY_PATTERN.",
+                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
+                . 'in this Symfony version. Cannot exercise depth-zero delegation until the '
+                . 'generator is updated to use DEPTH_KEY_PATTERN.',
             );
         }
 
@@ -232,10 +228,10 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertGreaterThan(
             0,
             $normalizeCalls,
-            "The nested normalizer must be called when no depth context key is present.",
+            'The nested normalizer must be called when no depth context key is present.',
         );
-        $this->assertArrayHasKey("author", $result);
-        $this->assertSame($mockData, $result["author"]);
+        $this->assertArrayHasKey('author', $result);
+        $this->assertSame($mockData, $result['author']);
     }
 
     // -------------------------------------------------------------------------
@@ -250,22 +246,20 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testMaxDepthLimitsNestingDepth(): void
     {
-        $author = new Author(1, "Alice", "alice@example.com");
-        $blog = new MaxDepthBlog("My Blog", $author);
+        $author = new Author(1, 'Alice', 'alice@example.com');
+        $blog = new MaxDepthBlog('My Blog', $author);
 
         $normalizeCalls = 0;
         $mockNormalizer = $this->createMock(NormalizerInterface::class);
         $mockNormalizer
-            ->method("normalize")
-            ->willReturnCallback(static function () use (
-                &$normalizeCalls,
-            ): array {
+            ->method('normalize')
+            ->willReturnCallback(static function () use (&$normalizeCalls): array {
                 ++$normalizeCalls;
 
                 return [
-                    "id" => 1,
-                    "name" => "Alice",
-                    "email" => "alice@example.com",
+                    'id' => 1,
+                    'name' => 'Alice',
+                    'email' => 'alice@example.com',
                 ];
             });
 
@@ -274,11 +268,7 @@ final class MaxDepthTest extends AbstractTestCase
         // Compute the context key exactly as AbstractObjectNormalizer does using
         // DEPTH_KEY_PATTERN so we can inject the pre-built counter without
         // evaluating the undefined DEPTH_KEY_PREFIX constant.
-        $depthKey = sprintf(
-            AbstractObjectNormalizer::DEPTH_KEY_PATTERN,
-            MaxDepthBlog::class,
-            "author",
-        );
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
 
         // Inject counter already at the limit (1 == MaxDepth(1)).
         // The guard condition in the generated code is:  if ($_currentDepth < 1)
@@ -294,9 +284,9 @@ final class MaxDepthTest extends AbstractTestCase
         $undefinedConstant = false;
 
         try {
-            $result = $this->normalizer->normalize($blog, "json", $context);
+            $result = $this->normalizer->normalize($blog, 'json', $context);
         } catch (\Error $e) {
-            if (str_contains($e->getMessage(), "DEPTH_KEY_PREFIX")) {
+            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
                 // The generator references an undefined constant — this is a
                 // known generator issue. We verify the generated source structure
                 // via testGeneratedCodeContainsDepthCheck instead.
@@ -312,14 +302,14 @@ final class MaxDepthTest extends AbstractTestCase
             $this->assertSame(
                 0,
                 $normalizeCalls,
-                "The mock normalizer must not be called when the depth guard crashes.",
+                'The mock normalizer must not be called when the depth guard crashes.',
             );
 
             // Mark test as incomplete so it is visible in CI without failing the suite.
             $this->markTestIncomplete(
-                "Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined " .
-                    "in this Symfony version. The depth guard cannot be exercised at runtime until " .
-                    "the generator is updated to use DEPTH_KEY_PATTERN.",
+                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
+                . 'in this Symfony version. The depth guard cannot be exercised at runtime until '
+                . 'the generator is updated to use DEPTH_KEY_PATTERN.',
             );
         }
 
@@ -328,12 +318,12 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertSame(
             0,
             $normalizeCalls,
-            "The nested normalizer must not be called when max depth is already reached.",
+            'The nested normalizer must not be called when max depth is already reached.',
         );
         $this->assertArrayNotHasKey(
-            "author",
+            'author',
             $result,
-            "The author property must be omitted when its max depth is exceeded.",
+            'The author property must be omitted when its max depth is exceeded.',
         );
     }
 
@@ -344,18 +334,15 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testMaxDepthAllowsNormalizationWithinLimit(): void
     {
-        $author = new Author(2, "Bob", "bob@example.com");
-        $blog = new MaxDepthBlog("Another Blog", $author);
+        $author = new Author(2, 'Bob', 'bob@example.com');
+        $blog = new MaxDepthBlog('Another Blog', $author);
 
-        $mockData = ["id" => 2, "name" => "Bob", "email" => "bob@example.com"];
+        $mockData = ['id' => 2, 'name' => 'Bob', 'email' => 'bob@example.com'];
         $normalizeCalls = 0;
         $mockNormalizer = $this->createMock(NormalizerInterface::class);
         $mockNormalizer
-            ->method("normalize")
-            ->willReturnCallback(static function () use (
-                $mockData,
-                &$normalizeCalls,
-            ): array {
+            ->method('normalize')
+            ->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
                 ++$normalizeCalls;
 
                 return $mockData;
@@ -364,20 +351,16 @@ final class MaxDepthTest extends AbstractTestCase
         $this->normalizer->setNormalizer($mockNormalizer);
 
         // depth counter at 0 — within the MaxDepth(1) limit.
-        $depthKey = sprintf(
-            AbstractObjectNormalizer::DEPTH_KEY_PATTERN,
-            MaxDepthBlog::class,
-            "author",
-        );
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
         $context = [$depthKey => 0];
 
         $result = null;
         $undefinedConstant = false;
 
         try {
-            $result = $this->normalizer->normalize($blog, "json", $context);
+            $result = $this->normalizer->normalize($blog, 'json', $context);
         } catch (\Error $e) {
-            if (str_contains($e->getMessage(), "DEPTH_KEY_PREFIX")) {
+            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
                 $undefinedConstant = true;
             } else {
                 throw $e;
@@ -386,9 +369,9 @@ final class MaxDepthTest extends AbstractTestCase
 
         if ($undefinedConstant) {
             $this->markTestIncomplete(
-                "Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined " .
-                    "in this Symfony version. Cannot exercise within-limit delegation until the " .
-                    "generator is updated to use DEPTH_KEY_PATTERN.",
+                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
+                . 'in this Symfony version. Cannot exercise within-limit delegation until the '
+                . 'generator is updated to use DEPTH_KEY_PATTERN.',
             );
         }
 
@@ -396,10 +379,10 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertGreaterThan(
             0,
             $normalizeCalls,
-            "The nested normalizer must be called when depth is within the allowed limit.",
+            'The nested normalizer must be called when depth is within the allowed limit.',
         );
-        $this->assertArrayHasKey("author", $result);
-        $this->assertSame($mockData, $result["author"]);
+        $this->assertArrayHasKey('author', $result);
+        $this->assertSame($mockData, $result['author']);
     }
 
     // -------------------------------------------------------------------------
@@ -410,11 +393,11 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testScalarPropertiesAreAlwaysPresent(): void
     {
-        $author = new Author(1, "Alice", "alice@example.com");
-        $blog = new MaxDepthBlog("Scalar Test", $author);
+        $author = new Author(1, 'Alice', 'alice@example.com');
+        $blog = new MaxDepthBlog('Scalar Test', $author);
 
         $mockNormalizer = $this->createMock(NormalizerInterface::class);
-        $mockNormalizer->method("normalize")->willReturn([]);
+        $mockNormalizer->method('normalize')->willReturn([]);
 
         $this->normalizer->setNormalizer($mockNormalizer);
 
@@ -422,9 +405,9 @@ final class MaxDepthTest extends AbstractTestCase
         $undefinedConstant = false;
 
         try {
-            $result = $this->normalizer->normalize($blog, "json", []);
+            $result = $this->normalizer->normalize($blog, 'json', []);
         } catch (\Error $e) {
-            if (str_contains($e->getMessage(), "DEPTH_KEY_PREFIX")) {
+            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
                 $undefinedConstant = true;
             } else {
                 throw $e;
@@ -433,14 +416,14 @@ final class MaxDepthTest extends AbstractTestCase
 
         if ($undefinedConstant) {
             $this->markTestIncomplete(
-                "Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined " .
-                    "in this Symfony version. Cannot verify scalar output until the generator is fixed.",
+                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
+                . 'in this Symfony version. Cannot verify scalar output until the generator is fixed.',
             );
         }
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey("title", $result);
-        $this->assertSame("Scalar Test", $result["title"]);
+        $this->assertArrayHasKey('title', $result);
+        $this->assertSame('Scalar Test', $result['title']);
     }
 
     // -------------------------------------------------------------------------
@@ -484,8 +467,8 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testSupportsNormalizationReturnsTrueForMaxDepthBlog(): void
     {
-        $author = new Author(1, "Alice", "alice@example.com");
-        $blog = new MaxDepthBlog("Blog", $author);
+        $author = new Author(1, 'Alice', 'alice@example.com');
+        $blog = new MaxDepthBlog('Blog', $author);
 
         $this->assertTrue($this->normalizer->supportsNormalization($blog));
     }
@@ -496,9 +479,7 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testSupportsNormalizationReturnsFalseForOtherObject(): void
     {
-        $this->assertFalse(
-            $this->normalizer->supportsNormalization(new \stdClass()),
-        );
+        $this->assertFalse($this->normalizer->supportsNormalization(new \stdClass()));
     }
 
     // -------------------------------------------------------------------------
@@ -507,7 +488,7 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testGetSupportedTypesIncludesMaxDepthBlog(): void
     {
-        $types = $this->normalizer->getSupportedTypes("json");
+        $types = $this->normalizer->getSupportedTypes('json');
 
         $this->assertIsArray($types);
         $this->assertArrayHasKey(MaxDepthBlog::class, $types);

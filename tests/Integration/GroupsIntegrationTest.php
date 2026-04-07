@@ -29,9 +29,9 @@ final class GroupsIntegrationTest extends AbstractTestCase
     protected function setUp(): void
     {
         $this->tempDir = $this->createTempDir();
-        $generator     = $this->makeGenerator($this->tempDir);
-        $factory       = $generator->getMetadataFactory();
-        $metadata      = $factory->getMetadataFor(BlogWithGroups::class);
+        $generator = $this->makeGenerator($this->tempDir);
+        $factory = $generator->getMetadataFactory();
+        $metadata = $factory->getMetadataFor(BlogWithGroups::class);
 
         $this->normalizerFqcn = $generator->resolveNormalizerFqcn($metadata);
 
@@ -41,7 +41,7 @@ final class GroupsIntegrationTest extends AbstractTestCase
         }
 
         $this->normalizer = new $this->normalizerFqcn();
-        $this->blog       = new BlogWithGroups(1, 'Test Title', 'Test Content');
+        $this->blog = new BlogWithGroups(1, 'Test Title', 'Test Content');
     }
 
     protected function tearDown(): void

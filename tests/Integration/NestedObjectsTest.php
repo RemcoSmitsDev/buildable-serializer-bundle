@@ -32,9 +32,9 @@ final class NestedObjectsTest extends AbstractTestCase
     protected function setUp(): void
     {
         $this->tempDir = $this->createTempDir();
-        $generator     = $this->makeGenerator($this->tempDir);
-        $factory       = $generator->getMetadataFactory();
-        $metadata      = $factory->getMetadataFor(BlogWithAuthor::class);
+        $generator = $this->makeGenerator($this->tempDir);
+        $factory = $generator->getMetadataFactory();
+        $metadata = $factory->getMetadataFor(BlogWithAuthor::class);
 
         $this->normalizerFqcn = $generator->resolveNormalizerFqcn($metadata);
 
@@ -89,7 +89,7 @@ final class NestedObjectsTest extends AbstractTestCase
     public function testNormalizeAuthorIsDelegatedToMockNormalizer(): void
     {
         $author = new Author(99, 'John', 'j@test.com');
-        $blog   = new BlogWithAuthor(1, 'Test Blog', $author);
+        $blog = new BlogWithAuthor(1, 'Test Blog', $author);
 
         $result = $this->normalizer->normalize($blog, 'json', []);
 
@@ -101,7 +101,7 @@ final class NestedObjectsTest extends AbstractTestCase
     public function testNormalizeScalarPropertiesAreIncluded(): void
     {
         $author = new Author(1, 'Jane', 'jane@example.com');
-        $blog   = new BlogWithAuthor(42, 'My Blog', $author);
+        $blog = new BlogWithAuthor(42, 'My Blog', $author);
 
         $result = $this->normalizer->normalize($blog, 'json', []);
 
@@ -112,7 +112,7 @@ final class NestedObjectsTest extends AbstractTestCase
     public function testNormalizeAuthorDataMatchesMockReturn(): void
     {
         $author = new Author(99, 'John', 'j@test.com');
-        $blog   = new BlogWithAuthor(1, 'Blog', $author);
+        $blog = new BlogWithAuthor(1, 'Blog', $author);
 
         $result = $this->normalizer->normalize($blog, 'json', []);
 
@@ -128,7 +128,7 @@ final class NestedObjectsTest extends AbstractTestCase
     public function testNormalizeNullCoAuthorIsIncludedAsNullWhenSkipNullValuesFalse(): void
     {
         $author = new Author(1, 'Main Author', 'main@example.com');
-        $blog   = new BlogWithAuthor(1, 'Blog', $author); // coAuthor = null
+        $blog = new BlogWithAuthor(1, 'Blog', $author); // coAuthor = null
 
         $result = $this->normalizer->normalize($blog, 'json', []);
 
@@ -139,8 +139,8 @@ final class NestedObjectsTest extends AbstractTestCase
 
     public function testNormalizeNullCoAuthorIsOmittedWhenSkipNullValuesTrue(): void
     {
-        $author  = new Author(1, 'Main Author', 'main@example.com');
-        $blog    = new BlogWithAuthor(1, 'Blog', $author);
+        $author = new Author(1, 'Main Author', 'main@example.com');
+        $blog = new BlogWithAuthor(1, 'Blog', $author);
         $context = [\Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer::SKIP_NULL_VALUES => true];
 
         $result = $this->normalizer->normalize($blog, 'json', $context);
@@ -150,9 +150,9 @@ final class NestedObjectsTest extends AbstractTestCase
 
     public function testNormalizeNonNullCoAuthorIsDelegated(): void
     {
-        $author   = new Author(1, 'Main', 'main@test.com');
+        $author = new Author(1, 'Main', 'main@test.com');
         $coAuthor = new Author(2, 'Co-Author', 'co@test.com');
-        $blog     = new BlogWithAuthor(1, 'Blog', $author, $coAuthor);
+        $blog = new BlogWithAuthor(1, 'Blog', $author, $coAuthor);
 
         $result = $this->normalizer->normalize($blog, 'json', []);
 
@@ -168,7 +168,7 @@ final class NestedObjectsTest extends AbstractTestCase
     public function testSupportsNormalizationReturnsTrueForBlogWithAuthor(): void
     {
         $author = new Author(1, 'A', 'a@b.com');
-        $blog   = new BlogWithAuthor(1, 'Blog', $author);
+        $blog = new BlogWithAuthor(1, 'Blog', $author);
 
         $this->assertTrue($this->normalizer->supportsNormalization($blog));
     }

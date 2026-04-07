@@ -25,9 +25,9 @@ final class GeneratedNormalizerTest extends AbstractTestCase
     protected function setUp(): void
     {
         $this->tempDir = $this->createTempDir();
-        $generator     = $this->makeGenerator($this->tempDir);
-        $factory       = $generator->getMetadataFactory();
-        $metadata      = $factory->getMetadataFor(SimpleBlog::class);
+        $generator = $this->makeGenerator($this->tempDir);
+        $factory = $generator->getMetadataFactory();
+        $metadata = $factory->getMetadataFor(SimpleBlog::class);
 
         $this->normalizerFqcn = $generator->resolveNormalizerFqcn($metadata);
 
@@ -50,7 +50,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizeSimpleObject(): void
     {
-        $blog   = new SimpleBlog(1, 'Test Title', 'Test Content');
+        $blog = new SimpleBlog(1, 'Test Title', 'Test Content');
         $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertIsArray($result);
@@ -62,7 +62,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
     public function testNormalizeIncludesNullableFieldWhenNull(): void
     {
         // excerpt is null (default), skipNullValues is false by default
-        $blog   = new SimpleBlog(1, 'Title', 'Body');
+        $blog = new SimpleBlog(1, 'Title', 'Body');
         $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertArrayHasKey('excerpt', $result);
@@ -71,7 +71,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizeIncludesNullableFieldWhenSet(): void
     {
-        $blog   = new SimpleBlog(1, 'Title', 'Body', 'Short excerpt');
+        $blog = new SimpleBlog(1, 'Title', 'Body', 'Short excerpt');
         $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertSame('Short excerpt', $result['excerpt']);
@@ -79,16 +79,16 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizeOmitsNullFieldWhenSkipNullValuesEnabled(): void
     {
-        $blog    = new SimpleBlog(1, 'Title', 'Body');
+        $blog = new SimpleBlog(1, 'Title', 'Body');
         $context = [\Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer::SKIP_NULL_VALUES => true];
-        $result  = $this->normalizer->normalize($blog, 'json', $context);
+        $result = $this->normalizer->normalize($blog, 'json', $context);
 
         $this->assertArrayNotHasKey('excerpt', $result);
     }
 
     public function testNormalizeReturnsArray(): void
     {
-        $blog   = new SimpleBlog(42, 'A', 'B');
+        $blog = new SimpleBlog(42, 'A', 'B');
         $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertIsArray($result);
@@ -96,7 +96,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizeWithDifferentFormatReturnsArray(): void
     {
-        $blog   = new SimpleBlog(1, 'Title', 'Content');
+        $blog = new SimpleBlog(1, 'Title', 'Content');
         $result = $this->normalizer->normalize($blog, 'xml', []);
 
         $this->assertIsArray($result);
@@ -104,7 +104,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizeWithNullFormatReturnsArray(): void
     {
-        $blog   = new SimpleBlog(1, 'Title', 'Content');
+        $blog = new SimpleBlog(1, 'Title', 'Content');
         $result = $this->normalizer->normalize($blog, null, []);
 
         $this->assertIsArray($result);
@@ -112,7 +112,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizeIdIsCorrectType(): void
     {
-        $blog   = new SimpleBlog(99, 'Title', 'Content');
+        $blog = new SimpleBlog(99, 'Title', 'Content');
         $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertSame(99, $result['id']);
@@ -125,7 +125,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testSupportsNormalizationReturnsTrueForCorrectClass(): void
     {
-        $blog   = new SimpleBlog(1, 'Title', 'Content');
+        $blog = new SimpleBlog(1, 'Title', 'Content');
         $result = $this->normalizer->supportsNormalization($blog);
 
         $this->assertTrue($result);
@@ -168,7 +168,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
     public function testGetSupportedTypesReturnsConsistentResultForDifferentFormats(): void
     {
         $jsonResult = $this->normalizer->getSupportedTypes('json');
-        $xmlResult  = $this->normalizer->getSupportedTypes('xml');
+        $xmlResult = $this->normalizer->getSupportedTypes('xml');
         $nullResult = $this->normalizer->getSupportedTypes(null);
 
         $this->assertArrayHasKey(SimpleBlog::class, $jsonResult);
@@ -209,7 +209,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
 
     public function testNormalizerPriorityIsPositive(): void
     {
-        $fqcn     = $this->normalizerFqcn;
+        $fqcn = $this->normalizerFqcn;
         $priority = constant($fqcn . '::NORMALIZER_PRIORITY');
 
         $this->assertGreaterThan(0, $priority);

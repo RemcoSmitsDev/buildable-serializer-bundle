@@ -134,14 +134,14 @@ final class CodeBuilderTest extends TestCase
     public function testIndentReturnsNewInstance(): void
     {
         $parent = new CodeBuilder(0);
-        $child  = $parent->indent();
+        $child = $parent->indent();
 
         $this->assertNotSame($parent, $child);
     }
 
     public function testIndentReturnsNewInstanceWithHigherIndent(): void
     {
-        $b     = new CodeBuilder(0);
+        $b = new CodeBuilder(0);
         $inner = $b->indent();
         $inner->addLine('x');
 
@@ -150,7 +150,7 @@ final class CodeBuilderTest extends TestCase
 
     public function testIndentWithMultipleLevels(): void
     {
-        $b     = new CodeBuilder(0);
+        $b = new CodeBuilder(0);
         $inner = $b->indent(3);
         $inner->addLine('deep');
 
@@ -160,14 +160,14 @@ final class CodeBuilderTest extends TestCase
     public function testSharedBufferBetweenParentAndChild(): void
     {
         $parent = new CodeBuilder(0);
-        $child  = $parent->indent();
+        $child = $parent->indent();
 
         $parent->addLine('parent-line-1');
         $child->addLine('child-line');
         $parent->addLine('parent-line-2');
 
         $output = $parent->build();
-        $lines  = explode("\n", $output);
+        $lines = explode("\n", $output);
 
         $this->assertSame('parent-line-1', $lines[0]);
         $this->assertStringContainsString('child-line', $lines[1]);
@@ -177,7 +177,7 @@ final class CodeBuilderTest extends TestCase
     public function testChildBufferIsSharedWithParent(): void
     {
         $parent = new CodeBuilder(0);
-        $child  = $parent->indent();
+        $child = $parent->indent();
 
         $child->addLine('from-child');
 
@@ -187,8 +187,8 @@ final class CodeBuilderTest extends TestCase
 
     public function testGrandchildSharesBuffer(): void
     {
-        $root       = new CodeBuilder(0);
-        $child      = $root->indent();
+        $root = new CodeBuilder(0);
+        $child = $root->indent();
         $grandchild = $child->indent();
 
         $root->addLine('root');
@@ -334,6 +334,7 @@ final class CodeBuilderTest extends TestCase
         $result = CodeBuilder::valueExport(1.0);
 
         $this->assertStringContainsString('1', $result);
+
         // PHP guarantees the exported value is a valid float literal
     }
 
@@ -365,8 +366,8 @@ final class CodeBuilderTest extends TestCase
     public function testExplicitSharedBufferIsUsed(): void
     {
         $buffer = new \ArrayObject();
-        $b1     = new CodeBuilder(0, $buffer);
-        $b2     = new CodeBuilder(1, $buffer);
+        $b1 = new CodeBuilder(0, $buffer);
+        $b2 = new CodeBuilder(1, $buffer);
 
         $b1->addLine('from-b1');
         $b2->addLine('from-b2');

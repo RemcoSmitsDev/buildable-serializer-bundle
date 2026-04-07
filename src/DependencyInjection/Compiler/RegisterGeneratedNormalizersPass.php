@@ -70,13 +70,13 @@ use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
  */
 final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 {
-    private const CACHE_DIR_PARAM = "buildable_serializer.cache_dir";
-    private const NAMESPACE_PARAM = "buildable_serializer.generated_namespace";
-    private const PATHS_PARAM = "buildable_serializer.paths";
-    private const FEATURES_PARAM = "buildable_serializer.features";
-    private const GENERATION_PARAM = "buildable_serializer.generation";
-    private const NORMALIZER_TAG = "serializer.normalizer";
-    private const SERIALIZER_SERVICE = "serializer";
+    private const CACHE_DIR_PARAM = 'buildable_serializer.cache_dir';
+    private const NAMESPACE_PARAM = 'buildable_serializer.generated_namespace';
+    private const PATHS_PARAM = 'buildable_serializer.paths';
+    private const FEATURES_PARAM = 'buildable_serializer.features';
+    private const GENERATION_PARAM = 'buildable_serializer.generation';
+    private const NORMALIZER_TAG = 'serializer.normalizer';
+    private const SERIALIZER_SERVICE = 'serializer';
     private const DEFAULT_PRIORITY = 200;
 
     // =========================================================================
@@ -88,10 +88,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         // ------------------------------------------------------------------
         // 1. Read and resolve container parameters
         // ------------------------------------------------------------------
-        foreach (
-            [self::CACHE_DIR_PARAM, self::NAMESPACE_PARAM, self::PATHS_PARAM]
-            as $param
-        ) {
+        foreach ([self::CACHE_DIR_PARAM, self::NAMESPACE_PARAM, self::PATHS_PARAM] as $param) {
             if (!$container->hasParameter($param)) {
                 return;
             }
@@ -100,15 +97,11 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         $bag = $container->getParameterBag();
 
         /** @var string $cacheDir */
-        $cacheDir = (string) $bag->resolveValue(
-            $container->getParameter(self::CACHE_DIR_PARAM),
-        );
+        $cacheDir = (string) $bag->resolveValue($container->getParameter(self::CACHE_DIR_PARAM));
         $cacheDir = realpath($cacheDir) ?: $cacheDir;
 
         /** @var string $generatedNamespace */
-        $generatedNamespace = (string) $container->getParameter(
-            self::NAMESPACE_PARAM,
-        );
+        $generatedNamespace = (string) $container->getParameter(self::NAMESPACE_PARAM);
 
         /** @var array<string, string> $rawPaths */
         $rawPaths = $container->getParameter(self::PATHS_PARAM);
@@ -120,35 +113,29 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         // Resolve Symfony parameter placeholders (e.g. %kernel.project_dir%) in every path.
         $resolvedPaths = [];
         foreach ($rawPaths as $namespace => $directory) {
-            $resolvedPaths[$namespace] = (string) $bag->resolveValue(
-                $directory,
-            );
+            $resolvedPaths[$namespace] = (string) $bag->resolveValue($directory);
         }
 
         /** @var array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool} $features */
         $features = $container->hasParameter(self::FEATURES_PARAM)
             ? (array) $container->getParameter(self::FEATURES_PARAM)
             : [
-                "groups" => true,
-                "max_depth" => true,
-                "circular_reference" => true,
-                "name_converter" => false,
-                "skip_null_values" => true,
+                'groups' => true,
+                'max_depth' => true,
+                'circular_reference' => true,
+                'name_converter' => false,
+                'skip_null_values' => true,
             ];
 
         /** @var array{strict_types: bool} $generation */
         $generation = $container->hasParameter(self::GENERATION_PARAM)
             ? (array) $container->getParameter(self::GENERATION_PARAM)
-            : ["strict_types" => true];
+            : ['strict_types' => true];
 
         // ------------------------------------------------------------------
         // 2. Ensure the cache directory exists
         // ------------------------------------------------------------------
-        if (
-            !is_dir($cacheDir) &&
-            !mkdir($cacheDir, 0755, true) &&
-            !is_dir($cacheDir)
-        ) {
+        if (!is_dir($cacheDir) && !mkdir($cacheDir, 0755, true) && !is_dir($cacheDir)) {
             // Cannot create the output directory — skip silently so the
             // application can still boot without generated normalizers.
             return;
@@ -163,13 +150,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         // ------------------------------------------------------------------
         $metadataFactory = $this->createMetadataFactory();
 
-        $generator = new NormalizerGenerator(
-            $metadataFactory,
-            $cacheDir,
-            $generatedNamespace,
-            $features,
-            $generation,
-        );
+        $generator = new NormalizerGenerator($metadataFactory, $cacheDir, $generatedNamespace, $features, $generation);
 
         $discovery = new FinderClassDiscovery($resolvedPaths);
 
@@ -218,16 +199,13 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
             $priority = $this->resolvePriority($fqcn);
 
-            if (
-                !$container->hasDefinition($fqcn) &&
-                !$container->hasAlias($fqcn)
-            ) {
+            if (!$container->hasDefinition($fqcn) && !$container->hasAlias($fqcn)) {
                 $definition = new Definition($fqcn);
                 $definition->setPublic(false);
                 $definition->setAutowired(false);
                 $definition->setAutoconfigured(false);
                 $definition->addTag(self::NORMALIZER_TAG, [
-                    "priority" => $priority,
+                    'priority' => $priority,
                 ]);
                 // Tell PhpDumper to emit `include_once $filePath` before
                 // instantiating this service in the compiled container.
@@ -281,10 +259,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         // PhpDocExtractor enriches type resolution with @var / @return
         // docblock annotations. It requires phpdocumentor/reflection-docblock
         // which may not be present in production (require-dev only).
-        if (
-            class_exists(PhpDocExtractor::class) &&
-            class_exists(\phpDocumentor\Reflection\DocBlockFactory::class)
-        ) {
+        if (class_exists(PhpDocExtractor::class) && class_exists(\phpDocumentor\Reflection\DocBlockFactory::class)) {
             array_unshift($typeExtractors, new PhpDocExtractor());
         }
 
@@ -314,20 +289,13 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
     {
         $lines = [];
         foreach ($classmap as $fqcn => $filePath) {
-            $lines[] =
-                "    " .
-                var_export($fqcn, true) .
-                " => " .
-                var_export($filePath, true) .
-                ",";
+            $lines[] = '    ' . var_export($fqcn, true) . ' => ' . var_export($filePath, true) . ',';
         }
 
         $content =
-            "<?php\n\n// @generated by buildable/serializer-bundle\n\nreturn [\n" .
-            implode("\n", $lines) .
-            "\n];\n";
+            "<?php\n\n// @generated by buildable/serializer-bundle\n\nreturn [\n" . implode("\n", $lines) . "\n];\n";
 
-        file_put_contents($cacheDir . "/autoload.php", $content);
+        file_put_contents($cacheDir . '/autoload.php', $content);
     }
 
     // =========================================================================
@@ -361,10 +329,8 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
      *
      * @param string[] $fqcns Generated normalizer FQCNs, highest priority first.
      */
-    private function injectIntoSerializer(
-        ContainerBuilder $container,
-        array $fqcns,
-    ): void {
+    private function injectIntoSerializer(ContainerBuilder $container, array $fqcns): void
+    {
         if (!$container->hasDefinition(self::SERIALIZER_SERVICE)) {
             return;
         }
@@ -390,10 +356,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         if (is_array($existing)) {
             // Argument is already a plain array of References (resolved by a
             // prior pass) — simply prepend ours.
-            $serializerDef->replaceArgument(
-                0,
-                array_merge($ourRefs, $existing),
-            );
+            $serializerDef->replaceArgument(0, array_merge($ourRefs, $existing));
 
             return;
         }
@@ -409,7 +372,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
                 // Already in $ourRefs — skip to avoid duplication.
                 continue;
             }
-            $otherWithPriority[$id] = (int) ($tags[0]["priority"] ?? 0);
+            $otherWithPriority[$id] = (int) ($tags[0]['priority'] ?? 0);
         }
         arsort($otherWithPriority);
 
@@ -452,8 +415,8 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
     {
         try {
             $ref = new \ReflectionClass($fqcn);
-            if ($ref->hasConstant("NORMALIZER_PRIORITY")) {
-                $value = $ref->getConstant("NORMALIZER_PRIORITY");
+            if ($ref->hasConstant('NORMALIZER_PRIORITY')) {
+                $value = $ref->getConstant('NORMALIZER_PRIORITY');
                 if (\is_int($value)) {
                     return $value;
                 }

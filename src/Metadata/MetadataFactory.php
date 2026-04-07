@@ -42,25 +42,25 @@ final class MetadataFactory implements MetadataFactoryInterface
      * @var list<string>
      */
     private const SCALAR_TYPES = [
-        "int",
-        "integer",
-        "float",
-        "double",
-        "string",
-        "bool",
-        "boolean",
-        "null",
-        "array",
-        "iterable",
-        "callable",
-        "resource",
-        "mixed",
-        "void",
-        "never",
-        "object",
-        "self",
-        "static",
-        "parent",
+        'int',
+        'integer',
+        'float',
+        'double',
+        'string',
+        'bool',
+        'boolean',
+        'null',
+        'array',
+        'iterable',
+        'callable',
+        'resource',
+        'mixed',
+        'void',
+        'never',
+        'object',
+        'self',
+        'static',
+        'parent',
     ];
 
     /**
@@ -94,12 +94,10 @@ final class MetadataFactory implements MetadataFactoryInterface
         }
 
         if (!class_exists($className)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'Class "%s" does not exist or cannot be autoloaded.',
-                    $className,
-                ),
-            );
+            throw new \InvalidArgumentException(sprintf(
+                'Class "%s" does not exist or cannot be autoloaded.',
+                $className,
+            ));
         }
 
         /** @var \ReflectionClass<object> $reflectionClass */
@@ -130,14 +128,10 @@ final class MetadataFactory implements MetadataFactoryInterface
      * @param  \ReflectionClass<T> $reflectionClass
      * @return ClassMetadata<T>
      */
-    private function buildClassMetadata(
-        \ReflectionClass $reflectionClass,
-    ): ClassMetadata {
+    private function buildClassMetadata(\ReflectionClass $reflectionClass): ClassMetadata
+    {
         /** @var ClassMetadata<T> $metadata */
-        $metadata = new ClassMetadata(
-            reflectionClass: $reflectionClass,
-            className: $reflectionClass->getName(),
-        );
+        $metadata = new ClassMetadata(reflectionClass: $reflectionClass, className: $reflectionClass->getName());
 
         /** @var array<string, true> $registered Tracks which property names have already been added */
         $registered = [];
@@ -147,17 +141,12 @@ final class MetadataFactory implements MetadataFactoryInterface
             // Only process promoted parameters that are publicly accessible as properties.
             // Private/protected promoted params cannot be read directly from outside the class;
             // they are discovered via their public getter methods in step 3 below.
-            $promotedProperty = $reflectionClass->getProperty(
-                $param->getName(),
-            );
+            $promotedProperty = $reflectionClass->getProperty($param->getName());
             if (!$promotedProperty->isPublic()) {
                 continue;
             }
 
-            $propertyMeta = $this->buildPropertyMetadataFromPromoted(
-                $reflectionClass,
-                $param,
-            );
+            $propertyMeta = $this->buildPropertyMetadataFromPromoted($reflectionClass, $param);
 
             if ($propertyMeta === null || $propertyMeta->ignored) {
                 $registered[$param->getName()] = true;
@@ -169,10 +158,7 @@ final class MetadataFactory implements MetadataFactoryInterface
         }
 
         // ----- 2. Regular public properties (non-promoted) -------------------------
-        foreach (
-            $reflectionClass->getProperties(\ReflectionProperty::IS_PUBLIC)
-            as $reflProperty
-        ) {
+        foreach ($reflectionClass->getProperties(\ReflectionProperty::IS_PUBLIC) as $reflProperty) {
             $name = $reflProperty->getName();
 
             // Skip statics and already-registered promoted params
@@ -180,10 +166,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 continue;
             }
 
-            $propertyMeta = $this->buildPropertyMetadataFromProperty(
-                $reflectionClass,
-                $reflProperty,
-            );
+            $propertyMeta = $this->buildPropertyMetadataFromProperty($reflectionClass, $reflProperty);
 
             if ($propertyMeta === null || $propertyMeta->ignored) {
                 $registered[$name] = true;
@@ -195,15 +178,8 @@ final class MetadataFactory implements MetadataFactoryInterface
         }
 
         // ----- 3. Virtual properties exposed through public getters ----------------
-        foreach (
-            $reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC)
-            as $method
-        ) {
-            if (
-                $method->isStatic() ||
-                $method->isConstructor() ||
-                $method->isDestructor()
-            ) {
+        foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->isStatic() || $method->isConstructor() || $method->isDestructor()) {
                 continue;
             }
 
@@ -212,19 +188,13 @@ final class MetadataFactory implements MetadataFactoryInterface
                 continue;
             }
 
-            $propertyName = $this->extractPropertyNameFromGetter(
-                $method->getName(),
-            );
+            $propertyName = $this->extractPropertyNameFromGetter($method->getName());
 
             if ($propertyName === null || isset($registered[$propertyName])) {
                 continue;
             }
 
-            $propertyMeta = $this->buildPropertyMetadataFromGetter(
-                $reflectionClass,
-                $method,
-                $propertyName,
-            );
+            $propertyMeta = $this->buildPropertyMetadataFromGetter($reflectionClass, $method, $propertyName);
 
             if ($propertyMeta === null || $propertyMeta->ignored) {
                 $registered[$propertyName] = true;
@@ -245,21 +215,15 @@ final class MetadataFactory implements MetadataFactoryInterface
      * @param  \ReflectionClass<T> $reflectionClass
      * @return \ReflectionParameter[]
      */
-    private function collectPromotedParams(
-        \ReflectionClass $reflectionClass,
-    ): array {
+    private function collectPromotedParams(\ReflectionClass $reflectionClass): array
+    {
         $constructor = $reflectionClass->getConstructor();
 
         if ($constructor === null) {
             return [];
         }
 
-        return array_values(
-            array_filter(
-                $constructor->getParameters(),
-                static fn(\ReflectionParameter $p): bool => $p->isPromoted(),
-            ),
-        );
+        return array_values(array_filter($constructor->getParameters(), static fn(\ReflectionParameter $p): bool => $p->isPromoted()));
     }
 
     /**
@@ -297,12 +261,7 @@ final class MetadataFactory implements MetadataFactoryInterface
         // Also check param-level attributes; they may add groups etc.
         $this->applyAttributesFromParameter($param, $propertyMeta);
 
-        $this->resolveType(
-            $reflectionClass->getName(),
-            $name,
-            $param->getType(),
-            $propertyMeta,
-        );
+        $this->resolveType($reflectionClass->getName(), $name, $param->getType(), $propertyMeta);
 
         return $propertyMeta;
     }
@@ -331,12 +290,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             return $propertyMeta;
         }
 
-        $this->resolveType(
-            $reflectionClass->getName(),
-            $name,
-            $reflProperty->getType(),
-            $propertyMeta,
-        );
+        $this->resolveType($reflectionClass->getName(), $name, $reflProperty->getType(), $propertyMeta);
 
         return $propertyMeta;
     }
@@ -361,10 +315,7 @@ final class MetadataFactory implements MetadataFactoryInterface
         // Read attributes from the backing property first (private/protected properties
         // are the canonical location for #[Groups], #[Ignore], #[SerializedName], #[MaxDepth]).
         if ($reflectionClass->hasProperty($propertyName)) {
-            $this->applyAttributesFromProperty(
-                $reflectionClass->getProperty($propertyName),
-                $propertyMeta,
-            );
+            $this->applyAttributesFromProperty($reflectionClass->getProperty($propertyName), $propertyMeta);
         }
 
         // Overlay method-level attributes (getter annotations take precedence).
@@ -374,12 +325,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             return $propertyMeta;
         }
 
-        $this->resolveType(
-            $reflectionClass->getName(),
-            $propertyName,
-            $method->getReturnType(),
-            $propertyMeta,
-        );
+        $this->resolveType($reflectionClass->getName(), $propertyName, $method->getReturnType(), $propertyMeta);
 
         return $propertyMeta;
     }
@@ -392,10 +338,8 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionProperty and apply
      * the results to the given PropertyMetadata.
      */
-    private function applyAttributesFromProperty(
-        \ReflectionProperty $reflProperty,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyAttributesFromProperty(\ReflectionProperty $reflProperty, PropertyMetadata $meta): void
+    {
         foreach ($reflProperty->getAttributes() as $attr) {
             $this->applyAttribute($attr, $meta);
         }
@@ -405,10 +349,8 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionParameter (promoted
      * constructor params) and merge them into the given PropertyMetadata.
      */
-    private function applyAttributesFromParameter(
-        \ReflectionParameter $param,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyAttributesFromParameter(\ReflectionParameter $param, PropertyMetadata $meta): void
+    {
         foreach ($param->getAttributes() as $attr) {
             $this->applyAttribute($attr, $meta);
         }
@@ -418,10 +360,8 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionMethod (getter) and
      * apply the results to the given PropertyMetadata.
      */
-    private function applyAttributesFromMethod(
-        \ReflectionMethod $method,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyAttributesFromMethod(\ReflectionMethod $method, PropertyMetadata $meta): void
+    {
         foreach ($method->getAttributes() as $attr) {
             $this->applyAttribute($attr, $meta);
         }
@@ -434,19 +374,15 @@ final class MetadataFactory implements MetadataFactoryInterface
      *
      * @param \ReflectionAttribute<object> $attr
      */
-    private function applyAttribute(
-        \ReflectionAttribute $attr,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyAttribute(\ReflectionAttribute $attr, PropertyMetadata $meta): void
+    {
         switch ($attr->getName()) {
             case Groups::class:
                 /** @var Groups $instance */
                 $instance = $attr->newInstance();
                 // Merge rather than overwrite – promoted params can carry the
                 // attribute on both the property and the parameter position.
-                $meta->groups = array_values(
-                    array_unique([...$meta->groups, ...$instance->getGroups()]),
-                );
+                $meta->groups = array_values(array_unique([...$meta->groups, ...$instance->getGroups()]));
                 break;
 
             case Ignore::class:
@@ -488,10 +424,7 @@ final class MetadataFactory implements MetadataFactoryInterface
     ): void {
         // --- Preferred path: Symfony PropertyInfo (richer / docblock-aware) ---
         try {
-            $infoTypes = $this->propertyInfoExtractor->getTypes(
-                $className,
-                $propertyName,
-            );
+            $infoTypes = $this->propertyInfoExtractor->getTypes($className, $propertyName);
         } catch (\Exception) {
             $infoTypes = null;
         }
@@ -512,28 +445,20 @@ final class MetadataFactory implements MetadataFactoryInterface
      *
      * @param list<Type> $types
      */
-    private function applyPropertyInfoTypes(
-        array $types,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyPropertyInfoTypes(array $types, PropertyMetadata $meta): void
+    {
         // Mark as nullable if any type slot is null
         foreach ($types as $type) {
-            if (
-                $type->isNullable() ||
-                $type->getBuiltinType() === Type::BUILTIN_TYPE_NULL
-            ) {
+            if ($type->isNullable() || $type->getBuiltinType() === Type::BUILTIN_TYPE_NULL) {
                 $meta->nullable = true;
             }
         }
 
         // Collect all non-null type descriptors
-        $nonNullTypes = array_values(
-            array_filter(
-                $types,
-                static fn(Type $t): bool => $t->getBuiltinType() !==
-                    Type::BUILTIN_TYPE_NULL,
-            ),
-        );
+        $nonNullTypes = array_values(array_filter(
+            $types,
+            static fn(Type $t): bool => $t->getBuiltinType() !== Type::BUILTIN_TYPE_NULL,
+        ));
 
         if ($nonNullTypes === []) {
             return;
@@ -545,9 +470,9 @@ final class MetadataFactory implements MetadataFactoryInterface
 
         // --- Collection detection (array / iterable / generic collections) ---
         if (
-            $primary->isCollection() ||
-            $builtinType === Type::BUILTIN_TYPE_ARRAY ||
-            $builtinType === Type::BUILTIN_TYPE_ITERABLE
+            $primary->isCollection()
+            || $builtinType === Type::BUILTIN_TYPE_ARRAY
+            || $builtinType === Type::BUILTIN_TYPE_ITERABLE
         ) {
             $meta->isCollection = true;
             $meta->type = $builtinType;
@@ -557,9 +482,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             if ($valueTypes !== []) {
                 $valueType = $valueTypes[0];
 
-                if (
-                    $valueType->getBuiltinType() === Type::BUILTIN_TYPE_OBJECT
-                ) {
+                if ($valueType->getBuiltinType() === Type::BUILTIN_TYPE_OBJECT) {
                     $meta->collectionValueType = $valueType->getClassName();
                 }
             }
@@ -588,10 +511,8 @@ final class MetadataFactory implements MetadataFactoryInterface
     /**
      * Apply type information obtained directly from PHP Reflection (fallback).
      */
-    private function applyReflectionType(
-        \ReflectionType $reflType,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyReflectionType(\ReflectionType $reflType, PropertyMetadata $meta): void
+    {
         if ($reflType instanceof \ReflectionNamedType) {
             $this->applyNamedReflectionType($reflType, $meta);
             return;
@@ -619,18 +540,13 @@ final class MetadataFactory implements MetadataFactoryInterface
     /**
      * Apply a single {@see \ReflectionNamedType} to a PropertyMetadata.
      */
-    private function applyNamedReflectionType(
-        \ReflectionNamedType $type,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyNamedReflectionType(\ReflectionNamedType $type, PropertyMetadata $meta): void
+    {
         $meta->nullable = $meta->nullable || $type->allowsNull();
         $typeName = $type->getName();
 
         if ($type->isBuiltin()) {
-            if (
-                $typeName === Type::BUILTIN_TYPE_ARRAY ||
-                $typeName === Type::BUILTIN_TYPE_ITERABLE
-            ) {
+            if ($typeName === Type::BUILTIN_TYPE_ARRAY || $typeName === Type::BUILTIN_TYPE_ITERABLE) {
                 $meta->isCollection = true;
             }
 
@@ -648,19 +564,14 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Apply a {@see \ReflectionUnionType} (e.g. `string|int|null`) to a
      * PropertyMetadata, using the first non-null type as the representative.
      */
-    private function applyUnionReflectionType(
-        \ReflectionUnionType $type,
-        PropertyMetadata $meta,
-    ): void {
+    private function applyUnionReflectionType(\ReflectionUnionType $type, PropertyMetadata $meta): void
+    {
         $meta->nullable = $meta->nullable || $type->allowsNull();
 
-        $nonNull = array_values(
-            array_filter(
-                $type->getTypes(),
-                static fn(\ReflectionType $t): bool => $t instanceof
-                    \ReflectionNamedType && $t->getName() !== "null",
-            ),
-        );
+        $nonNull = array_values(array_filter(
+            $type->getTypes(),
+            static fn(\ReflectionType $t): bool => $t instanceof \ReflectionNamedType && $t->getName() !== 'null',
+        ));
 
         if ($nonNull === []) {
             return;
@@ -694,13 +605,13 @@ final class MetadataFactory implements MetadataFactoryInterface
      */
     private function extractPropertyNameFromGetter(string $methodName): ?string
     {
-        foreach (["get", "is", "has"] as $prefix) {
+        foreach (['get', 'is', 'has'] as $prefix) {
             $prefixLength = \strlen($prefix);
 
             if (
-                \strlen($methodName) > $prefixLength &&
-                str_starts_with($methodName, $prefix) &&
-                ctype_upper($methodName[$prefixLength])
+                \strlen($methodName) > $prefixLength
+                && str_starts_with($methodName, $prefix)
+                && ctype_upper($methodName[$prefixLength])
             ) {
                 return lcfirst(substr($methodName, $prefixLength));
             }

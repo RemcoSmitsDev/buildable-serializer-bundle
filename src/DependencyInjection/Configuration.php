@@ -26,106 +26,74 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *             skip_null_values: true
  *         generation:
  *             strict_types: true
-
+ *
  */
 final class Configuration implements ConfigurationInterface
 {
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder("buildable_serializer");
+        $treeBuilder = new TreeBuilder('buildable_serializer');
 
         /** @var ArrayNodeDefinition $rootNode */
         $rootNode = $treeBuilder->getRootNode();
 
         $rootNode
             ->children()
-            ->scalarNode("cache_dir")
-            ->defaultValue("%kernel.project_dir%/var/buildable_serializer")
-            ->info(
-                "Directory where generated normalizer PHP files will be written.",
-            )
+            ->scalarNode('cache_dir')
+            ->defaultValue('%kernel.project_dir%/var/buildable_serializer')
+            ->info('Directory where generated normalizer PHP files will be written.')
             ->cannotBeEmpty()
             ->end()
-
-            ->scalarNode("generated_namespace")
+            ->scalarNode('generated_namespace')
             ->defaultValue("BuildableSerializer\Generated")
-            ->info(
-                "Root PHP namespace used for all generated normalizer classes.",
-            )
+            ->info('Root PHP namespace used for all generated normalizer classes.')
             ->cannotBeEmpty()
             ->end()
-
-            ->arrayNode("paths")
-            ->info(
-                "PSR-4 map of namespace-prefix => directory to scan for #[Serializable] classes.",
-            )
-            ->useAttributeAsKey("namespace")
+            ->arrayNode('paths')
+            ->info('PSR-4 map of namespace-prefix => directory to scan for #[Serializable] classes.')
+            ->useAttributeAsKey('namespace')
             ->scalarPrototype()
             ->cannotBeEmpty()
             ->end()
             ->defaultValue([])
             ->end()
-
-            ->arrayNode("features")
-            ->info(
-                "Toggle individual serializer features in the generated normalizers.",
-            )
+            ->arrayNode('features')
+            ->info('Toggle individual serializer features in the generated normalizers.')
             ->addDefaultsIfNotSet()
             ->children()
-            ->booleanNode("groups")
+            ->booleanNode('groups')
             ->defaultTrue()
-            ->info(
-                "Emit group-filtering logic in generated normalizers. " .
-                    "When false, group context keys are ignored entirely.",
-            )
+            ->info('Emit group-filtering logic in generated normalizers. '
+            . 'When false, group context keys are ignored entirely.')
             ->end()
-
-            ->booleanNode("max_depth")
+            ->booleanNode('max_depth')
             ->defaultTrue()
-            ->info(
-                "Emit max-depth checking logic in generated normalizers. " .
-                    "Allows limiting the depth of nested-object serialization.",
-            )
+            ->info('Emit max-depth checking logic in generated normalizers. '
+            . 'Allows limiting the depth of nested-object serialization.')
             ->end()
-
-            ->booleanNode("circular_reference")
+            ->booleanNode('circular_reference')
             ->defaultTrue()
-            ->info(
-                "Emit circular-reference detection logic in generated normalizers.",
-            )
+            ->info('Emit circular-reference detection logic in generated normalizers.')
             ->end()
-
-            ->booleanNode("name_converter")
+            ->booleanNode('name_converter')
             ->defaultFalse()
-            ->info(
-                "Respect a name converter service when mapping PHP property " .
-                    "names to serialized keys.",
-            )
+            ->info('Respect a name converter service when mapping PHP property ' . 'names to serialized keys.')
             ->end()
-
-            ->booleanNode("skip_null_values")
+            ->booleanNode('skip_null_values')
             ->defaultTrue()
-            ->info(
-                "Emit logic to skip null-valued properties when the " .
-                    '"skip_null_values" context key is set to true.',
-            )
+            ->info('Emit logic to skip null-valued properties when the '
+            . '"skip_null_values" context key is set to true.')
             ->end()
             ->end()
             ->end()
-
-            ->arrayNode("generation")
-            ->info(
-                "Options controlling how the PHP source files are generated.",
-            )
+            ->arrayNode('generation')
+            ->info('Options controlling how the PHP source files are generated.')
             ->addDefaultsIfNotSet()
             ->children()
-            ->booleanNode("strict_types")
+            ->booleanNode('strict_types')
             ->defaultTrue()
-            ->info(
-                'Prepend "declare(strict_types=1);" to every generated file.',
-            )
+            ->info('Prepend "declare(strict_types=1);" to every generated file.')
             ->end()
-
             ->end()
             ->end()
             ->end();

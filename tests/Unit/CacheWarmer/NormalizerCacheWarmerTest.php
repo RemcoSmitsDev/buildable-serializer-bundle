@@ -40,20 +40,15 @@ final class NormalizerCacheWarmerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir =
-            sys_get_temp_dir() .
-            DIRECTORY_SEPARATOR .
-            "buildable_warmer_test_" .
-            uniqid("", true);
+        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'buildable_warmer_test_' . uniqid('', true);
 
         $this->discovery = $this->createMock(ClassDiscoveryInterface::class);
 
         // addMethods(['generateAll']) adds generateAll() as a mockable method
         // even though it is not (yet) declared on NormalizerGeneratorInterface.
-        $this->generator = $this->getMockBuilder(
-            NormalizerGeneratorInterface::class,
-        )
-            ->addMethods(["generateAll"])
+        $this->generator = $this
+            ->getMockBuilder(NormalizerGeneratorInterface::class)
+            ->addMethods(['generateAll'])
             ->getMockForAbstractClass();
     }
 
@@ -77,27 +72,27 @@ final class NormalizerCacheWarmerTest extends TestCase
 
     public function testWarmUpReturnsEmptyArrayWhenNoClassesDiscovered(): void
     {
-        $this->discovery->method("discoverClasses")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn([]);
 
-        $result = $this->makeWarmer()->warmUp("/kernel/cache");
+        $result = $this->makeWarmer()->warmUp('/kernel/cache');
 
         $this->assertSame([], $result);
     }
 
     public function testWarmUpDoesNotCallGeneratorWhenNoClassesDiscovered(): void
     {
-        $this->discovery->method("discoverClasses")->willReturn([]);
-        $this->generator->expects($this->never())->method("generateAll");
+        $this->discovery->method('discoverClasses')->willReturn([]);
+        $this->generator->expects($this->never())->method('generateAll');
 
-        $this->makeWarmer()->warmUp("/kernel/cache");
+        $this->makeWarmer()->warmUp('/kernel/cache');
     }
 
     public function testWarmUpDoesNotCreateCacheDirWhenNoClassesDiscovered(): void
     {
         $this->assertDirectoryDoesNotExist($this->tempDir);
-        $this->discovery->method("discoverClasses")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn([]);
 
-        $this->makeWarmer()->warmUp("/kernel/cache");
+        $this->makeWarmer()->warmUp('/kernel/cache');
 
         $this->assertDirectoryDoesNotExist($this->tempDir);
     }
@@ -112,28 +107,22 @@ final class NormalizerCacheWarmerTest extends TestCase
 
         $classes = ["App\\Entity\\User"];
 
-        $this->discovery->method("discoverClasses")->willReturn($classes);
-        $this->generator
-            ->expects($this->once())
-            ->method("generateAll")
-            ->with($classes)
-            ->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn($classes);
+        $this->generator->expects($this->once())->method('generateAll')->with($classes)->willReturn([]);
 
-        $this->makeWarmer()->warmUp("/kernel/cache");
+        $this->makeWarmer()->warmUp('/kernel/cache');
     }
 
     public function testWarmUpReturnsFilePathsFromGenerateAll(): void
     {
         mkdir($this->tempDir, 0777, true);
 
-        $expectedPaths = ["/var/cache/prod/normalizers/UserNormalizer.php"];
+        $expectedPaths = ['/var/cache/prod/normalizers/UserNormalizer.php'];
 
-        $this->discovery
-            ->method("discoverClasses")
-            ->willReturn(["App\\Entity\\User"]);
-        $this->generator->method("generateAll")->willReturn($expectedPaths);
+        $this->discovery->method('discoverClasses')->willReturn(["App\\Entity\\User"]);
+        $this->generator->method('generateAll')->willReturn($expectedPaths);
 
-        $result = $this->makeWarmer()->warmUp("/kernel/cache");
+        $result = $this->makeWarmer()->warmUp('/kernel/cache');
 
         $this->assertSame($expectedPaths, $result);
     }
@@ -152,28 +141,22 @@ final class NormalizerCacheWarmerTest extends TestCase
             "App\\Dto\\UserDto",
         ];
 
-        $this->discovery->method("discoverClasses")->willReturn($classes);
-        $this->generator
-            ->expects($this->once())
-            ->method("generateAll")
-            ->with($classes)
-            ->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn($classes);
+        $this->generator->expects($this->once())->method('generateAll')->with($classes)->willReturn([]);
 
-        $this->makeWarmer()->warmUp("/kernel/cache");
+        $this->makeWarmer()->warmUp('/kernel/cache');
     }
 
     public function testWarmUpReturnsAllGeneratedFilePaths(): void
     {
         mkdir($this->tempDir, 0777, true);
 
-        $paths = ["/cache/UserNormalizer.php", "/cache/OrderNormalizer.php"];
+        $paths = ['/cache/UserNormalizer.php', '/cache/OrderNormalizer.php'];
 
-        $this->discovery
-            ->method("discoverClasses")
-            ->willReturn(["App\\Entity\\User", "App\\Entity\\Order"]);
-        $this->generator->method("generateAll")->willReturn($paths);
+        $this->discovery->method('discoverClasses')->willReturn(["App\\Entity\\User", "App\\Entity\\Order"]);
+        $this->generator->method('generateAll')->willReturn($paths);
 
-        $result = $this->makeWarmer()->warmUp("/kernel/cache");
+        $result = $this->makeWarmer()->warmUp('/kernel/cache');
 
         $this->assertCount(2, $result);
         $this->assertContains($paths[0], $result);
@@ -188,12 +171,10 @@ final class NormalizerCacheWarmerTest extends TestCase
     {
         $this->assertDirectoryDoesNotExist($this->tempDir);
 
-        $this->discovery
-            ->method("discoverClasses")
-            ->willReturn(["App\\Entity\\User"]);
-        $this->generator->method("generateAll")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn(["App\\Entity\\User"]);
+        $this->generator->method('generateAll')->willReturn([]);
 
-        $this->makeWarmer()->warmUp("/kernel/cache");
+        $this->makeWarmer()->warmUp('/kernel/cache');
 
         $this->assertDirectoryExists($this->tempDir);
     }
@@ -202,13 +183,11 @@ final class NormalizerCacheWarmerTest extends TestCase
     {
         mkdir($this->tempDir, 0777, true);
 
-        $this->discovery
-            ->method("discoverClasses")
-            ->willReturn(["App\\Entity\\User"]);
-        $this->generator->method("generateAll")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn(["App\\Entity\\User"]);
+        $this->generator->method('generateAll')->willReturn([]);
 
         $this->expectNotToPerformAssertions();
-        $this->makeWarmer()->warmUp("/kernel/cache");
+        $this->makeWarmer()->warmUp('/kernel/cache');
     }
 
     // -------------------------------------------------------------------------
@@ -219,16 +198,12 @@ final class NormalizerCacheWarmerTest extends TestCase
     {
         mkdir($this->tempDir, 0777, true);
 
-        $this->discovery
-            ->method("discoverClasses")
-            ->willReturn(["App\\Entity\\User"]);
-        $this->generator->method("generateAll")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn(["App\\Entity\\User"]);
+        $this->generator->method('generateAll')->willReturn([]);
 
         // Pass a completely different kernel cache dir; the warmer must still
         // write to the bundle's configured cacheDir.
-        $result = $this->makeWarmer()->warmUp(
-            "/some/completely/different/path",
-        );
+        $result = $this->makeWarmer()->warmUp('/some/completely/different/path');
 
         // No assertion other than "did not throw" — the warmer uses $this->cacheDir.
         $this->assertIsArray($result);
@@ -243,12 +218,12 @@ final class NormalizerCacheWarmerTest extends TestCase
         mkdir($this->tempDir, 0777, true);
 
         $classes = ["App\\Entity\\User"];
-        $this->discovery->method("discoverClasses")->willReturn($classes);
-        $this->generator->method("generateAll")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn($classes);
+        $this->generator->method('generateAll')->willReturn([]);
 
         $warmer = $this->makeWarmer();
-        $warmer->warmUp("/cache");
-        $warmer->warmUp("/cache");
+        $warmer->warmUp('/cache');
+        $warmer->warmUp('/cache');
 
         $this->addToAssertionCount(1); // no exception = pass
     }
@@ -258,15 +233,12 @@ final class NormalizerCacheWarmerTest extends TestCase
         mkdir($this->tempDir, 0777, true);
 
         $classes = ["App\\Entity\\User"];
-        $this->discovery->method("discoverClasses")->willReturn($classes);
-        $this->generator
-            ->expects($this->exactly(2))
-            ->method("generateAll")
-            ->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn($classes);
+        $this->generator->expects($this->exactly(2))->method('generateAll')->willReturn([]);
 
         $warmer = $this->makeWarmer();
-        $warmer->warmUp("/cache");
-        $warmer->warmUp("/cache");
+        $warmer->warmUp('/cache');
+        $warmer->warmUp('/cache');
     }
 
     // -------------------------------------------------------------------------
@@ -277,12 +249,10 @@ final class NormalizerCacheWarmerTest extends TestCase
     {
         mkdir($this->tempDir, 0777, true);
 
-        $this->discovery
-            ->method("discoverClasses")
-            ->willReturn(["App\\Entity\\User"]);
-        $this->generator->method("generateAll")->willReturn([]);
+        $this->discovery->method('discoverClasses')->willReturn(["App\\Entity\\User"]);
+        $this->generator->method('generateAll')->willReturn([]);
 
-        $result = $this->makeWarmer()->warmUp("/cache");
+        $result = $this->makeWarmer()->warmUp('/cache');
 
         $this->assertSame([], $result);
     }
@@ -296,11 +266,7 @@ final class NormalizerCacheWarmerTest extends TestCase
      */
     private function makeWarmer(): NormalizerCacheWarmer
     {
-        return new NormalizerCacheWarmer(
-            $this->generator,
-            $this->discovery,
-            $this->tempDir,
-        );
+        return new NormalizerCacheWarmer($this->generator, $this->discovery, $this->tempDir);
     }
 
     /**
@@ -313,7 +279,7 @@ final class NormalizerCacheWarmerTest extends TestCase
         }
 
         foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === "." || $entry === "..") {
+            if ($entry === '.' || $entry === '..') {
                 continue;
             }
 

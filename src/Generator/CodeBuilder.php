@@ -73,7 +73,7 @@ final class CodeBuilder
         ?\ArrayObject $buffer = null,
     ) {
         /** @var \ArrayObject<int, string> $resolved */
-        $resolved     = $buffer ?? new \ArrayObject();
+        $resolved = $buffer ?? new \ArrayObject();
         $this->buffer = $resolved;
     }
 
@@ -101,9 +101,7 @@ final class CodeBuilder
             return;
         }
 
-        $prefix = $totalLevels > 0
-            ? str_repeat(self::INDENT_UNIT, $totalLevels)
-            : '';
+        $prefix = $totalLevels > 0 ? str_repeat(self::INDENT_UNIT, $totalLevels) : '';
 
         $this->buffer->append($prefix . $line);
     }
@@ -184,16 +182,12 @@ final class CodeBuilder
         }
 
         $isList = array_is_list($data);
-        $parts  = [];
+        $parts = [];
 
         foreach ($data as $key => $value) {
-            $exportedValue = is_array($value)
-                ? self::arrayExport($value)
-                : self::valueExport($value);
+            $exportedValue = is_array($value) ? self::arrayExport($value) : self::valueExport($value);
 
-            $parts[] = $isList
-                ? $exportedValue
-                : self::valueExport($key) . ' => ' . $exportedValue;
+            $parts[] = $isList ? $exportedValue : self::valueExport($key) . ' => ' . $exportedValue;
         }
 
         return '[' . implode(', ', $parts) . ']';
@@ -221,18 +215,16 @@ final class CodeBuilder
     public static function valueExport(mixed $value): string
     {
         return match (true) {
-            $value === null   => 'null',
-            is_bool($value)   => $value ? 'true' : 'false',
-            is_int($value)    => (string) $value,
-            is_float($value)  => self::exportFloat($value),
+            $value === null => 'null',
+            is_bool($value) => $value ? 'true' : 'false',
+            is_int($value) => (string) $value,
+            is_float($value) => self::exportFloat($value),
             is_string($value) => self::exportString($value),
-            is_array($value)  => self::arrayExport($value),
-            default           => throw new \InvalidArgumentException(
-                sprintf(
-                    'Cannot export a value of type "%s" as a PHP literal.',
-                    get_debug_type($value),
-                ),
-            ),
+            is_array($value) => self::arrayExport($value),
+            default => throw new \InvalidArgumentException(sprintf(
+                'Cannot export a value of type "%s" as a PHP literal.',
+                get_debug_type($value),
+            )),
         };
     }
 
@@ -259,9 +251,7 @@ final class CodeBuilder
         $str = (string) $value;
 
         // PHP's (string) cast may produce "1" for 1.0; ensure float syntax.
-        return (str_contains($str, '.') || str_contains($str, 'E'))
-            ? $str
-            : $str . '.0';
+        return str_contains($str, '.') || str_contains($str, 'E') ? $str : $str . '.0';
     }
 
     /**

@@ -49,15 +49,13 @@ final class CollectionsTest extends AbstractTestCase
         // the mock must also handle arrays by recursively normalizing each element.
         $mockNormalizer = $this->createMock(NormalizerInterface::class);
         $mockNormalizer
-            ->method("normalize")
-            ->willReturnCallback(static function (mixed $data) use (
-                &$mockNormalizer,
-            ): mixed {
+            ->method('normalize')
+            ->willReturnCallback(static function (mixed $data) use (&$mockNormalizer): mixed {
                 if ($data instanceof Author) {
                     return [
-                        "id" => $data->getId(),
-                        "name" => $data->getName(),
-                        "email" => $data->getEmail(),
+                        'id' => $data->getId(),
+                        'name' => $data->getName(),
+                        'email' => $data->getEmail(),
                     ];
                 }
 
@@ -108,42 +106,46 @@ final class CollectionsTest extends AbstractTestCase
 
     public function testNormalizeScalarTagsPassThroughAsIs(): void
     {
-        $blog = new BlogWithCollections(1, "My Blog", [
-            "php",
-            "symfony",
-            "testing",
-        ]);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(
+            1,
+            'My Blog',
+            [
+                'php',
+                'symfony',
+                'testing',
+            ],
+        );
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey("tags", $result);
-        $this->assertSame(["php", "symfony", "testing"], $result["tags"]);
+        $this->assertArrayHasKey('tags', $result);
+        $this->assertSame(['php', 'symfony', 'testing'], $result['tags']);
     }
 
     public function testNormalizeEmptyTagsCollection(): void
     {
-        $blog = new BlogWithCollections(1, "Blog", []);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(1, 'Blog', []);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertArrayHasKey("tags", $result);
-        $this->assertSame([], $result["tags"]);
+        $this->assertArrayHasKey('tags', $result);
+        $this->assertSame([], $result['tags']);
     }
 
     public function testNormalizeSingleTagInCollection(): void
     {
-        $blog = new BlogWithCollections(1, "Blog", ["only-tag"]);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(1, 'Blog', ['only-tag']);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertSame(["only-tag"], $result["tags"]);
+        $this->assertSame(['only-tag'], $result['tags']);
     }
 
     public function testNormalizeTagsPreservesOrder(): void
     {
-        $tags = ["z-tag", "a-tag", "m-tag"];
-        $blog = new BlogWithCollections(1, "Blog", $tags);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $tags = ['z-tag', 'a-tag', 'm-tag'];
+        $blog = new BlogWithCollections(1, 'Blog', $tags);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertSame($tags, $result["tags"]);
+        $this->assertSame($tags, $result['tags']);
     }
 
     // -------------------------------------------------------------------------
@@ -153,50 +155,50 @@ final class CollectionsTest extends AbstractTestCase
     public function testNormalizeTypedAuthorCollectionDelegatesEachItem(): void
     {
         $authors = [
-            new Author(1, "Alice", "alice@example.com"),
-            new Author(2, "Bob", "bob@example.com"),
+            new Author(1, 'Alice', 'alice@example.com'),
+            new Author(2, 'Bob', 'bob@example.com'),
         ];
-        $blog = new BlogWithCollections(1, "Blog", [], $authors);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(1, 'Blog', [], $authors);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey("authors", $result);
-        $this->assertCount(2, $result["authors"]);
+        $this->assertArrayHasKey('authors', $result);
+        $this->assertCount(2, $result['authors']);
     }
 
     public function testNormalizeFirstAuthorHasCorrectData(): void
     {
-        $authors = [new Author(10, "Alice", "alice@test.com")];
-        $blog = new BlogWithCollections(1, "Blog", [], $authors);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $authors = [new Author(10, 'Alice', 'alice@test.com')];
+        $blog = new BlogWithCollections(1, 'Blog', [], $authors);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertSame(10, $result["authors"][0]["id"]);
-        $this->assertSame("Alice", $result["authors"][0]["name"]);
-        $this->assertSame("alice@test.com", $result["authors"][0]["email"]);
+        $this->assertSame(10, $result['authors'][0]['id']);
+        $this->assertSame('Alice', $result['authors'][0]['name']);
+        $this->assertSame('alice@test.com', $result['authors'][0]['email']);
     }
 
     public function testNormalizeMultipleAuthorsPreservesOrder(): void
     {
         $authors = [
-            new Author(1, "First", "first@test.com"),
-            new Author(2, "Second", "second@test.com"),
-            new Author(3, "Third", "third@test.com"),
+            new Author(1, 'First', 'first@test.com'),
+            new Author(2, 'Second', 'second@test.com'),
+            new Author(3, 'Third', 'third@test.com'),
         ];
-        $blog = new BlogWithCollections(1, "Blog", [], $authors);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(1, 'Blog', [], $authors);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertSame(1, $result["authors"][0]["id"]);
-        $this->assertSame(2, $result["authors"][1]["id"]);
-        $this->assertSame(3, $result["authors"][2]["id"]);
+        $this->assertSame(1, $result['authors'][0]['id']);
+        $this->assertSame(2, $result['authors'][1]['id']);
+        $this->assertSame(3, $result['authors'][2]['id']);
     }
 
     public function testNormalizeEmptyAuthorsCollection(): void
     {
-        $blog = new BlogWithCollections(1, "Blog", [], []);
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(1, 'Blog', [], []);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertArrayHasKey("authors", $result);
-        $this->assertSame([], $result["authors"]);
+        $this->assertArrayHasKey('authors', $result);
+        $this->assertSame([], $result['authors']);
     }
 
     // -------------------------------------------------------------------------
@@ -207,18 +209,18 @@ final class CollectionsTest extends AbstractTestCase
     {
         $blog = new BlogWithCollections(
             id: 5,
-            title: "Full Blog",
-            tags: ["tag1", "tag2"],
-            authors: [new Author(7, "Writer", "writer@test.com")],
+            title: 'Full Blog',
+            tags: ['tag1', 'tag2'],
+            authors: [new Author(7, 'Writer', 'writer@test.com')],
         );
 
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertSame(5, $result["id"]);
-        $this->assertSame("Full Blog", $result["title"]);
-        $this->assertSame(["tag1", "tag2"], $result["tags"]);
-        $this->assertCount(1, $result["authors"]);
-        $this->assertSame(7, $result["authors"][0]["id"]);
+        $this->assertSame(5, $result['id']);
+        $this->assertSame('Full Blog', $result['title']);
+        $this->assertSame(['tag1', 'tag2'], $result['tags']);
+        $this->assertCount(1, $result['authors']);
+        $this->assertSame(7, $result['authors'][0]['id']);
     }
 
     // -------------------------------------------------------------------------
@@ -227,11 +229,11 @@ final class CollectionsTest extends AbstractTestCase
 
     public function testNormalizeScalarPropertiesIncluded(): void
     {
-        $blog = new BlogWithCollections(42, "Test Title");
-        $result = $this->normalizer->normalize($blog, "json", []);
+        $blog = new BlogWithCollections(42, 'Test Title');
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
-        $this->assertSame(42, $result["id"]);
-        $this->assertSame("Test Title", $result["title"]);
+        $this->assertSame(42, $result['id']);
+        $this->assertSame('Test Title', $result['title']);
     }
 
     // -------------------------------------------------------------------------
@@ -240,16 +242,14 @@ final class CollectionsTest extends AbstractTestCase
 
     public function testSupportsNormalizationReturnsTrueForBlogWithCollections(): void
     {
-        $blog = new BlogWithCollections(1, "Blog");
+        $blog = new BlogWithCollections(1, 'Blog');
 
         $this->assertTrue($this->normalizer->supportsNormalization($blog));
     }
 
     public function testSupportsNormalizationReturnsFalseForOtherObject(): void
     {
-        $this->assertFalse(
-            $this->normalizer->supportsNormalization(new \stdClass()),
-        );
+        $this->assertFalse($this->normalizer->supportsNormalization(new \stdClass()));
     }
 
     // -------------------------------------------------------------------------
@@ -258,7 +258,7 @@ final class CollectionsTest extends AbstractTestCase
 
     public function testGetSupportedTypesIncludesBlogWithCollections(): void
     {
-        $types = $this->normalizer->getSupportedTypes("json");
+        $types = $this->normalizer->getSupportedTypes('json');
 
         $this->assertArrayHasKey(BlogWithCollections::class, $types);
         $this->assertTrue($types[BlogWithCollections::class]);

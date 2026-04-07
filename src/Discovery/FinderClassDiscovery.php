@@ -27,7 +27,9 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
     /**
      * @param array<string, string> $paths Namespace-prefix => absolute directory path.
      */
-    public function __construct(private readonly array $paths) {}
+    public function __construct(
+        private readonly array $paths,
+    ) {}
 
     /** @return list<class-string> */
     public function discoverClasses(): array
@@ -38,27 +40,21 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
             $realDir = realpath($directory);
 
             if ($realDir === false || is_dir($realDir) === false) {
-                throw new \InvalidArgumentException(
-                    sprintf(
-                        'The directory "%s" configured for namespace prefix "%s" does not exist or is not a directory.',
-                        $directory,
-                        $namespacePrefix,
-                    ),
-                );
+                throw new \InvalidArgumentException(sprintf(
+                    'The directory "%s" configured for namespace prefix "%s" does not exist or is not a directory.',
+                    $directory,
+                    $namespacePrefix,
+                ));
             }
 
-            $finder = Finder::create()->files()->in($realDir)->name("*.php");
+            $finder = Finder::create()->files()->in($realDir)->name('*.php');
 
             foreach ($finder as $file) {
                 if ($file->getRealPath() === false) {
                     continue;
                 }
 
-                $fqcn = $this->pathToFqcn(
-                    $file->getRealPath(),
-                    $realDir,
-                    $namespacePrefix,
-                );
+                $fqcn = $this->pathToFqcn($file->getRealPath(), $realDir, $namespacePrefix);
 
                 if (class_exists($fqcn) === false) {
                     require_once $file->getRealPath();
@@ -70,21 +66,11 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
                     continue;
                 }
 
-                if (
-                    $ref->isAbstract() ||
-                    $ref->isInterface() ||
-                    $ref->isTrait() ||
-                    $ref->isEnum()
-                ) {
+                if ($ref->isAbstract() || $ref->isInterface() || $ref->isTrait() || $ref->isEnum()) {
                     continue;
                 }
 
-                if (
-                    $ref->getAttributes(
-                        Serializable::class,
-                        \ReflectionAttribute::IS_INSTANCEOF,
-                    ) === []
-                ) {
+                if ($ref->getAttributes(Serializable::class, \ReflectionAttribute::IS_INSTANCEOF) === []) {
                     continue;
                 }
 
@@ -101,11 +87,8 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
      * Derive the FQCN from a real file path using the PSR-4 namespace prefix and
      * the configured base directory, without reading the file content.
      */
-    private function pathToFqcn(
-        string $filePath,
-        string $baseDir,
-        string $namespacePrefix,
-    ): string {
+    private function pathToFqcn(string $filePath, string $baseDir, string $namespacePrefix): string
+    {
         $relative = substr($filePath, \strlen($baseDir) + 1); // strip base dir + separator
         $relative = substr($relative, 0, -4); // strip .php
         $relative = str_replace(\DIRECTORY_SEPARATOR, "\\", $relative);

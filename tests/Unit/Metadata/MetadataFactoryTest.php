@@ -33,9 +33,9 @@ final class MetadataFactoryTest extends TestCase
 
     private function makeFactory(): MetadataFactory
     {
-        $phpDoc     = new PhpDocExtractor();
+        $phpDoc = new PhpDocExtractor();
         $reflection = new ReflectionExtractor();
-        $extractor  = new PropertyInfoExtractor(
+        $extractor = new PropertyInfoExtractor(
             listExtractors: [$reflection],
             typeExtractors: [$phpDoc, $reflection],
             accessExtractors: [$reflection],
@@ -234,7 +234,7 @@ final class MetadataFactoryTest extends TestCase
 
     public function testGetMetadataIsCached(): void
     {
-        $first  = $this->factory->getMetadataFor(SimpleBlog::class);
+        $first = $this->factory->getMetadataFor(SimpleBlog::class);
         $second = $this->factory->getMetadataFor(SimpleBlog::class);
 
         $this->assertSame($first, $second, 'getMetadataFor() must return the same object on repeated calls.');
@@ -242,7 +242,7 @@ final class MetadataFactoryTest extends TestCase
 
     public function testCachingDoesNotAffectDifferentClasses(): void
     {
-        $simpleBlog  = $this->factory->getMetadataFor(SimpleBlog::class);
+        $simpleBlog = $this->factory->getMetadataFor(SimpleBlog::class);
         $blogWithGroups = $this->factory->getMetadataFor(BlogWithGroups::class);
 
         $this->assertNotSame($simpleBlog, $blogWithGroups);

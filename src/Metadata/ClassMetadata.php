@@ -19,7 +19,7 @@ final class ClassMetadata implements \Stringable
         /** @var \ReflectionClass<T> */
         public \ReflectionClass $reflectionClass,
         /** @var class-string<T> */
-        public string $className = "",
+        public string $className = '',
         /** @var PropertyMetadata[] */
         public array $properties = [],
     ) {}
@@ -137,12 +137,8 @@ final class ClassMetadata implements \Stringable
                 $types[$property->type] = $property->type;
             }
 
-            if (
-                $property->isCollection &&
-                $property->collectionValueType !== null
-            ) {
-                $types[$property->collectionValueType] =
-                    $property->collectionValueType;
+            if ($property->isCollection && $property->collectionValueType !== null) {
+                $types[$property->collectionValueType] = $property->collectionValueType;
             }
         }
 
@@ -155,10 +151,6 @@ final class ClassMetadata implements \Stringable
      */
     public function __toString(): string
     {
-        return sprintf(
-            "ClassMetadata(%s, %d properties)",
-            $this->className,
-            \count($this->properties),
-        );
+        return sprintf('ClassMetadata(%s, %d properties)', $this->className, \count($this->properties));
     }
 }

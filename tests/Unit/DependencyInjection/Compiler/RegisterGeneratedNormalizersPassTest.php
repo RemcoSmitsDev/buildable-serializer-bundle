@@ -27,17 +27,11 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir =
-            sys_get_temp_dir() .
-            DIRECTORY_SEPARATOR .
-            "buildable_pass_test_" .
-            uniqid("", true);
+        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'buildable_pass_test_' . uniqid('', true);
 
         mkdir($this->tempDir, 0777, true);
 
-        $this->discoveryFixturesDir = realpath(
-            __DIR__ . "/../../../Fixtures/Discovery",
-        );
+        $this->discoveryFixturesDir = realpath(__DIR__ . '/../../../Fixtures/Discovery');
 
         $this->container = new ContainerBuilder();
         $this->pass = new RegisterGeneratedNormalizersPass();
@@ -54,11 +48,8 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     public function testProcessDoesNothingWhenCacheDirParameterAbsent(): void
     {
-        $this->container->setParameter(
-            "buildable_serializer.generated_namespace",
-            "BuildableTest\\Generated",
-        );
-        $this->container->setParameter("buildable_serializer.paths", []);
+        $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
+        $this->container->setParameter('buildable_serializer.paths', []);
 
         $this->pass->process($this->container);
 
@@ -67,11 +58,8 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     public function testProcessDoesNothingWhenGeneratedNamespaceParameterAbsent(): void
     {
-        $this->container->setParameter(
-            "buildable_serializer.cache_dir",
-            $this->tempDir,
-        );
-        $this->container->setParameter("buildable_serializer.paths", []);
+        $this->container->setParameter('buildable_serializer.cache_dir', $this->tempDir);
+        $this->container->setParameter('buildable_serializer.paths', []);
 
         $this->pass->process($this->container);
 
@@ -80,14 +68,8 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     public function testProcessDoesNothingWhenPathsParameterAbsent(): void
     {
-        $this->container->setParameter(
-            "buildable_serializer.cache_dir",
-            $this->tempDir,
-        );
-        $this->container->setParameter(
-            "buildable_serializer.generated_namespace",
-            "BuildableTest\\Generated",
-        );
+        $this->container->setParameter('buildable_serializer.cache_dir', $this->tempDir);
+        $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
 
         $this->pass->process($this->container);
 
@@ -117,63 +99,51 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessGeneratesNormalizerFilesForSerializableClasses(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
         // At least one *Normalizer.php file must exist in the temp output dir.
-        $generated =
-            glob($this->tempDir . "/**/*Normalizer.php", GLOB_BRACE) ?:
-            glob($this->tempDir . "/*Normalizer.php") ?:
-            $this->findNormalizerFiles($this->tempDir);
+        $generated = glob(
+            $this->tempDir . '/**/*Normalizer.php',
+            GLOB_BRACE,
+        ) ?: glob($this->tempDir . '/*Normalizer.php') ?: $this->findNormalizerFiles($this->tempDir);
 
-        $this->assertNotEmpty(
-            $generated,
-            "Expected generated Normalizer PHP files in cache_dir.",
-        );
+        $this->assertNotEmpty($generated, 'Expected generated Normalizer PHP files in cache_dir.');
     }
 
     public function testProcessGeneratesAutoloadClassmap(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
         $this->assertFileExists(
-            $this->tempDir . DIRECTORY_SEPARATOR . "autoload.php",
-            "Expected an autoload.php classmap file in cache_dir.",
+            $this->tempDir . DIRECTORY_SEPARATOR . 'autoload.php',
+            'Expected an autoload.php classmap file in cache_dir.',
         );
     }
 
     public function testAutoloadClassmapContainsValidPhpArray(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
-        $classmap = require $this->tempDir . "/autoload.php";
+        $classmap = require $this->tempDir . '/autoload.php';
 
         $this->assertIsArray($classmap);
         $this->assertNotEmpty($classmap);
 
         foreach ($classmap as $fqcn => $path) {
-            $this->assertIsString($fqcn, "Classmap keys must be FQCN strings.");
-            $this->assertIsString(
-                $path,
-                "Classmap values must be file-path strings.",
-            );
-            $this->assertFileExists(
-                $path,
-                "Generated file {$path} must exist on disk.",
-            );
+            $this->assertIsString($fqcn, 'Classmap keys must be FQCN strings.');
+            $this->assertIsString($path, 'Classmap values must be file-path strings.');
+            $this->assertFileExists($path, "Generated file {$path} must exist on disk.");
         }
     }
 
@@ -184,8 +154,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessRegistersNormalizerServicesInContainer(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -196,8 +165,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesImplementGeneratedNormalizerInterface(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -213,8 +181,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesAreTaggedWithSerializerNormalizerTag(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -222,7 +189,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
             $definition = $this->container->getDefinition($fqcn);
             $this->assertTrue(
-                $definition->hasTag("serializer.normalizer"),
+                $definition->hasTag('serializer.normalizer'),
                 "{$fqcn} must be tagged with 'serializer.normalizer'.",
             );
         }
@@ -231,40 +198,31 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesUseDefaultPriority200(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
             $definition = $this->container->getDefinition($fqcn);
-            $tags = $definition->getTag("serializer.normalizer");
-            $priority = (int) ($tags[0]["priority"] ?? 0);
+            $tags = $definition->getTag('serializer.normalizer');
+            $priority = (int) ($tags[0]['priority'] ?? 0);
 
-            $this->assertSame(
-                200,
-                $priority,
-                "{$fqcn} must be tagged with priority 200.",
-            );
+            $this->assertSame(200, $priority, "{$fqcn} must be tagged with priority 200.");
         }
     }
 
     public function testRegisteredServicesArePrivate(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
             $definition = $this->container->getDefinition($fqcn);
-            $this->assertFalse(
-                $definition->isPublic(),
-                "{$fqcn} must be a private service.",
-            );
+            $this->assertFalse($definition->isPublic(), "{$fqcn} must be a private service.");
         }
     }
 
@@ -275,8 +233,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testAbstractClassWithAttributeIsNotRegistered(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -284,9 +241,9 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         // AbstractModel has #[Serializable] but is abstract — must be excluded.
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
             $this->assertStringNotContainsStringIgnoringCase(
-                "AbstractModel",
+                'AbstractModel',
                 $fqcn,
-                "AbstractModel must not appear as a registered normalizer.",
+                'AbstractModel must not appear as a registered normalizer.',
             );
         }
     }
@@ -294,17 +251,16 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testNonSerializableClassIsNotRegistered(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
             $this->assertStringNotContainsStringIgnoringCase(
-                "NotSerializableModel",
+                'NotSerializableModel',
                 $fqcn,
-                "NotSerializableModel must not appear as a registered normalizer.",
+                'NotSerializableModel must not appear as a registered normalizer.',
             );
         }
     }
@@ -318,23 +274,19 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
-        $serializerDef = $this->container->getDefinition("serializer");
+        $serializerDef = $this->container->getDefinition('serializer');
         $normalizersArg = $serializerDef->getArgument(0);
 
         $this->assertIsArray($normalizersArg);
 
         $referencedIds = array_map(
             static fn(Reference $ref): string => (string) $ref,
-            array_filter(
-                $normalizersArg,
-                static fn($arg): bool => $arg instanceof Reference,
-            ),
+            array_filter($normalizersArg, static fn($arg): bool => $arg instanceof Reference),
         );
 
         $registeredFqcns = $this->getRegisteredNormalizerFqcns();
@@ -354,21 +306,16 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
 
-        $normalizersArg = $this->container
-            ->getDefinition("serializer")
-            ->getArgument(0);
+        $normalizersArg = $this->container->getDefinition('serializer')->getArgument(0);
         $this->assertIsArray($normalizersArg);
 
         if ($normalizersArg === []) {
-            $this->markTestSkipped(
-                "No normalizer References found in serializer argument.",
-            );
+            $this->markTestSkipped('No normalizer References found in serializer argument.');
         }
 
         $firstRef = $normalizersArg[0];
@@ -379,7 +326,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertContains(
             (string) $firstRef,
             $registeredFqcns,
-            "The first normalizer in the chain must be a generated normalizer.",
+            'The first normalizer in the chain must be a generated normalizer.',
         );
     }
 
@@ -388,7 +335,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         // Use an empty temp dir — no PHP files → no #[Serializable] classes.
-        $emptyDir = $this->tempDir . DIRECTORY_SEPARATOR . "empty_src";
+        $emptyDir = $this->tempDir . DIRECTORY_SEPARATOR . 'empty_src';
         mkdir($emptyDir, 0777, true);
 
         $this->setupContainerParameters([
@@ -398,12 +345,12 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->pass->process($this->container);
 
         // Serializer argument must still be the original TaggedIteratorArgument (unchanged).
-        $serializerDef = $this->container->getDefinition("serializer");
+        $serializerDef = $this->container->getDefinition('serializer');
         $arg = $serializerDef->getArgument(0);
 
         $this->assertIsNotArray(
             $arg,
-            "Serializer argument must not be converted to a flat array when no classes are discovered.",
+            'Serializer argument must not be converted to a flat array when no classes are discovered.',
         );
     }
 
@@ -413,16 +360,12 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     public function testProcessCreatesCacheDirWhenAbsent(): void
     {
-        $newCacheDir = $this->tempDir . DIRECTORY_SEPARATOR . "auto_created";
+        $newCacheDir = $this->tempDir . DIRECTORY_SEPARATOR . 'auto_created';
         $this->assertDirectoryDoesNotExist($newCacheDir);
 
-        $this->setupContainerParameters(
-            [
-                "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                    $this->discoveryFixturesDir,
-            ],
-            $newCacheDir,
-        );
+        $this->setupContainerParameters([
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+        ], $newCacheDir);
 
         $this->pass->process($this->container);
 
@@ -436,8 +379,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessIsIdempotentWhenRunTwice(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" =>
-                $this->discoveryFixturesDir,
+            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -450,7 +392,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertSame(
             $countAfterFirst,
             $countAfterSecond,
-            "Running the pass twice must not register duplicate normalizer services.",
+            'Running the pass twice must not register duplicate normalizer services.',
         );
     }
 
@@ -463,28 +405,20 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
      *
      * @param array<string, string> $paths namespace-prefix => directory
      */
-    private function setupContainerParameters(
-        array $paths,
-        ?string $cacheDir = null,
-    ): void {
-        $this->container->setParameter(
-            "buildable_serializer.cache_dir",
-            $cacheDir ?? $this->tempDir,
-        );
-        $this->container->setParameter(
-            "buildable_serializer.generated_namespace",
-            "BuildableTest\\Generated",
-        );
-        $this->container->setParameter("buildable_serializer.paths", $paths);
-        $this->container->setParameter("buildable_serializer.features", [
-            "groups" => true,
-            "max_depth" => true,
-            "circular_reference" => true,
-            "name_converter" => false,
-            "skip_null_values" => true,
+    private function setupContainerParameters(array $paths, ?string $cacheDir = null): void
+    {
+        $this->container->setParameter('buildable_serializer.cache_dir', $cacheDir ?? $this->tempDir);
+        $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
+        $this->container->setParameter('buildable_serializer.paths', $paths);
+        $this->container->setParameter('buildable_serializer.features', [
+            'groups' => true,
+            'max_depth' => true,
+            'circular_reference' => true,
+            'name_converter' => false,
+            'skip_null_values' => true,
         ]);
-        $this->container->setParameter("buildable_serializer.generation", [
-            "strict_types" => true,
+        $this->container->setParameter('buildable_serializer.generation', [
+            'strict_types' => true,
         ]);
     }
 
@@ -498,13 +432,11 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $def = new Definition(Serializer::class);
         $def->setArguments([
             // Use a plain object (non-array) to simulate the TaggedIteratorArgument.
-            new \Symfony\Component\DependencyInjection\Argument\TaggedIteratorArgument(
-                "serializer.normalizer",
-            ),
+            new \Symfony\Component\DependencyInjection\Argument\TaggedIteratorArgument('serializer.normalizer'),
             [],
             [],
         ]);
-        $this->container->setDefinition("serializer", $def);
+        $this->container->setDefinition('serializer', $def);
     }
 
     private function assertNoNormalizerServicesRegistered(): void
@@ -512,7 +444,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertSame(
             [],
             $this->getRegisteredNormalizerFqcns(),
-            "No normalizer services should have been registered.",
+            'No normalizer services should have been registered.',
         );
     }
 
@@ -520,7 +452,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     {
         $this->assertNotEmpty(
             $this->getRegisteredNormalizerFqcns(),
-            "At least one normalizer service should have been registered.",
+            'At least one normalizer service should have been registered.',
         );
     }
 
@@ -564,19 +496,17 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             return $files;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(
-                $dir,
-                \FilesystemIterator::SKIP_DOTS,
-            ),
-        );
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
+            $dir,
+            \FilesystemIterator::SKIP_DOTS,
+        ));
 
         /** @var \SplFileInfo $file */
         foreach ($iterator as $file) {
             if (
-                $file->isFile() &&
-                $file->getExtension() === "php" &&
-                str_ends_with($file->getFilename(), "Normalizer.php")
+                $file->isFile()
+                && $file->getExtension() === 'php'
+                && str_ends_with($file->getFilename(), 'Normalizer.php')
             ) {
                 $files[] = $file->getRealPath();
             }
@@ -592,17 +522,12 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         }
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(
-                $dir,
-                \FilesystemIterator::SKIP_DOTS,
-            ),
+            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST,
         );
 
         foreach ($iterator as $file) {
-            $file->isDir()
-                ? rmdir($file->getRealPath())
-                : unlink($file->getRealPath());
+            $file->isDir() ? rmdir($file->getRealPath()) : unlink($file->getRealPath());
         }
 
         rmdir($dir);

@@ -17,12 +17,12 @@ enum AccessorType: string
     /**
      * Access via a public method call: $object->getName(), $object->isActive(), etc.
      */
-    case METHOD = "METHOD";
+    case METHOD = 'METHOD';
 
     /**
      * Access via a public property read: $object->name, $object->active, etc.
      */
-    case PROPERTY = "PROPERTY";
+    case PROPERTY = 'PROPERTY';
 
     /**
      * Return the PHP expression string used to read the value from $object.
@@ -30,10 +30,8 @@ enum AccessorType: string
      * @param string $accessor The method or property name.
      * @param string $variable The variable name representing the object (without $).
      */
-    public function toExpression(
-        string $accessor,
-        string $variable = "object",
-    ): string {
+    public function toExpression(string $accessor, string $variable = 'object'): string
+    {
         return match ($this) {
             self::METHOD => sprintf('$%s->%s()', $variable, $accessor),
             self::PROPERTY => sprintf('$%s->%s', $variable, $accessor),

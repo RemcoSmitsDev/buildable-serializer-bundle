@@ -74,11 +74,8 @@ final class GeneratedNormalizerInfo implements \Stringable
      * @param string       $filePath            Absolute path to the generated PHP file on disk.
      * @param string       $normalizedClassName The unqualified class name (short name) of the generated normalizer.
      */
-    public function __construct(
-        string $fqcn,
-        string $filePath,
-        string $normalizedClassName,
-    ) {
+    public function __construct(string $fqcn, string $filePath, string $normalizedClassName)
+    {
         $this->fqcn = $fqcn;
         $this->filePath = $filePath;
         $this->normalizedClassName = $normalizedClassName;
@@ -90,10 +87,6 @@ final class GeneratedNormalizerInfo implements \Stringable
      */
     public function __toString(): string
     {
-        return sprintf(
-            "GeneratedNormalizerInfo(%s => %s)",
-            $this->fqcn,
-            $this->filePath,
-        );
+        return sprintf('GeneratedNormalizerInfo(%s => %s)', $this->fqcn, $this->filePath);
     }
 }
