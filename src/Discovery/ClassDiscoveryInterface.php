@@ -25,7 +25,7 @@ interface ClassDiscoveryInterface
      * - Deduplicate the returned list.
      * - Sort the returned list for deterministic output.
      *
-     * @return list<class-string> Sorted, deduplicated list of FQCNs.
+     * @return iterable<class-string> Sorted, deduplicated list of FQCNs.
      */
-    public function discoverClasses(): array;
+    public function discoverClasses(): iterable;
 }

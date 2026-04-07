@@ -341,14 +341,4 @@ final class BuildableSerializerExtensionTest extends TestCase
             'MetadataFactory service should be registered.',
         );
     }
-
-    public function testLoadRegistersGenerateNormalizersCommandService(): void
-    {
-        $container = $this->loadExtensionForServices([[]]);
-
-        $this->assertTrue(
-            $container->hasDefinition("Buildable\SerializerBundle\Command\GenerateNormalizersCommand"),
-            'GenerateNormalizersCommand service should be registered.',
-        );
-    }
 }

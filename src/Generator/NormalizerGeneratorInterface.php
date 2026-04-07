@@ -6,32 +6,6 @@ namespace Buildable\SerializerBundle\Generator;
 
 use Buildable\SerializerBundle\Metadata\ClassMetadata;
 
-/**
- * Contract for generating optimised PHP normalizer source files from class metadata.
- *
- * Depending on this interface — rather than the concrete {@see NormalizerGenerator} —
- * lets consumer services (the cache warmer, the console command) be tested in isolation
- * without touching the filesystem.
- *
- * ### Typical consumer workflow
- *
- * ```php
- * // 1. Resolve the FQCN before (or after) writing, so the classmap can be built.
- * $fqcn     = $generator->resolveNormalizerFqcn($metadata);
- *
- * // 2. Write the source file and receive its absolute path.
- * $filePath = $generator->generateAndWrite($metadata);
- *
- * // 3. Build the GeneratedNormalizerInfo value object for downstream use.
- * $shortName = substr($fqcn, strrpos($fqcn, '\\') + 1);
- * $info = new GeneratedNormalizerInfo($fqcn, $filePath, $shortName);
- * ```
- *
- * @see NormalizerGenerator   The production implementation.
- * @see GeneratedNormalizerInfo
- * @see \Buildable\SerializerBundle\CacheWarmer\NormalizerCacheWarmer
- * @see \Buildable\SerializerBundle\Command\GenerateNormalizersCommand
- */
 interface NormalizerGeneratorInterface
 {
     /**
@@ -81,4 +55,21 @@ interface NormalizerGeneratorInterface
      * @return string Absolute path of the PHP file (may or may not exist yet).
      */
     public function resolveFilePath(ClassMetadata $metadata): string;
+
+    /**
+     * Generate PHP normalizer source files for all provided class metadata objects
+     * and write them to the generator's configured output directory.
+     *
+     * This is a batch operation equivalent to calling {@see generateAndWrite()} for
+     * each metadata object, but may be optimized for bulk generation.
+     *
+     * @param iterable<ClassMetadata> $metadataCollection Collection of fully-built metadata for domain classes.
+     *
+     * @return iterable<GeneratedNormalizerInfo> Array of value objects describing each generated normalizer,
+     *                                        containing the FQCN, file path, and short name.
+     *
+     * @throws \RuntimeException When the output directory cannot be created or a
+     *                           file cannot be written.
+     */
+    public function generateAll(iterable $metadataCollection): iterable;
 }

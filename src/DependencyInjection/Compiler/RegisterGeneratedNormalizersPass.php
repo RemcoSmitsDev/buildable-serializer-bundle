@@ -77,17 +77,19 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
     private const GENERATION_PARAM = 'buildable_serializer.generation';
     private const NORMALIZER_TAG = 'serializer.normalizer';
     private const SERIALIZER_SERVICE = 'serializer';
-    private const DEFAULT_PRIORITY = 200;
 
-    // =========================================================================
-    // CompilerPassInterface
-    // =========================================================================
+    private const DEFAULT_FEATURES = [
+        'groups' => true,
+        'max_depth' => true,
+        'circular_reference' => true,
+        'name_converter' => false,
+        'skip_null_values' => true,
+    ];
+
+    private const DEFAULT_PRIORITY = 200;
 
     public function process(ContainerBuilder $container): void
     {
-        // ------------------------------------------------------------------
-        // 1. Read and resolve container parameters
-        // ------------------------------------------------------------------
         foreach ([self::CACHE_DIR_PARAM, self::NAMESPACE_PARAM, self::PATHS_PARAM] as $param) {
             if (!$container->hasParameter($param)) {
                 return;
@@ -119,22 +121,13 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         /** @var array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool} $features */
         $features = $container->hasParameter(self::FEATURES_PARAM)
             ? (array) $container->getParameter(self::FEATURES_PARAM)
-            : [
-                'groups' => true,
-                'max_depth' => true,
-                'circular_reference' => true,
-                'name_converter' => false,
-                'skip_null_values' => true,
-            ];
+            : self::DEFAULT_FEATURES;
 
         /** @var array{strict_types: bool} $generation */
         $generation = $container->hasParameter(self::GENERATION_PARAM)
             ? (array) $container->getParameter(self::GENERATION_PARAM)
             : ['strict_types' => true];
 
-        // ------------------------------------------------------------------
-        // 2. Ensure the cache directory exists
-        // ------------------------------------------------------------------
         if (!is_dir($cacheDir) && !mkdir($cacheDir, 0755, true) && !is_dir($cacheDir)) {
             // Cannot create the output directory — skip silently so the
             // application can still boot without generated normalizers.
@@ -154,9 +147,6 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
         $discovery = new FinderClassDiscovery($resolvedPaths);
 
-        // ------------------------------------------------------------------
-        // 4. Discover #[Serializable] classes
-        // ------------------------------------------------------------------
         try {
             $classes = $discovery->discoverClasses();
         } catch (\Throwable) {

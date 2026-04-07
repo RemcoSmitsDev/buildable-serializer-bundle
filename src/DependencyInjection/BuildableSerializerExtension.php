@@ -9,39 +9,11 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
-/**
- * Registers the BuildableSerializerBundle's services and exposes the resolved
- * configuration as container parameters.
- *
- * Parameters registered:
- *   - buildable_serializer.cache_dir            (string)
- *   - buildable_serializer.generated_namespace  (string)
- *   - buildable_serializer.paths                (array<string,string>)
- *   - buildable_serializer.features             (array{...})
- *   - buildable_serializer.features.groups      (bool)
- *   - buildable_serializer.features.max_depth   (bool)
- *   - buildable_serializer.features.circular_reference (bool)
- *   - buildable_serializer.features.name_converter     (bool)
- *   - buildable_serializer.features.skip_null_values   (bool)
- *   - buildable_serializer.generation           (array{...})
- *   - buildable_serializer.generation.strict_types     (bool)
- *
- */
 final class BuildableSerializerExtension extends Extension
 {
-    /**
-     * The container parameter prefix used for every value exported by this bundle.
-     */
     private const PARAMETER_PREFIX = 'buildable_serializer';
 
-    /**
-     * {@inheritDoc}
-     *
-     * Processes the user's configuration, registers it as container parameters,
-     * and loads the bundle's service definitions from config/services.yaml.
-     *
-     * @param array<int|string, mixed> $configs
-     */
+    /** @inheritdoc */
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();

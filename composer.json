@@ -48,10 +48,8 @@
     }
   },
   "scripts": {
-    "test": "phpunit",
-    "test:unit": "phpunit --testsuite=Unit",
-    "test:integration": "phpunit --testsuite=Integration",
-    "test:coverage": "phpunit --coverage-text",
+    "phpunit": "phpunit",
+    "phpunit-coverage": "phpunit --coverage-text",
     "phpstan": "phpstan analyse src tests",
     "mago": "mago format"
   }

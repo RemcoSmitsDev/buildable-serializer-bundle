@@ -60,11 +60,7 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
                     require_once $file->getRealPath();
                 }
 
-                try {
-                    $ref = new \ReflectionClass($fqcn);
-                } catch (\ReflectionException) {
-                    continue;
-                }
+                $ref = new \ReflectionClass($fqcn);
 
                 if ($ref->isAbstract() || $ref->isInterface() || $ref->isTrait() || $ref->isEnum()) {
                     continue;
@@ -78,7 +74,7 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
             }
         }
 
-        sort($classes);
+        sort($classes, SORT_STRING);
 
         return array_values(array_unique($classes));
     }
@@ -86,6 +82,8 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
     /**
      * Derive the FQCN from a real file path using the PSR-4 namespace prefix and
      * the configured base directory, without reading the file content.
+     *
+     * @return class-string
      */
     private function pathToFqcn(string $filePath, string $baseDir, string $namespacePrefix): string
     {
@@ -93,6 +91,7 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
         $relative = substr($relative, 0, -4); // strip .php
         $relative = str_replace(\DIRECTORY_SEPARATOR, "\\", $relative);
 
+        /** @var class-string */
         return rtrim($namespacePrefix, "\\") . "\\" . $relative;
     }
 }

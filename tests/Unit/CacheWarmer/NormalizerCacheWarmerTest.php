@@ -48,7 +48,6 @@ final class NormalizerCacheWarmerTest extends TestCase
         // even though it is not (yet) declared on NormalizerGeneratorInterface.
         $this->generator = $this
             ->getMockBuilder(NormalizerGeneratorInterface::class)
-            ->addMethods(['generateAll'])
             ->getMockForAbstractClass();
     }
 

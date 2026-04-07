@@ -41,14 +41,6 @@ namespace Buildable\SerializerBundle\Generator;
  */
 final class CodeBuilder
 {
-    /**
-     * Number of spaces per indentation level (PSR-12: 4 spaces).
-     */
-    private const INDENT_SIZE = 4;
-
-    /**
-     * Pre-computed single-level indent string.
-     */
     private const INDENT_UNIT = '    ';
 
     /**
@@ -76,10 +68,6 @@ final class CodeBuilder
         $resolved = $buffer ?? new \ArrayObject();
         $this->buffer = $resolved;
     }
-
-    // -------------------------------------------------------------------------
-    // Line appenders
-    // -------------------------------------------------------------------------
 
     /**
      * Append a single line of code at (baseIndent + indent) indentation levels.
@@ -116,10 +104,6 @@ final class CodeBuilder
         $this->buffer->append('');
     }
 
-    // -------------------------------------------------------------------------
-    // Indentation
-    // -------------------------------------------------------------------------
-
     /**
      * Return a new {@see CodeBuilder} with a higher base-indentation level
      * that still appends into the *same* underlying line buffer.
@@ -136,10 +120,6 @@ final class CodeBuilder
         return new self($this->baseIndent + $levels, $this->buffer);
     }
 
-    // -------------------------------------------------------------------------
-    // Output
-    // -------------------------------------------------------------------------
-
     /**
      * Join all buffered lines into a single string separated by newline characters.
      *
@@ -153,10 +133,6 @@ final class CodeBuilder
         return implode("\n", (array) $this->buffer);
     }
 
-    // -------------------------------------------------------------------------
-    // Static export helpers
-    // -------------------------------------------------------------------------
-
     /**
      * Generate a compact, single-line PHP array literal for the given array.
      *
@@ -168,7 +144,7 @@ final class CodeBuilder
      * ```
      * arrayExport([])                        // '[]'
      * arrayExport(['a', 'b'])                // "['a', 'b']"
-     * arrayExport(['k' => 1, 'j' => 2])     // "['k' => 1, 'j' => 2]"
+     * arrayExport(['k' => 1, 'j' => 2])      // "['k' => 1, 'j' => 2]"
      * arrayExport(['x' => ['y', 'z']])       // "['x' => ['y', 'z']]"
      * ```
      *
@@ -227,10 +203,6 @@ final class CodeBuilder
             )),
         };
     }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Export a float value as a PHP literal, handling IEEE 754 special cases.
