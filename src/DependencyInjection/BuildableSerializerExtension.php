@@ -78,12 +78,7 @@ final class BuildableSerializerExtension extends Extension
         $loader->load('services.yaml');
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * Returns the recommended configuration key used in the application's
-     * config files (e.g. config/packages/buildable_serializer.yaml).
-     */
+    /** @inheritDoc */
     public function getAlias(): string
     {
         return 'buildable_serializer';
