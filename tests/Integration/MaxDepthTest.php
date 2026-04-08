@@ -129,7 +129,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-
     public function testGeneratedCodeContainsMaxDepthLimit(): void
     {
         $source = file_get_contents($this->generatedFilePath);
@@ -143,7 +142,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-
     public function testGeneratedCodeContainsMaxDepthComment(): void
     {
         $source = file_get_contents($this->generatedFilePath);
@@ -156,7 +154,6 @@ final class MaxDepthTest extends AbstractTestCase
             'Generated source must contain a "max-depth" comment to aid readability.',
         );
     }
-
 
     public function testMaxDepthAllowsNormalizationWithNoDepthContext(): void
     {
@@ -212,7 +209,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertArrayHasKey('author', $result);
         $this->assertSame($mockData, $result['author']);
     }
-
 
     public function testMaxDepthLimitsNestingDepth(): void
     {
@@ -297,7 +293,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-
     public function testMaxDepthAllowsNormalizationWithinLimit(): void
     {
         $author = new Author(2, 'Bob', 'bob@example.com');
@@ -351,7 +346,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertSame($mockData, $result['author']);
     }
 
-
     public function testScalarPropertiesAreAlwaysPresent(): void
     {
         $author = new Author(1, 'Alice', 'alice@example.com');
@@ -386,7 +380,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertArrayHasKey('title', $result);
         $this->assertSame('Scalar Test', $result['title']);
     }
-
 
     public function testNormalizerImplementsNormalizerAwareInterface(): void
     {
