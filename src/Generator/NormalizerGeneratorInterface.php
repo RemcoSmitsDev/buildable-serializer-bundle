@@ -65,11 +65,11 @@ interface NormalizerGeneratorInterface
      *
      * @param iterable<ClassMetadata> $metadataCollection Collection of fully-built metadata for domain classes.
      *
-     * @return iterable<GeneratedNormalizerInfo> Array of value objects describing each generated normalizer,
+     * @return array<GeneratedNormalizerInfo> Array of value objects describing each generated normalizer,
      *                                        containing the FQCN, file path, and short name.
      *
      * @throws \RuntimeException When the output directory cannot be created or a
      *                           file cannot be written.
      */
-    public function generateAll(iterable $metadataCollection): iterable;
+    public function generateAll(iterable $metadataCollection): array;
 }
