@@ -8,6 +8,30 @@ Instead of relying on the generic reflection-based `ObjectNormalizer` at runtime
 
 ---
 
+## Benchmarks
+
+Normalizing a single `Post` (with a nested `User` and `Address`) **200 000 times** in a local environment:
+
+| | Time |
+|---|---|
+| Symfony `ObjectNormalizer` (before) | 3 883 ms |
+| Generated normalizer (after) | 172 ms |
+
+That is a **~22× speedup** — purely from eliminating runtime reflection and metadata overhead.
+
+The benchmark was produced with:
+
+```php
+$start = microtime(true);
+for ($i = 0; $i < 200_000; $i++) {
+    $this->serializer->normalize($post);
+}
+$elapsed = microtime(true) - $start;
+dd("Time: " . round($elapsed * 1000) . " ms");
+```
+
+---
+
 ## How it works
 
 1. **Mark your classes** with the `#[Serializable]` attribute.
@@ -80,15 +104,209 @@ All options are optional and fall back to the defaults shown above.
 
 ```php
 use BuildableSerializerBundle\Attribute\Serializable;
+use BuildableSerializerBundle\Attribute\Groups;
+use BuildableSerializerBundle\Attribute\SerializedName;
+use BuildableSerializerBundle\Attribute\Ignore;
+use BuildableSerializerBundle\Attribute\MaxDepth;
 
 #[Serializable]
-final class ProductDto
+class User
 {
+    #[Groups(["user:read", "user:list"])]
+    private int $id;
+
+    #[Groups(["user:read", "user:list"])]
+    private string $firstName;
+
+    #[Groups(["user:read", "user:list"])]
+    private string $lastName;
+
+    #[Groups(["user:read"])]
+    #[SerializedName("email_address")]
+    private string $email;
+
+    #[Groups(["user:read"])]
+    private ?Address $address = null;
+
+    #[Ignore]
+    private string $passwordHash = "";
+
+    #[Groups(["user:read"])]
+    private bool $active = true;
+
     public function __construct(
-        public readonly int    $id,
-        public readonly string $name,
-        public readonly ?float $price = null,
-    ) {}
+        int $id,
+        string $firstName,
+        string $lastName,
+        string $email,
+    ) {
+        $this->id = $id;
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getFirstName(): string
+    {
+        return $this->firstName;
+    }
+
+    public function getLastName(): string
+    {
+        return $this->lastName;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function getAddress(): ?Address
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?Address $address): void
+    {
+        $this->address = $address;
+    }
+
+    public function getPasswordHash(): string
+    {
+        return $this->passwordHash;
+    }
+
+    public function setPasswordHash(string $hash): void
+    {
+        $this->passwordHash = $hash;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function setActive(bool $active): void
+    {
+        $this->active = $active;
+    }
+}
+
+#[Serializable]
+class Post
+{
+    #[Groups(["post:read", "post:list"])]
+    private int $id;
+
+    #[Groups(["post:read", "post:list"])]
+    private string $title;
+
+    #[Groups(["post:read"])]
+    private string $content;
+
+    #[Groups(["post:read", "post:list"])]
+    #[MaxDepth(1)]
+    private User $author;
+
+    public function __construct(
+        int $id,
+        string $title,
+        string $content,
+        User $author,
+    ) {
+        $this->id = $id;
+        $this->title = $title;
+        $this->content = $content;
+        $this->author = $author;
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function getContent(): string
+    {
+        return $this->content;
+    }
+
+    public function getAuthor(): User
+    {
+        return $this->author;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
+    public function setContent(string $content): static
+    {
+        $this->content = $content;
+
+        return $this;
+    }
+}
+
+#[Serializable]
+class Address
+{
+    #[Groups(["address:read", "user:read"])]
+    public string $street;
+
+    #[Groups(["address:read", "user:read"])]
+    public string $city;
+
+    #[Groups(["address:read", "user:read"])]
+    #[SerializedName("postal_code")]
+    public string $postalCode;
+
+    #[Groups(["address:read", "user:read"])]
+    public string $country;
+
+    public function __construct(
+        string $street,
+        string $city,
+        string $postalCode,
+        string $country,
+    ) {
+        $this->street = $street;
+        $this->city = $city;
+        $this->postalCode = $postalCode;
+        $this->country = $country;
+    }
+
+    public function getStreet(): string
+    {
+        return $this->street;
+    }
+
+    public function getCity(): string
+    {
+        return $this->city;
+    }
+
+    public function getPostalCode(): string
+    {
+        return $this->postalCode;
+    }
+
+    public function getCountry(): string
+    {
+        return $this->country;
+    }
 }
 ```
 
@@ -100,7 +318,273 @@ php bin/console cache:clear
 php bin/console cache:warmup
 ```
 
-That's it. The Symfony Serializer will now use the generated normalizer for `ProductDto` automatically — no other code changes are required.
+That's it. The Symfony Serializer will now use the generated normalizers automatically — no other code changes are required.
+
+### 3. Generated normalizers
+
+The bundle writes one normalizer per model into the configured `cache_dir`. For the models above it produces:
+
+**`UserNormalizer.php`**
+
+```php
+/**
+ * @generated
+ *
+ * Normalizer for \App\Model\User.
+ *
+ * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ */
+final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
+{
+    use NormalizerAwareTrait;
+    /** Priority in the Symfony Serializer normalizer chain (higher = earlier). */
+    public const NORMALIZER_PRIORITY = 200;
+    /**
+     * @param \App\Model\User $object
+     * @param array<string, mixed>      $context
+     *
+     * @return array<string, mixed>
+     */
+    public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
+    {
+        $objectHash = spl_object_hash($object);
+        $context['circular_reference_limit_counters'] ??= [];
+        if (isset($context['circular_reference_limit_counters'][$objectHash])) {
+            $limit = (int) ($context[AbstractNormalizer::CIRCULAR_REFERENCE_LIMIT] ?? 1);
+            if ($context['circular_reference_limit_counters'][$objectHash] >= $limit) {
+                if (isset($context[AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER])) {
+                    return $context[AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER]($object, $format, $context);
+                }
+                throw new CircularReferenceException(sprintf('A circular reference has been detected when serializing the object of class "%s" (configured limit: %d).', 'App\Model\User', $limit));
+            }
+            ++$context['circular_reference_limit_counters'][$objectHash];
+        } else {
+            $context['circular_reference_limit_counters'][$objectHash] = 1;
+        }
+        $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
+        $data = [];
+        if ($groups === [] || array_intersect(['user:read', 'user:list'], $groups) !== []) {
+            $_val = $object->getId();
+            if ($_val !== null || !$skipNullValues) {
+                $data['id'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['user:read', 'user:list'], $groups) !== []) {
+            $_val = $object->getFirstName();
+            if ($_val !== null || !$skipNullValues) {
+                $data['firstName'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['user:read', 'user:list'], $groups) !== []) {
+            $_val = $object->getLastName();
+            if ($_val !== null || !$skipNullValues) {
+                $data['lastName'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['user:read'], $groups) !== []) {
+            $_val = $object->getEmail();
+            if ($_val !== null || !$skipNullValues) {
+                $data['email_address'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['user:read'], $groups) !== []) {
+            $_val = $object->getAddress();
+            if ($_val !== null) {
+                $data['address'] = $this->normalizer->normalize($_val, $format, $context);
+            } elseif (!$skipNullValues) {
+                $data['address'] = null;
+            }
+        }
+        if ($groups === [] || array_intersect(['user:read'], $groups) !== []) {
+            $_val = $object->isActive();
+            if ($_val !== null || !$skipNullValues) {
+                $data['active'] = $_val;
+            }
+        }
+        return $data;
+    }
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
+    {
+        return $data instanceof User;
+    }
+    /**
+     * @return array<class-string|'*'|'object'|string, bool|null>
+     */
+    public function getSupportedTypes(?string $format): array
+    {
+        return [User::class => true];
+    }
+}
+```
+
+**`PostNormalizer.php`**
+
+```php
+/**
+ * @generated
+ *
+ * Normalizer for \App\Model\Post.
+ *
+ * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ */
+final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
+{
+    use NormalizerAwareTrait;
+    /** Priority in the Symfony Serializer normalizer chain (higher = earlier). */
+    public const NORMALIZER_PRIORITY = 200;
+    /**
+     * @param \App\Model\Post $object
+     * @param array<string, mixed>      $context
+     *
+     * @return array<string, mixed>
+     */
+    public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
+    {
+        $objectHash = spl_object_hash($object);
+        $context['circular_reference_limit_counters'] ??= [];
+        if (isset($context['circular_reference_limit_counters'][$objectHash])) {
+            $limit = (int) ($context[AbstractNormalizer::CIRCULAR_REFERENCE_LIMIT] ?? 1);
+            if ($context['circular_reference_limit_counters'][$objectHash] >= $limit) {
+                if (isset($context[AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER])) {
+                    return $context[AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER]($object, $format, $context);
+                }
+                throw new CircularReferenceException(sprintf('A circular reference has been detected when serializing the object of class "%s" (configured limit: %d).', 'App\Model\Post', $limit));
+            }
+            ++$context['circular_reference_limit_counters'][$objectHash];
+        } else {
+            $context['circular_reference_limit_counters'][$objectHash] = 1;
+        }
+        $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
+        $data = [];
+        if ($groups === [] || array_intersect(['post:read', 'post:list'], $groups) !== []) {
+            $_val = $object->getId();
+            if ($_val !== null || !$skipNullValues) {
+                $data['id'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['post:read', 'post:list'], $groups) !== []) {
+            $_val = $object->getTitle();
+            if ($_val !== null || !$skipNullValues) {
+                $data['title'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['post:read'], $groups) !== []) {
+            $_val = $object->getContent();
+            if ($_val !== null || !$skipNullValues) {
+                $data['content'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['post:read', 'post:list'], $groups) !== []) {
+            $_depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, 'App\Model\Post', 'author');
+            $_currentDepth = (int) ($context[$_depthKey] ?? 0);
+            // max-depth: author (limit=1)
+            if ($_currentDepth < 1) {
+                $context[$_depthKey] = $_currentDepth + 1;
+                $_val = $object->getAuthor();
+                if ($_val !== null || !$skipNullValues) {
+                    $data['author'] = $_val !== null ? $this->normalizer->normalize($_val, $format, $context) : null;
+                }
+            }
+        }
+        return $data;
+    }
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
+    {
+        return $data instanceof Post;
+    }
+    /**
+     * @return array<class-string|'*'|'object'|string, bool|null>
+     */
+    public function getSupportedTypes(?string $format): array
+    {
+        return [Post::class => true];
+    }
+}
+```
+
+**`AddressNormalizer.php`**
+
+```php
+/**
+ * @generated
+ *
+ * Normalizer for \App\Model\Address.
+ *
+ * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ */
+final class AddressNormalizer implements NormalizerInterface, GeneratedNormalizerInterface
+{
+    /** Priority in the Symfony Serializer normalizer chain (higher = earlier). */
+    public const NORMALIZER_PRIORITY = 200;
+    /**
+     * @param \App\Model\Address $object
+     * @param array<string, mixed>      $context
+     *
+     * @return array<string, mixed>
+     */
+    public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
+    {
+        $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
+        $data = [];
+        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+            $_val = $object->street;
+            if ($_val !== null || !$skipNullValues) {
+                $data['street'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+            $_val = $object->city;
+            if ($_val !== null || !$skipNullValues) {
+                $data['city'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+            $_val = $object->postalCode;
+            if ($_val !== null || !$skipNullValues) {
+                $data['postal_code'] = $_val;
+            }
+        }
+        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+            $_val = $object->country;
+            if ($_val !== null || !$skipNullValues) {
+                $data['country'] = $_val;
+            }
+        }
+        return $data;
+    }
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
+    {
+        return $data instanceof Address;
+    }
+    /**
+     * @return array<class-string|'*'|'object'|string, bool|null>
+     */
+    public function getSupportedTypes(?string $format): array
+    {
+        return [Address::class => true];
+    }
+}
+```
+
+A few things worth noting in the generated output:
+
+- **`#[Ignore]`** — `$passwordHash` is completely absent from `UserNormalizer`; the field is never read or written.
+- **`#[SerializedName]`** — `$email` is emitted as `email_address` and `$postalCode` as `postal_code`.
+- **`#[MaxDepth(1)]`** — `PostNormalizer` wraps the `author` property in a depth-counter guard so that nested `User` objects are not serialized beyond one level.
+- **Nullable object property** — `address` in `UserNormalizer` uses a dedicated branch: it only calls `normalize()` when the value is non-null, and falls back to `null` (or skips entirely when `SKIP_NULL_VALUES` is set).
+- **`NormalizerAwareInterface`** — `UserNormalizer` and `PostNormalizer` receive the parent normalizer via `NormalizerAwareTrait` so they can delegate nested objects. `AddressNormalizer` has no nested objects and therefore does not need it.
 
 ---
 
