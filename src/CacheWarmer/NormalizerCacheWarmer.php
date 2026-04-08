@@ -50,10 +50,6 @@ final class NormalizerCacheWarmer implements CacheWarmerInterface
         private readonly string $cacheDir,
     ) {}
 
-    // -------------------------------------------------------------------------
-    // CacheWarmerInterface
-    // -------------------------------------------------------------------------
-
     /**
      * Generate normalizer PHP files for all discovered classes.
      *
@@ -90,10 +86,6 @@ final class NormalizerCacheWarmer implements CacheWarmerInterface
     {
         return false;
     }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Ensure the configured cache directory exists, creating it (and any missing
