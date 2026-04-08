@@ -134,6 +134,3 @@ Disabling a feature you don't need produces leaner, faster generated code.
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
-```
-
-Now let me save this file properly:
