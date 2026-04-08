@@ -26,10 +26,6 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
  */
 class UserFixture
 {
-    // -------------------------------------------------------------------------
-    // Promoted constructor parameters (readonly, PROPERTY accessor)
-    // -------------------------------------------------------------------------
-
     /**
      * The user's unique identifier.
      * Belongs to both "user:read" and "user:write" groups.
@@ -52,10 +48,6 @@ class UserFixture
     #[Groups(['user:read'])]
     #[SerializedName('email_address')]
     public readonly string $email;
-
-    // -------------------------------------------------------------------------
-    // Public mutable properties (PROPERTY accessor)
-    // -------------------------------------------------------------------------
 
     /**
      * Optional biography text.
@@ -100,19 +92,11 @@ class UserFixture
      */
     public int $score = 0;
 
-    // -------------------------------------------------------------------------
-    // Private / protected state exposed via getters (METHOD accessor)
-    // -------------------------------------------------------------------------
-
     private bool $active = true;
 
     private \DateTimeImmutable $createdAt;
 
     private ?string $locale = null;
-
-    // -------------------------------------------------------------------------
-    // Constructor
-    // -------------------------------------------------------------------------
 
     public function __construct(int $id, string $name, string $email)
     {
@@ -121,10 +105,6 @@ class UserFixture
         $this->email = $email;
         $this->createdAt = new \DateTimeImmutable();
     }
-
-    // -------------------------------------------------------------------------
-    // Getters (discovered as METHOD accessors)
-    // -------------------------------------------------------------------------
 
     /**
      * Whether the user account is currently active.
@@ -165,10 +145,6 @@ class UserFixture
     {
         return $this->address !== null;
     }
-
-    // -------------------------------------------------------------------------
-    // Mutators (NOT exposed via serialization – no getter matching)
-    // -------------------------------------------------------------------------
 
     public function setActive(bool $active): void
     {

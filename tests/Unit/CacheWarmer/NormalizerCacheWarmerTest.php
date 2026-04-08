@@ -54,18 +54,10 @@ final class NormalizerCacheWarmerTest extends TestCase
         $this->removeDirectory($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // isOptional
-    // -------------------------------------------------------------------------
-
     public function testIsOptionalReturnsTrue(): void
     {
         $this->assertFalse($this->makeWarmer()->isOptional());
     }
-
-    // -------------------------------------------------------------------------
-    // warmUp — empty discovery result
-    // -------------------------------------------------------------------------
 
     public function testWarmUpReturnsEmptyArrayWhenNoClassesDiscovered(): void
     {
@@ -94,10 +86,6 @@ final class NormalizerCacheWarmerTest extends TestCase
         $this->assertDirectoryDoesNotExist($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // warmUp — single class generated
-    // -------------------------------------------------------------------------
-
     public function testWarmUpCallsGenerateAllWithDiscoveredClasses(): void
     {
         mkdir($this->tempDir, 0777, true);
@@ -123,10 +111,6 @@ final class NormalizerCacheWarmerTest extends TestCase
 
         $this->assertSame($expectedPaths, $result);
     }
-
-    // -------------------------------------------------------------------------
-    // warmUp — multiple classes
-    // -------------------------------------------------------------------------
 
     public function testWarmUpPassesAllDiscoveredClassesToGenerateAll(): void
     {
@@ -160,10 +144,6 @@ final class NormalizerCacheWarmerTest extends TestCase
         $this->assertContains($paths[1], $result);
     }
 
-    // -------------------------------------------------------------------------
-    // warmUp — cache directory creation
-    // -------------------------------------------------------------------------
-
     public function testWarmUpCreatesCacheDirWhenClassesExistAndDirMissing(): void
     {
         $this->assertDirectoryDoesNotExist($this->tempDir);
@@ -187,10 +167,6 @@ final class NormalizerCacheWarmerTest extends TestCase
         $this->makeWarmer()->warmUp('/kernel/cache');
     }
 
-    // -------------------------------------------------------------------------
-    // warmUp — kernel cacheDir argument is ignored
-    // -------------------------------------------------------------------------
-
     public function testWarmUpIgnoresKernelCacheDirArgument(): void
     {
         mkdir($this->tempDir, 0777, true);
@@ -205,10 +181,6 @@ final class NormalizerCacheWarmerTest extends TestCase
         // No assertion other than "did not throw" — the warmer uses $this->cacheDir.
         $this->assertIsArray($result);
     }
-
-    // -------------------------------------------------------------------------
-    // warmUp — called multiple times (idempotency)
-    // -------------------------------------------------------------------------
 
     public function testWarmUpCanBeCalledMultipleTimesWithoutError(): void
     {
@@ -238,10 +210,6 @@ final class NormalizerCacheWarmerTest extends TestCase
         $warmer->warmUp('/cache');
     }
 
-    // -------------------------------------------------------------------------
-    // warmUp — generator returns empty paths
-    // -------------------------------------------------------------------------
-
     public function testWarmUpReturnsEmptyArrayWhenGenerateAllReturnsEmptyArray(): void
     {
         mkdir($this->tempDir, 0777, true);
@@ -253,10 +221,6 @@ final class NormalizerCacheWarmerTest extends TestCase
 
         $this->assertSame([], $result);
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Build a NormalizerCacheWarmer wired to the current test doubles.

@@ -87,10 +87,6 @@ final class CircularReferenceTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // Implements NormalizerAwareInterface (required for recursive delegation)
-    // -------------------------------------------------------------------------
-
     public function testNormalizerImplementsNormalizerAwareInterface(): void
     {
         $this->assertInstanceOf(
@@ -111,10 +107,6 @@ final class CircularReferenceTest extends AbstractTestCase
             $this->normalizer,
         );
     }
-
-    // -------------------------------------------------------------------------
-    // Non-circular graph — no guard should fire
-    // -------------------------------------------------------------------------
 
     public function testNormalizeNonCircularObjectReturnsData(): void
     {
@@ -151,10 +143,6 @@ final class CircularReferenceTest extends AbstractTestCase
         $this->assertIsArray($result);
         $this->assertSame('parent', $result['name']);
     }
-
-    // -------------------------------------------------------------------------
-    // Circular reference with handler — handler is invoked, no exception
-    // -------------------------------------------------------------------------
 
     public function testCircularReferenceHandlerIsInvokedInsteadOfThrowing(): void
     {
@@ -224,10 +212,6 @@ final class CircularReferenceTest extends AbstractTestCase
         $this->assertSame('root-node', $result['name']);
     }
 
-    // -------------------------------------------------------------------------
-    // Circular reference without handler — CircularReferenceException thrown
-    // -------------------------------------------------------------------------
-
     public function testCircularReferenceWithoutHandlerThrowsException(): void
     {
         $node = new CircularReference('looping');
@@ -251,10 +235,6 @@ final class CircularReferenceTest extends AbstractTestCase
         }
     }
 
-    // -------------------------------------------------------------------------
-    // supportsNormalization
-    // -------------------------------------------------------------------------
-
     public function testSupportsNormalizationReturnsTrueForCircularReference(): void
     {
         $node = new CircularReference('x');
@@ -266,10 +246,6 @@ final class CircularReferenceTest extends AbstractTestCase
     {
         $this->assertFalse($this->normalizer->supportsNormalization(new \stdClass()));
     }
-
-    // -------------------------------------------------------------------------
-    // getSupportedTypes
-    // -------------------------------------------------------------------------
 
     public function testGetSupportedTypesIncludesCircularReference(): void
     {

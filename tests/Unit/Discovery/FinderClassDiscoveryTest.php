@@ -29,18 +29,12 @@ final class FinderClassDiscoveryTest extends TestCase
         $this->fixturesDir = realpath(__DIR__ . '/../../Fixtures/Discovery');
 
         $reflection = new ReflectionExtractor();
-        $this->metadataFactory = new MetadataFactory(
-            new PropertyInfoExtractor(
-                listExtractors: [$reflection],
-                typeExtractors: [$reflection],
-                accessExtractors: [$reflection],
-            ),
-        );
+        $this->metadataFactory = new MetadataFactory(new PropertyInfoExtractor(
+            listExtractors: [$reflection],
+            typeExtractors: [$reflection],
+            accessExtractors: [$reflection],
+        ));
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Extract fully-qualified class names from a list of ClassMetadata objects.
@@ -52,10 +46,6 @@ final class FinderClassDiscoveryTest extends TestCase
     {
         return array_map(static fn(ClassMetadata $m): string => $m->getClassName(), $classes);
     }
-
-    // -------------------------------------------------------------------------
-    // Happy path
-    // -------------------------------------------------------------------------
 
     public function testDiscoversSingleSerializableClass(): void
     {
@@ -125,10 +115,6 @@ final class FinderClassDiscoveryTest extends TestCase
         $this->assertCount(\count($unique), $classes, 'Result must not contain duplicates.');
     }
 
-    // -------------------------------------------------------------------------
-    // Exclusions
-    // -------------------------------------------------------------------------
-
     public function testExcludesClassesWithoutSerializableAttribute(): void
     {
         $discovery = new FinderClassDiscovery($this->metadataFactory, [
@@ -152,10 +138,6 @@ final class FinderClassDiscoveryTest extends TestCase
         $this->assertNotContains('BuildableSerializerBundle\Tests\Fixtures\Discovery\AbstractModel', $classes);
     }
 
-    // -------------------------------------------------------------------------
-    // Error handling
-    // -------------------------------------------------------------------------
-
     public function testThrowsInvalidArgumentExceptionForNonExistentDirectory(): void
     {
         $discovery = new FinderClassDiscovery($this->metadataFactory, [
@@ -167,10 +149,6 @@ final class FinderClassDiscoveryTest extends TestCase
 
         $discovery->discoverClasses();
     }
-
-    // -------------------------------------------------------------------------
-    // Multiple paths
-    // -------------------------------------------------------------------------
 
     public function testMergesClassesFromMultiplePaths(): void
     {
@@ -186,10 +164,6 @@ final class FinderClassDiscoveryTest extends TestCase
         $this->assertContains(SerializableModel::class, $classes);
         $this->assertContains(NestedSerializableModel::class, $classes);
     }
-
-    // -------------------------------------------------------------------------
-    // ClassMetadata shape
-    // -------------------------------------------------------------------------
 
     public function testDiscoveredItemsAreClassMetadataObjects(): void
     {

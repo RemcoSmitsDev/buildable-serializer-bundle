@@ -65,10 +65,6 @@ final class NestedObjectsTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // Implements NormalizerAwareInterface
-    // -------------------------------------------------------------------------
-
     public function testNormalizerImplementsNormalizerAwareInterface(): void
     {
         $this->assertInstanceOf(
@@ -81,10 +77,6 @@ final class NestedObjectsTest extends AbstractTestCase
     {
         $this->assertInstanceOf(NormalizerInterface::class, $this->normalizer);
     }
-
-    // -------------------------------------------------------------------------
-    // Nested author is delegated and result assembled
-    // -------------------------------------------------------------------------
 
     public function testNormalizeAuthorIsDelegatedToMockNormalizer(): void
     {
@@ -120,10 +112,6 @@ final class NestedObjectsTest extends AbstractTestCase
         $this->assertSame('John', $result['author']['name']);
         $this->assertSame('j@test.com', $result['author']['email']);
     }
-
-    // -------------------------------------------------------------------------
-    // Nullable co-author
-    // -------------------------------------------------------------------------
 
     public function testNormalizeNullCoAuthorIsIncludedAsNullWhenSkipNullValuesFalse(): void
     {
@@ -161,10 +149,6 @@ final class NestedObjectsTest extends AbstractTestCase
         $this->assertSame(self::AUTHOR_DATA, $result['coAuthor']);
     }
 
-    // -------------------------------------------------------------------------
-    // supportsNormalization
-    // -------------------------------------------------------------------------
-
     public function testSupportsNormalizationReturnsTrueForBlogWithAuthor(): void
     {
         $author = new Author(1, 'A', 'a@b.com');
@@ -185,10 +169,6 @@ final class NestedObjectsTest extends AbstractTestCase
         $this->assertFalse($this->normalizer->supportsNormalization($author));
     }
 
-    // -------------------------------------------------------------------------
-    // getSupportedTypes
-    // -------------------------------------------------------------------------
-
     public function testGetSupportedTypesIncludesBlogWithAuthor(): void
     {
         $types = $this->normalizer->getSupportedTypes('json');
@@ -196,10 +176,6 @@ final class NestedObjectsTest extends AbstractTestCase
         $this->assertArrayHasKey(BlogWithAuthor::class, $types);
         $this->assertTrue($types[BlogWithAuthor::class]);
     }
-
-    // -------------------------------------------------------------------------
-    // GeneratedNormalizerInterface
-    // -------------------------------------------------------------------------
 
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {

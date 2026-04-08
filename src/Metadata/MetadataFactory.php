@@ -389,10 +389,6 @@ final class MetadataFactory implements MetadataFactoryInterface
         );
     }
 
-    // -------------------------------------------------------------------------
-    // Attribute readers
-    // -------------------------------------------------------------------------
-
     /**
      * Create an empty attribute data array with default values.
      *
@@ -483,10 +479,6 @@ final class MetadataFactory implements MetadataFactoryInterface
                 break;
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Type resolution
-    // -------------------------------------------------------------------------
 
     /**
      * Populate type-related fields on a PropertyMetadata, preferring the richer
@@ -698,10 +690,6 @@ final class MetadataFactory implements MetadataFactoryInterface
         $this->collectNamedReflectionType($first, $data);
         $data['nullable'] = $savedNullable || $type->allowsNull();
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Extract a camelCase property name from a getter method name.

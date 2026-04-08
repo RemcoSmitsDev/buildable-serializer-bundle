@@ -27,10 +27,6 @@ final class MetadataFactoryTest extends TestCase
         $this->factory = $this->makeFactory();
     }
 
-    // -------------------------------------------------------------------------
-    // Factory helper
-    // -------------------------------------------------------------------------
-
     private function makeFactory(): MetadataFactory
     {
         $phpDoc = new PhpDocExtractor();
@@ -43,10 +39,6 @@ final class MetadataFactoryTest extends TestCase
 
         return new MetadataFactory($extractor);
     }
-
-    // -------------------------------------------------------------------------
-    // hasMetadataFor()
-    // -------------------------------------------------------------------------
 
     public function testHasMetadataForReturnsFalseForUnknownClass(): void
     {
@@ -62,10 +54,6 @@ final class MetadataFactoryTest extends TestCase
     {
         $this->assertTrue($this->factory->hasMetadataFor(\stdClass::class));
     }
-
-    // -------------------------------------------------------------------------
-    // getMetadataFor() — basic structure
-    // -------------------------------------------------------------------------
 
     public function testGetMetadataForSimpleBlog(): void
     {
@@ -94,10 +82,6 @@ final class MetadataFactoryTest extends TestCase
             $this->assertFalse($property->isIgnored(), "Property '{$property->getName()}' should not be ignored.");
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Accessor type for SimpleBlog (private promoted params → getters)
-    // -------------------------------------------------------------------------
 
     public function testSimpleBlogPropertiesUseMethodAccessor(): void
     {
@@ -129,10 +113,6 @@ final class MetadataFactoryTest extends TestCase
         $this->assertNotNull($titleProp);
         $this->assertSame('getTitle', $titleProp->getAccessor());
     }
-
-    // -------------------------------------------------------------------------
-    // Groups — BlogWithGroups
-    // -------------------------------------------------------------------------
 
     public function testGetMetadataForBlogWithGroups(): void
     {
@@ -177,10 +157,6 @@ final class MetadataFactoryTest extends TestCase
         $this->assertSame(['blog:read'], $contentProp->getGroups());
     }
 
-    // -------------------------------------------------------------------------
-    // Nested objects — BlogWithAuthor
-    // -------------------------------------------------------------------------
-
     public function testGetMetadataForBlogWithAuthor(): void
     {
         $metadata = $this->factory->getMetadataFor(BlogWithAuthor::class);
@@ -206,10 +182,6 @@ final class MetadataFactoryTest extends TestCase
         $this->assertSame(Author::class, $authorProp->getType());
     }
 
-    // -------------------------------------------------------------------------
-    // Nullable detection — SimpleBlog::excerpt
-    // -------------------------------------------------------------------------
-
     public function testNullablePropertyDetected(): void
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
@@ -227,10 +199,6 @@ final class MetadataFactoryTest extends TestCase
         $this->assertNotNull($idProp);
         $this->assertFalse($idProp->isNullable(), '"id" is not nullable.');
     }
-
-    // -------------------------------------------------------------------------
-    // In-memory caching
-    // -------------------------------------------------------------------------
 
     public function testGetMetadataIsCached(): void
     {
@@ -250,10 +218,6 @@ final class MetadataFactoryTest extends TestCase
         $this->assertSame(BlogWithGroups::class, $blogWithGroups->getClassName());
     }
 
-    // -------------------------------------------------------------------------
-    // Error handling
-    // -------------------------------------------------------------------------
-
     public function testThrowsOnNonExistentClass(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -272,10 +236,6 @@ final class MetadataFactoryTest extends TestCase
             $this->assertStringContainsString($className, $e->getMessage());
         }
     }
-
-    // -------------------------------------------------------------------------
-    // reflectionClass reference
-    // -------------------------------------------------------------------------
 
     public function testMetadataReflectionClassMatchesTargetClass(): void
     {

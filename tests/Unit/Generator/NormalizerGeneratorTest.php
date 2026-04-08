@@ -35,10 +35,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // generateAndWrite()
-    // -------------------------------------------------------------------------
-
     public function testGenerateAndWriteReturnsValidFilePath(): void
     {
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
@@ -135,10 +131,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertStringContainsString('public function getSupportedTypes(', file_get_contents($path));
     }
 
-    // -------------------------------------------------------------------------
-    // resolveNormalizerFqcn()
-    // -------------------------------------------------------------------------
-
     public function testResolveNormalizerFqcnReturnsExpectedFqcn(): void
     {
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
@@ -163,10 +155,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertStringEndsWith('AuthorNormalizer', $fqcn);
     }
 
-    // -------------------------------------------------------------------------
-    // resolveFilePath()
-    // -------------------------------------------------------------------------
-
     public function testResolveFilePathEndsWithPhpExtension(): void
     {
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
@@ -190,10 +178,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
         $this->assertStringContainsString('SimpleBlogNormalizer', $path);
     }
-
-    // -------------------------------------------------------------------------
-    // generateAll()
-    // -------------------------------------------------------------------------
 
     public function testGenerateAllCreatesFilesForAllClasses(): void
     {
@@ -237,20 +221,12 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertSame([], $paths);
     }
 
-    // -------------------------------------------------------------------------
-    // getMetadataFactory()
-    // -------------------------------------------------------------------------
-
     public function testGetMetadataFactoryReturnsFactory(): void
     {
         $factory = $this->generator->getMetadataFactory();
 
         $this->assertInstanceOf(MetadataFactory::class, $factory);
     }
-
-    // -------------------------------------------------------------------------
-    // Generated content — accessor
-    // -------------------------------------------------------------------------
 
     public function testGeneratedFileContainsPropertyAccessor(): void
     {
@@ -272,10 +248,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertStringContainsString('->getContent()', $content);
     }
 
-    // -------------------------------------------------------------------------
-    // Generated content — groups
-    // -------------------------------------------------------------------------
-
     public function testGeneratedFileContainsGroupsMapWhenGroupsPresent(): void
     {
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithGroups::class);
@@ -295,10 +267,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
         $this->assertStringContainsString('$groups', $content);
     }
-
-    // -------------------------------------------------------------------------
-    // Generated content — circular reference
-    // -------------------------------------------------------------------------
 
     public function testGeneratedFileContainsCircularReferenceCheckWhenEnabled(): void
     {
@@ -329,10 +297,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertStringNotContainsString('spl_object_hash', $content);
     }
 
-    // -------------------------------------------------------------------------
-    // Generated content — skip_null_values
-    // -------------------------------------------------------------------------
-
     public function testGeneratedFileContainsSkipNullValuesLogic(): void
     {
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
@@ -341,10 +305,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
         $this->assertStringContainsString('skipNullValues', $content);
     }
-
-    // -------------------------------------------------------------------------
-    // Overwrite on regeneration
-    // -------------------------------------------------------------------------
 
     public function testGenerateAndWriteOverwritesExistingFile(): void
     {

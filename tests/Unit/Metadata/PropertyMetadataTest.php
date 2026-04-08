@@ -13,10 +13,6 @@ use PHPUnit\Framework\TestCase;
  */
 final class PropertyMetadataTest extends TestCase
 {
-    // -------------------------------------------------------------------------
-    // Default values
-    // -------------------------------------------------------------------------
-
     public function testDefaultValues(): void
     {
         $pm = new PropertyMetadata();
@@ -35,10 +31,6 @@ final class PropertyMetadataTest extends TestCase
         $this->assertFalse($pm->isNullable());
         $this->assertFalse($pm->isReadonly());
     }
-
-    // -------------------------------------------------------------------------
-    // getSerializedKey()
-    // -------------------------------------------------------------------------
 
     public function testGetSerializedKeyReturnsNameWhenNoSerializedName(): void
     {
@@ -60,10 +52,6 @@ final class PropertyMetadataTest extends TestCase
 
         $this->assertSame('my_property', $pm->getSerializedKey());
     }
-
-    // -------------------------------------------------------------------------
-    // isInGroup()
-    // -------------------------------------------------------------------------
 
     public function testIsInGroupReturnsTrueWhenGroupsEmpty(): void
     {
@@ -88,10 +76,6 @@ final class PropertyMetadataTest extends TestCase
         $this->assertFalse($pm->isInGroup('c'));
         $this->assertFalse($pm->isInGroup(''));
     }
-
-    // -------------------------------------------------------------------------
-    // isEligibleForGroups()
-    // -------------------------------------------------------------------------
 
     public function testIsEligibleForGroupsReturnsFalseWhenIgnored(): void
     {
@@ -136,10 +120,6 @@ final class PropertyMetadataTest extends TestCase
 
         $this->assertFalse($pm->isEligibleForGroups(['a']));
     }
-
-    // -------------------------------------------------------------------------
-    // __toString()
-    // -------------------------------------------------------------------------
 
     public function testToStringReturnsNonEmptyString(): void
     {

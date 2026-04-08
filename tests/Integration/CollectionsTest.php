@@ -80,10 +80,6 @@ final class CollectionsTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // Implements NormalizerAwareInterface (needs delegate for Author[])
-    // -------------------------------------------------------------------------
-
     public function testNormalizerImplementsNormalizerAwareInterface(): void
     {
         $this->assertInstanceOf(
@@ -99,10 +95,6 @@ final class CollectionsTest extends AbstractTestCase
             $this->normalizer,
         );
     }
-
-    // -------------------------------------------------------------------------
-    // Scalar tags collection (string[]) passes through as-is
-    // -------------------------------------------------------------------------
 
     public function testNormalizeScalarTagsPassThroughAsIs(): void
     {
@@ -147,10 +139,6 @@ final class CollectionsTest extends AbstractTestCase
 
         $this->assertSame($tags, $result['tags']);
     }
-
-    // -------------------------------------------------------------------------
-    // Typed Author[] collection — each item delegated to normalizer
-    // -------------------------------------------------------------------------
 
     public function testNormalizeTypedAuthorCollectionDelegatesEachItem(): void
     {
@@ -201,10 +189,6 @@ final class CollectionsTest extends AbstractTestCase
         $this->assertSame([], $result['authors']);
     }
 
-    // -------------------------------------------------------------------------
-    // Both tags and authors together
-    // -------------------------------------------------------------------------
-
     public function testNormalizeBothCollectionsPresent(): void
     {
         $blog = new BlogWithCollections(
@@ -223,10 +207,6 @@ final class CollectionsTest extends AbstractTestCase
         $this->assertSame(7, $result['authors'][0]['id']);
     }
 
-    // -------------------------------------------------------------------------
-    // Scalar properties are also present
-    // -------------------------------------------------------------------------
-
     public function testNormalizeScalarPropertiesIncluded(): void
     {
         $blog = new BlogWithCollections(42, 'Test Title');
@@ -235,10 +215,6 @@ final class CollectionsTest extends AbstractTestCase
         $this->assertSame(42, $result['id']);
         $this->assertSame('Test Title', $result['title']);
     }
-
-    // -------------------------------------------------------------------------
-    // supportsNormalization
-    // -------------------------------------------------------------------------
 
     public function testSupportsNormalizationReturnsTrueForBlogWithCollections(): void
     {
@@ -251,10 +227,6 @@ final class CollectionsTest extends AbstractTestCase
     {
         $this->assertFalse($this->normalizer->supportsNormalization(new \stdClass()));
     }
-
-    // -------------------------------------------------------------------------
-    // getSupportedTypes
-    // -------------------------------------------------------------------------
 
     public function testGetSupportedTypesIncludesBlogWithCollections(): void
     {

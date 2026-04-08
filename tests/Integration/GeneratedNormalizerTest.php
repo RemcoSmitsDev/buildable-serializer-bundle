@@ -44,10 +44,6 @@ final class GeneratedNormalizerTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // normalize()
-    // -------------------------------------------------------------------------
-
     public function testNormalizeSimpleObject(): void
     {
         $blog = new SimpleBlog(1, 'Test Title', 'Test Content');
@@ -119,10 +115,6 @@ final class GeneratedNormalizerTest extends AbstractTestCase
         $this->assertIsInt($result['id']);
     }
 
-    // -------------------------------------------------------------------------
-    // supportsNormalization()
-    // -------------------------------------------------------------------------
-
     public function testSupportsNormalizationReturnsTrueForCorrectClass(): void
     {
         $blog = new SimpleBlog(1, 'Title', 'Content');
@@ -152,10 +144,6 @@ final class GeneratedNormalizerTest extends AbstractTestCase
         $this->assertFalse($this->normalizer->supportsNormalization([]));
     }
 
-    // -------------------------------------------------------------------------
-    // getSupportedTypes()
-    // -------------------------------------------------------------------------
-
     public function testGetSupportedTypesReturnsMappingForClass(): void
     {
         $result = $this->normalizer->getSupportedTypes('json');
@@ -176,10 +164,6 @@ final class GeneratedNormalizerTest extends AbstractTestCase
         $this->assertArrayHasKey(SimpleBlog::class, $nullResult);
     }
 
-    // -------------------------------------------------------------------------
-    // GeneratedNormalizerInterface
-    // -------------------------------------------------------------------------
-
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
         $this->assertInstanceOf(
@@ -192,10 +176,6 @@ final class GeneratedNormalizerTest extends AbstractTestCase
     {
         $this->assertInstanceOf(NormalizerInterface::class, $this->normalizer);
     }
-
-    // -------------------------------------------------------------------------
-    // NORMALIZER_PRIORITY constant
-    // -------------------------------------------------------------------------
 
     public function testNormalizerHasPriorityConstant(): void
     {

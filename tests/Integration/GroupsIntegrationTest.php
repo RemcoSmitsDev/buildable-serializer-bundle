@@ -49,10 +49,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // No groups context — all non-ignored properties included
-    // -------------------------------------------------------------------------
-
     public function testNormalizeWithNoGroupsContextIncludesAllNonIgnoredProperties(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', []);
@@ -82,10 +78,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->assertArrayHasKey('content', $result);
         $this->assertArrayHasKey('author_name', $result);
     }
-
-    // -------------------------------------------------------------------------
-    // groups = ['blog:list'] — only id and title
-    // -------------------------------------------------------------------------
 
     public function testNormalizeWithBlogListGroupIncludesIdAndTitle(): void
     {
@@ -134,10 +126,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->assertSame('Test Title', $result['title']);
     }
 
-    // -------------------------------------------------------------------------
-    // groups = ['blog:read'] — id, title, content, author_name
-    // -------------------------------------------------------------------------
-
     public function testNormalizeWithBlogReadGroupIncludesAllReadProperties(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', [
@@ -171,10 +159,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->assertSame('Test Author', $result['author_name']);
     }
 
-    // -------------------------------------------------------------------------
-    // SerializedName: authorName → author_name
-    // -------------------------------------------------------------------------
-
     public function testNormalizeUsesSerializedNameForAuthorName(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', []);
@@ -183,10 +167,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->assertArrayHasKey('author_name', $result);
         $this->assertArrayNotHasKey('authorName', $result);
     }
-
-    // -------------------------------------------------------------------------
-    // Unknown group returns empty result
-    // -------------------------------------------------------------------------
 
     public function testNormalizeWithUnknownGroupReturnsEmptyOrMinimalResult(): void
     {
@@ -202,10 +182,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->assertArrayNotHasKey('internalField', $result);
     }
 
-    // -------------------------------------------------------------------------
-    // Multiple groups — union
-    // -------------------------------------------------------------------------
-
     public function testNormalizeWithMultipleGroupsIncludesUnionOfProperties(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', [
@@ -219,10 +195,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
         $this->assertArrayHasKey('author_name', $result);
     }
 
-    // -------------------------------------------------------------------------
-    // supportsNormalization
-    // -------------------------------------------------------------------------
-
     public function testSupportsNormalizationReturnsTrueForBlogWithGroups(): void
     {
         $this->assertTrue($this->normalizer->supportsNormalization($this->blog));
@@ -232,10 +204,6 @@ final class GroupsIntegrationTest extends AbstractTestCase
     {
         $this->assertFalse($this->normalizer->supportsNormalization(new \stdClass()));
     }
-
-    // -------------------------------------------------------------------------
-    // getSupportedTypes
-    // -------------------------------------------------------------------------
 
     public function testGetSupportedTypesIncludesBlogWithGroups(): void
     {

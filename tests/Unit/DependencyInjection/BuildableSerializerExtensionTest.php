@@ -13,10 +13,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  */
 final class BuildableSerializerExtensionTest extends TestCase
 {
-    // -------------------------------------------------------------------------
-    // Helper
-    // -------------------------------------------------------------------------
-
     /**
      * Build a ContainerBuilder that is pre-populated with the kernel parameters
      * and stub service definitions that services.yaml references, so that the
@@ -89,20 +85,12 @@ final class BuildableSerializerExtensionTest extends TestCase
         return $container;
     }
 
-    // -------------------------------------------------------------------------
-    // getAlias()
-    // -------------------------------------------------------------------------
-
     public function testGetAliasReturnsCorrectKey(): void
     {
         $extension = new BuildableSerializerExtension();
 
         $this->assertSame('buildable_serializer', $extension->getAlias());
     }
-
-    // -------------------------------------------------------------------------
-    // Parameter: buildable_serializer.paths
-    // -------------------------------------------------------------------------
 
     public function testLoadRegistersParameters(): void
     {
@@ -140,10 +128,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertSame('/tmp/src/Entity', $paths["App\Entity"]);
     }
 
-    // -------------------------------------------------------------------------
-    // Parameter: buildable_serializer.cache_dir
-    // -------------------------------------------------------------------------
-
     public function testLoadRegistersDefaultCacheDir(): void
     {
         $container = $this->loadExtension([[]]);
@@ -167,10 +151,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertSame('/custom/cache/dir', $container->getParameter('buildable_serializer.cache_dir'));
     }
 
-    // -------------------------------------------------------------------------
-    // Parameter: buildable_serializer.generated_namespace
-    // -------------------------------------------------------------------------
-
     public function testLoadRegistersGeneratedNamespace(): void
     {
         $container = $this->loadExtension([[]]);
@@ -190,10 +170,6 @@ final class BuildableSerializerExtensionTest extends TestCase
 
         $this->assertSame("My\Custom\Namespace", $container->getParameter('buildable_serializer.generated_namespace'));
     }
-
-    // -------------------------------------------------------------------------
-    // Parameter: buildable_serializer.features
-    // -------------------------------------------------------------------------
 
     public function testLoadRegistersFeatureParameters(): void
     {
@@ -271,10 +247,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertTrue($container->getParameter('buildable_serializer.features.name_converter'));
     }
 
-    // -------------------------------------------------------------------------
-    // Parameter: buildable_serializer.generation
-    // -------------------------------------------------------------------------
-
     public function testLoadRegistersGenerationParameters(): void
     {
         $container = $this->loadExtension([[]]);
@@ -316,11 +288,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $generation = $container->getParameter('buildable_serializer.generation');
         $this->assertFalse($generation['strict_types']);
     }
-
-    // -------------------------------------------------------------------------
-    // Service definitions registered
-    // These tests require symfony/yaml and are skipped when it is absent.
-    // -------------------------------------------------------------------------
 
     public function testLoadRegistersNormalizerGeneratorService(): void
     {

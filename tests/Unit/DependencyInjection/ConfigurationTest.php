@@ -13,10 +13,6 @@ use Symfony\Component\Config\Definition\Processor;
  */
 final class ConfigurationTest extends TestCase
 {
-    // -------------------------------------------------------------------------
-    // Helper
-    // -------------------------------------------------------------------------
-
     private function processConfig(array $config): array
     {
         return (new Processor())->processConfiguration(
@@ -26,10 +22,6 @@ final class ConfigurationTest extends TestCase
             ],
         );
     }
-
-    // -------------------------------------------------------------------------
-    // Default values
-    // -------------------------------------------------------------------------
 
     public function testDefaultValues(): void
     {
@@ -62,10 +54,6 @@ final class ConfigurationTest extends TestCase
         $this->assertArrayNotHasKey('psr4', $config['generation']);
     }
 
-    // -------------------------------------------------------------------------
-    // cache_dir
-    // -------------------------------------------------------------------------
-
     public function testCanSetCacheDir(): void
     {
         $config = $this->processConfig(['cache_dir' => '/tmp/my_cache']);
@@ -81,10 +69,6 @@ final class ConfigurationTest extends TestCase
 
         $this->assertSame('%kernel.cache_dir%/custom', $config['cache_dir']);
     }
-
-    // -------------------------------------------------------------------------
-    // generated_namespace
-    // -------------------------------------------------------------------------
 
     public function testCanSetGeneratedNamespace(): void
     {
@@ -103,10 +87,6 @@ final class ConfigurationTest extends TestCase
 
         $this->assertSame("App\\Normalizer\\Generated", $config['generated_namespace']);
     }
-
-    // -------------------------------------------------------------------------
-    // paths
-    // -------------------------------------------------------------------------
 
     public function testPathsDefaultsToEmptyArray(): void
     {
@@ -138,10 +118,6 @@ final class ConfigurationTest extends TestCase
         $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]);
         $this->assertSame('/tmp/src/Entity', $config['paths']["App\Entity"]);
     }
-
-    // -------------------------------------------------------------------------
-    // features
-    // -------------------------------------------------------------------------
 
     public function testCanDisableGroups(): void
     {
@@ -212,10 +188,6 @@ final class ConfigurationTest extends TestCase
         $this->assertFalse($config['features']['skip_null_values']);
     }
 
-    // -------------------------------------------------------------------------
-    // generation
-    // -------------------------------------------------------------------------
-
     public function testCanDisableStrictTypes(): void
     {
         $config = $this->processConfig([
@@ -232,10 +204,6 @@ final class ConfigurationTest extends TestCase
         $this->assertTrue($config['generation']['strict_types']);
         $this->assertArrayNotHasKey('psr4', $config['generation']);
     }
-
-    // -------------------------------------------------------------------------
-    // Combined configuration
-    // -------------------------------------------------------------------------
 
     public function testFullConfiguration(): void
     {

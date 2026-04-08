@@ -109,12 +109,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // testGeneratedCodeContainsDepthCheck
-    // The generated source must contain the depth-check infrastructure keywords
-    // emitted by the generator for max-depth properties.
-    // -------------------------------------------------------------------------
-
     public function testGeneratedCodeContainsDepthCheck(): void
     {
         $source = file_get_contents($this->generatedFilePath);
@@ -135,11 +129,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // testGeneratedCodeContainsMaxDepthLimit
-    // The generated source must hard-code the actual MaxDepth value (1) as the
-    // comparison literal.
-    // -------------------------------------------------------------------------
 
     public function testGeneratedCodeContainsMaxDepthLimit(): void
     {
@@ -154,11 +143,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // testGeneratedCodeContainsMaxDepthComment
-    // The generator appends a closing comment that names the property and the
-    // limit, making generated files easier to read.
-    // -------------------------------------------------------------------------
 
     public function testGeneratedCodeContainsMaxDepthComment(): void
     {
@@ -173,11 +157,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // testMaxDepthAllowsNormalizationWithNoDepthContext
-    // When no depth context key is present (first call), the author MUST be
-    // delegated to the inner normalizer (depth 0 < limit 1).
-    // -------------------------------------------------------------------------
 
     public function testMaxDepthAllowsNormalizationWithNoDepthContext(): void
     {
@@ -234,15 +213,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertSame($mockData, $result['author']);
     }
 
-    // -------------------------------------------------------------------------
-    // testMaxDepthLimitsNestingDepth
-    // When the depth counter for the author property is already at the limit (1),
-    // the author value must NOT be delegated to the inner normalizer.
-    //
-    // The context key is built using sprintf(DEPTH_KEY_PATTERN, class, property)
-    // to avoid relying on the DEPTH_KEY_PREFIX constant that the generator
-    // references but that does not exist in Symfony ^6.4|^7.0.
-    // -------------------------------------------------------------------------
 
     public function testMaxDepthLimitsNestingDepth(): void
     {
@@ -327,10 +297,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // testMaxDepthAllowsNormalizationWithinLimit
-    // When the depth counter is below the limit, the author MUST be delegated.
-    // -------------------------------------------------------------------------
 
     public function testMaxDepthAllowsNormalizationWithinLimit(): void
     {
@@ -385,11 +351,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertSame($mockData, $result['author']);
     }
 
-    // -------------------------------------------------------------------------
-    // testScalarPropertiesAreAlwaysPresent
-    // Regardless of max-depth state, scalar properties (title) must always be
-    // included in the output.
-    // -------------------------------------------------------------------------
 
     public function testScalarPropertiesAreAlwaysPresent(): void
     {
@@ -426,11 +387,6 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertSame('Scalar Test', $result['title']);
     }
 
-    // -------------------------------------------------------------------------
-    // testNormalizerImplementsNormalizerAwareInterface
-    // The generated normalizer for a class with nested objects must implement
-    // NormalizerAwareInterface so setNormalizer() is available.
-    // -------------------------------------------------------------------------
 
     public function testNormalizerImplementsNormalizerAwareInterface(): void
     {
@@ -440,18 +396,10 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // testNormalizerImplementsNormalizerInterface
-    // -------------------------------------------------------------------------
-
     public function testNormalizerImplementsNormalizerInterface(): void
     {
         $this->assertInstanceOf(NormalizerInterface::class, $this->normalizer);
     }
-
-    // -------------------------------------------------------------------------
-    // testNormalizerImplementsGeneratedNormalizerInterface
-    // -------------------------------------------------------------------------
 
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
@@ -461,10 +409,6 @@ final class MaxDepthTest extends AbstractTestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // testSupportsNormalizationReturnsTrueForMaxDepthBlog
-    // -------------------------------------------------------------------------
-
     public function testSupportsNormalizationReturnsTrueForMaxDepthBlog(): void
     {
         $author = new Author(1, 'Alice', 'alice@example.com');
@@ -473,18 +417,10 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertTrue($this->normalizer->supportsNormalization($blog));
     }
 
-    // -------------------------------------------------------------------------
-    // testSupportsNormalizationReturnsFalseForOtherObject
-    // -------------------------------------------------------------------------
-
     public function testSupportsNormalizationReturnsFalseForOtherObject(): void
     {
         $this->assertFalse($this->normalizer->supportsNormalization(new \stdClass()));
     }
-
-    // -------------------------------------------------------------------------
-    // testGetSupportedTypesIncludesMaxDepthBlog
-    // -------------------------------------------------------------------------
 
     public function testGetSupportedTypesIncludesMaxDepthBlog(): void
     {
