@@ -184,7 +184,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $buf->line(" * Normalizer for \\" . $targetFqcn . '.');
         $buf->line(' *');
         $buf->line(' * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.');
-        $buf->line(' * Regenerate by running: bin/console buildable:generate-normalizers');
         $buf->line(' */');
 
         // ---- Class declaration ----------------------------------------------
