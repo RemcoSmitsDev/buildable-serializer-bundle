@@ -71,16 +71,16 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
-        $this->assertSame(SimpleBlog::class, $metadata->className);
+        $this->assertSame(SimpleBlog::class, $metadata->getClassName());
         // SimpleBlog exposes id, title, content, excerpt via getters
-        $this->assertGreaterThanOrEqual(3, count($metadata->properties));
+        $this->assertGreaterThanOrEqual(3, count($metadata->getProperties()));
     }
 
     public function testGetMetadataForSimpleBlogHasExpectedProperties(): void
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
-        $names = array_map(static fn($p) => $p->getName(), $metadata->properties);
+        $names = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
         $this->assertContains('id', $names);
         $this->assertContains('title', $names);
         $this->assertContains('content', $names);
@@ -90,7 +90,7 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
-        foreach ($metadata->properties as $property) {
+        foreach ($metadata->getProperties() as $property) {
             $this->assertFalse($property->isIgnored(), "Property '{$property->getName()}' should not be ignored.");
         }
     }
@@ -103,7 +103,7 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
-        foreach ($metadata->properties as $property) {
+        foreach ($metadata->getProperties() as $property) {
             $this->assertSame(
                 AccessorType::METHOD,
                 $property->getAccessorType(),
@@ -155,7 +155,7 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(BlogWithGroups::class);
 
-        $names = array_map(static fn($p) => $p->getName(), $metadata->properties);
+        $names = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
         $this->assertNotContains('internalField', $names, '"internalField" carries #[Ignore] and must be excluded.');
     }
 
@@ -246,8 +246,8 @@ final class MetadataFactoryTest extends TestCase
         $blogWithGroups = $this->factory->getMetadataFor(BlogWithGroups::class);
 
         $this->assertNotSame($simpleBlog, $blogWithGroups);
-        $this->assertSame(SimpleBlog::class, $simpleBlog->className);
-        $this->assertSame(BlogWithGroups::class, $blogWithGroups->className);
+        $this->assertSame(SimpleBlog::class, $simpleBlog->getClassName());
+        $this->assertSame(BlogWithGroups::class, $blogWithGroups->getClassName());
     }
 
     // -------------------------------------------------------------------------
@@ -281,7 +281,7 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
-        $this->assertSame(SimpleBlog::class, $metadata->reflectionClass->getName());
+        $this->assertSame(SimpleBlog::class, $metadata->getClassName());
     }
 
     public function testGetShortNameFromMetadata(): void

@@ -17,15 +17,16 @@ use Buildable\SerializerBundle\Metadata\ClassMetadata;
 interface ClassDiscoveryInterface
 {
     /**
-     * Return the list of fully-qualified class names for which a normalizer
-     * should be generated.
+     * Return the list of ClassMetadata objects for all concrete, instantiable
+     * classes that should have a normalizer generated.
      *
      * Implementations MUST:
      *
      * - Return only concrete, instantiable classes (no interfaces, abstract
      *   classes, traits, or enums).
+     * - Return results in a stable, deterministic order.
      *
-     * @return iterable<ClassMetadata<object>>
+     * @return list<ClassMetadata<object>>
      */
-    public function discoverClasses(): iterable;
+    public function discoverClasses(): array;
 }

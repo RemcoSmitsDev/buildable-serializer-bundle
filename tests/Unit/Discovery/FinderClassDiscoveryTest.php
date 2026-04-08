@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Buildable\SerializerBundle\Tests\Unit\Discovery;
 
 use Buildable\SerializerBundle\Discovery\FinderClassDiscovery;
+use Buildable\SerializerBundle\Metadata\ClassMetadata;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\AnotherSerializableModel;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\NotSerializableModel;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
@@ -25,6 +26,21 @@ final class FinderClassDiscoveryTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Extract fully-qualified class names from a list of ClassMetadata objects.
+     *
+     * @param list<ClassMetadata<object>> $classes
+     * @return list<string>
+     */
+    private function classNames(array $classes): array
+    {
+        return array_map(static fn(ClassMetadata $m): string => $m->getClassName(), $classes);
+    }
+
+    // -------------------------------------------------------------------------
     // Happy path
     // -------------------------------------------------------------------------
 
@@ -34,7 +50,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         $this->assertContains(SerializableModel::class, $classes);
     }
@@ -45,7 +61,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         $this->assertContains(SerializableModel::class, $classes);
         $this->assertContains(AnotherSerializableModel::class, $classes);
@@ -57,7 +73,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         $this->assertContains(NestedSerializableModel::class, $classes);
     }
@@ -75,7 +91,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         $sorted = $classes;
         sort($sorted);
@@ -90,7 +106,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir . '/',
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
         $unique = array_unique($classes);
 
         $this->assertCount(\count($unique), $classes, 'Result must not contain duplicates.');
@@ -106,7 +122,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         $this->assertNotContains(NotSerializableModel::class, $classes);
     }
@@ -117,7 +133,7 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         // AbstractModel carries #[Serializable] but is abstract — must be skipped.
         $this->assertNotContains('Buildable\SerializerBundle\Tests\Fixtures\Discovery\AbstractModel', $classes);
@@ -152,15 +168,26 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery\Sub' => $subDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
+        $classes = $this->classNames($discovery->discoverClasses());
 
         $this->assertContains(SerializableModel::class, $classes);
         $this->assertContains(NestedSerializableModel::class, $classes);
     }
 
     // -------------------------------------------------------------------------
-    // FQCN derivation
+    // ClassMetadata shape
     // -------------------------------------------------------------------------
+
+    public function testDiscoveredItemsAreClassMetadataObjects(): void
+    {
+        $discovery = new FinderClassDiscovery([
+            'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
+        ]);
+
+        foreach ($discovery->discoverClasses() as $item) {
+            $this->assertInstanceOf(ClassMetadata::class, $item);
+        }
+    }
 
     public function testFqcnIsDerivedFromPathWithoutReadingFile(): void
     {
@@ -170,12 +197,10 @@ final class FinderClassDiscoveryTest extends TestCase
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
-        $classes = $discovery->discoverClasses();
-
-        foreach ($classes as $fqcn) {
+        foreach ($discovery->discoverClasses() as $metadata) {
             $this->assertTrue(
-                class_exists($fqcn, false),
-                sprintf('Class "%s" should be loadable after discovery.', $fqcn),
+                class_exists($metadata->getClassName(), false),
+                sprintf('Class "%s" should be loadable after discovery.', $metadata->getClassName()),
             );
         }
     }

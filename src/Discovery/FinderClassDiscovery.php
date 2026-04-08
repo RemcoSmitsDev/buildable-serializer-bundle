@@ -75,6 +75,11 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
             }
         }
 
+        usort(
+            $metadataCollection,
+            static fn(ClassMetadata $a, ClassMetadata $b): int => $a->getClassName() <=> $b->getClassName(),
+        );
+
         return $metadataCollection;
     }
 
