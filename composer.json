@@ -51,7 +51,7 @@
   "scripts": {
     "phpunit": "phpunit",
     "phpunit-coverage": "phpunit --coverage-text",
-    "phpstan": "phpstan analyse src tests",
+    "phpstan": "phpstan analyse --memory-limit=1G",
     "mago": "mago format"
   }
 }

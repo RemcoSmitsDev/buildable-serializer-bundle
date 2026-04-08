@@ -50,7 +50,6 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\Declare_;
-use PhpParser\Node\Stmt\DeclareDeclare;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\ElseIf_;
 use PhpParser\Node\Stmt\Expression;
@@ -59,7 +58,6 @@ use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\Stmt\TraitUse;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\Node\Stmt\UseUse;
 use PhpParser\Node\UnionType;
 use PhpParser\Node\UseItem;
 use PhpParser\PhpVersion;
@@ -118,20 +116,13 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return $this->metadataFactory;
     }
 
-    /**
-     * Generate and write normalizer files for every given fully-qualified class
-     * name. Returns the absolute paths of all files that were written.
-     *
-     * @param  string[] $classNames
-     * @return string[] Absolute paths of written files, in input order.
-     */
-    public function generateAll(iterable $classNames): array
+    /** @inheritdoc */
+    public function generateAll(iterable $metadataCollection): array
     {
         $paths = [];
         $classmap = [];
 
-        foreach ($classNames as $className) {
-            $metadata = $this->metadataFactory->getMetadataFor($className);
+        foreach ($metadataCollection as $metadata) {
             $filePath = $this->generateAndWrite($metadata);
             $fqcn = $this->resolveNormalizerFqcn($metadata);
             $paths[] = $filePath;
@@ -172,16 +163,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         file_put_contents($this->cacheDir . '/autoload.php', $content);
     }
 
-    /**
-     * Generate the PHP source for a single normalizer class and write it to the
-     * resolved file path, creating parent directories as necessary.
-     *
-     * Returns the absolute path of the written file.
-     *
-     * @template T of object
-     *
-     * @param ClassMetadata<T> $metadata
-     */
+    /** @inheritdoc */
     public function generateAndWrite(ClassMetadata $metadata): string
     {
         $source = $this->generate($metadata);
@@ -308,27 +290,13 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return "<?php\n\n" . $code . "\n";
     }
 
-    /**
-     * Return the FQCN of the normalizer class that will be generated for the
-     * given metadata (namespace + class name, separated by backslash).
-     *
-     * @template T of object
-     *
-     * @param ClassMetadata<T> $metadata
-     */
+    /** @inheritdoc */
     public function resolveNormalizerFqcn(ClassMetadata $metadata): string
     {
         return $this->resolveNormalizerNamespace($metadata) . "\\" . $this->resolveNormalizerClassName($metadata);
     }
 
-    /**
-     * Return the absolute filesystem path where the generated normalizer source
-     * file will be written.
-     *
-     * @template T of object
-     *
-     * @param ClassMetadata<T> $metadata
-     */
+    /** @inheritdoc */
     public function resolveFilePath(ClassMetadata $metadata): string
     {
         return (

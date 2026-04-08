@@ -36,7 +36,9 @@ interface NormalizerGeneratorInterface
      * Example: for `App\Entity\User` with namespace `BuildableSerializer\Generated`
      * the result would be `BuildableSerializer\Generated\App\Entity\UserNormalizer`.
      *
-     * @param ClassMetadata $metadata Metadata for the domain class whose normalizer FQCN is needed.
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      *
      * @return string Fully-qualified class name of the generated (or to-be-generated) normalizer.
      */
@@ -50,7 +52,9 @@ interface NormalizerGeneratorInterface
      * Useful for building the classmap entry (`FQCN => filePath`) without actually
      * generating the file.
      *
-     * @param ClassMetadata $metadata Metadata for the domain class.
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata Metadata for the domain class.
      *
      * @return string Absolute path of the PHP file (may or may not exist yet).
      */
@@ -63,10 +67,9 @@ interface NormalizerGeneratorInterface
      * This is a batch operation equivalent to calling {@see generateAndWrite()} for
      * each metadata object, but may be optimized for bulk generation.
      *
-     * @param iterable<ClassMetadata> $metadataCollection Collection of fully-built metadata for domain classes.
+     * @param iterable<ClassMetadata<object>> $metadataCollection
      *
-     * @return array<GeneratedNormalizerInfo> Array of value objects describing each generated normalizer,
-     *                                        containing the FQCN, file path, and short name.
+     * @return array<string> Array of absolute paths of written files, in input order.
      *
      * @throws \RuntimeException When the output directory cannot be created or a
      *                           file cannot be written.

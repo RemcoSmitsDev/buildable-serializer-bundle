@@ -16,7 +16,11 @@ interface MetadataFactoryInterface
     /**
      * Return metadata for the given fully-qualified class name.
      *
-     * @param class-string $className
+     * @template T of object
+     *
+     * @param class-string<T> $className
+     *
+     * @return ClassMetadata<T>
      *
      * @throws \InvalidArgumentException When the class does not exist.
      */
