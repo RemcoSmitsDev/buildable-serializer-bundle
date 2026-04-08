@@ -46,9 +46,7 @@ final class NormalizerCacheWarmerTest extends TestCase
 
         // addMethods(['generateAll']) adds generateAll() as a mockable method
         // even though it is not (yet) declared on NormalizerGeneratorInterface.
-        $this->generator = $this
-            ->getMockBuilder(NormalizerGeneratorInterface::class)
-            ->getMockForAbstractClass();
+        $this->generator = $this->getMockBuilder(NormalizerGeneratorInterface::class)->getMockForAbstractClass();
     }
 
     protected function tearDown(): void
