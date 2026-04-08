@@ -362,33 +362,34 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
             $context['circular_reference_limit_counters'][$objectHash] = 1;
         }
         $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        $groupsLookup = array_fill_keys($groups, true);
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
-        if ($groups === [] || array_intersect(['user:read', 'user:list'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
             $_val = $object->getId();
             if ($_val !== null || !$skipNullValues) {
                 $data['id'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['user:read', 'user:list'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
             $_val = $object->getFirstName();
             if ($_val !== null || !$skipNullValues) {
                 $data['firstName'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['user:read', 'user:list'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
             $_val = $object->getLastName();
             if ($_val !== null || !$skipNullValues) {
                 $data['lastName'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['user:read'])) {
             $_val = $object->getEmail();
             if ($_val !== null || !$skipNullValues) {
                 $data['email_address'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['user:read'])) {
             $_val = $object->getAddress();
             if ($_val !== null) {
                 $data['address'] = $this->normalizer->normalize($_val, $format, $context);
@@ -396,7 +397,7 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
                 $data['address'] = null;
             }
         }
-        if ($groups === [] || array_intersect(['user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['user:read'])) {
             $_val = $object->isActive();
             if ($_val !== null || !$skipNullValues) {
                 $data['active'] = $_val;
@@ -459,27 +460,28 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
             $context['circular_reference_limit_counters'][$objectHash] = 1;
         }
         $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        $groupsLookup = array_fill_keys($groups, true);
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
-        if ($groups === [] || array_intersect(['post:read', 'post:list'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
             $_val = $object->getId();
             if ($_val !== null || !$skipNullValues) {
                 $data['id'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['post:read', 'post:list'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
             $_val = $object->getTitle();
             if ($_val !== null || !$skipNullValues) {
                 $data['title'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['post:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['post:read'])) {
             $_val = $object->getContent();
             if ($_val !== null || !$skipNullValues) {
                 $data['content'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['post:read', 'post:list'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
             $_depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, 'App\Model\Post', 'author');
             $_currentDepth = (int) ($context[$_depthKey] ?? 0);
             // max-depth: author (limit=1)
@@ -533,27 +535,28 @@ final class AddressNormalizer implements NormalizerInterface, GeneratedNormalize
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
         $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        $groupsLookup = array_fill_keys($groups, true);
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
-        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
             $_val = $object->street;
             if ($_val !== null || !$skipNullValues) {
                 $data['street'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
             $_val = $object->city;
             if ($_val !== null || !$skipNullValues) {
                 $data['city'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
             $_val = $object->postalCode;
             if ($_val !== null || !$skipNullValues) {
                 $data['postal_code'] = $_val;
             }
         }
-        if ($groups === [] || array_intersect(['address:read', 'user:read'], $groups) !== []) {
+        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
             $_val = $object->country;
             if ($_val !== null || !$skipNullValues) {
                 $data['country'] = $_val;
