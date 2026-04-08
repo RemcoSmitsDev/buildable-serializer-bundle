@@ -21,19 +21,19 @@ final class PropertyMetadataTest extends TestCase
     {
         $pm = new PropertyMetadata();
 
-        $this->assertSame('', $pm->name);
-        $this->assertNull($pm->serializedName);
-        $this->assertSame([], $pm->groups);
-        $this->assertFalse($pm->ignored);
-        $this->assertNull($pm->type);
-        $this->assertFalse($pm->isNested);
-        $this->assertFalse($pm->isCollection);
-        $this->assertNull($pm->collectionValueType);
-        $this->assertSame('', $pm->accessor);
-        $this->assertSame(AccessorType::METHOD, $pm->accessorType);
-        $this->assertNull($pm->maxDepth);
-        $this->assertFalse($pm->nullable);
-        $this->assertFalse($pm->isReadonly);
+        $this->assertSame('', $pm->getName());
+        $this->assertNull($pm->getSerializedName());
+        $this->assertSame([], $pm->getGroups());
+        $this->assertFalse($pm->isIgnored());
+        $this->assertNull($pm->getType());
+        $this->assertFalse($pm->isNested());
+        $this->assertFalse($pm->isCollection());
+        $this->assertNull($pm->getCollectionValueType());
+        $this->assertSame('', $pm->getAccessor());
+        $this->assertSame(AccessorType::METHOD, $pm->getAccessorType());
+        $this->assertNull($pm->getMaxDepth());
+        $this->assertFalse($pm->isNullable());
+        $this->assertFalse($pm->isReadonly());
     }
 
     // -------------------------------------------------------------------------
@@ -42,26 +42,21 @@ final class PropertyMetadataTest extends TestCase
 
     public function testGetSerializedKeyReturnsNameWhenNoSerializedName(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->name = 'foo';
+        $pm = new PropertyMetadata(name: 'foo');
 
         $this->assertSame('foo', $pm->getSerializedKey());
     }
 
     public function testGetSerializedKeyReturnsSerializedNameWhenSet(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->name = 'foo';
-        $pm->serializedName = 'bar';
+        $pm = new PropertyMetadata(name: 'foo', serializedName: 'bar');
 
         $this->assertSame('bar', $pm->getSerializedKey());
     }
 
     public function testGetSerializedKeyReturnsSerializedNameOverName(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->name = 'myProperty';
-        $pm->serializedName = 'my_property';
+        $pm = new PropertyMetadata(name: 'myProperty', serializedName: 'my_property');
 
         $this->assertSame('my_property', $pm->getSerializedKey());
     }
@@ -72,8 +67,7 @@ final class PropertyMetadataTest extends TestCase
 
     public function testIsInGroupReturnsTrueWhenGroupsEmpty(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = [];
+        $pm = new PropertyMetadata(groups: []);
 
         $this->assertTrue($pm->isInGroup('any_group'));
         $this->assertTrue($pm->isInGroup('another'));
@@ -81,8 +75,7 @@ final class PropertyMetadataTest extends TestCase
 
     public function testIsInGroupReturnsTrueWhenGroupMatches(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = ['a', 'b'];
+        $pm = new PropertyMetadata(groups: ['a', 'b']);
 
         $this->assertTrue($pm->isInGroup('a'));
         $this->assertTrue($pm->isInGroup('b'));
@@ -90,8 +83,7 @@ final class PropertyMetadataTest extends TestCase
 
     public function testIsInGroupReturnsFalseWhenGroupNotMatches(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = ['a', 'b'];
+        $pm = new PropertyMetadata(groups: ['a', 'b']);
 
         $this->assertFalse($pm->isInGroup('c'));
         $this->assertFalse($pm->isInGroup(''));
@@ -103,9 +95,7 @@ final class PropertyMetadataTest extends TestCase
 
     public function testIsEligibleForGroupsReturnsFalseWhenIgnored(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->ignored = true;
-        $pm->groups = [];
+        $pm = new PropertyMetadata(groups: [], ignored: true);
 
         $this->assertFalse($pm->isEligibleForGroups([]));
         $this->assertFalse($pm->isEligibleForGroups(['any']));
@@ -113,32 +103,28 @@ final class PropertyMetadataTest extends TestCase
 
     public function testIsEligibleForGroupsReturnsTrueWhenActiveGroupsEmpty(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = ['a', 'b'];
+        $pm = new PropertyMetadata(groups: ['a', 'b']);
 
         $this->assertTrue($pm->isEligibleForGroups([]));
     }
 
     public function testIsEligibleForGroupsReturnsTrueWhenPropertyGroupsEmpty(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = [];
+        $pm = new PropertyMetadata(groups: []);
 
         $this->assertTrue($pm->isEligibleForGroups(['a', 'b']));
     }
 
     public function testIsEligibleForGroupsReturnsTrueWhenGroupIntersects(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = ['a', 'b'];
+        $pm = new PropertyMetadata(groups: ['a', 'b']);
 
         $this->assertTrue($pm->isEligibleForGroups(['b', 'c']));
     }
 
     public function testIsEligibleForGroupsReturnsFalseWhenNoIntersection(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->groups = ['a'];
+        $pm = new PropertyMetadata(groups: ['a']);
 
         $this->assertFalse($pm->isEligibleForGroups(['b']));
         $this->assertFalse($pm->isEligibleForGroups(['c', 'd']));
@@ -146,9 +132,7 @@ final class PropertyMetadataTest extends TestCase
 
     public function testIsEligibleForGroupsReturnsFalseWhenIgnoredEvenWithMatchingGroups(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->ignored = true;
-        $pm->groups = ['a'];
+        $pm = new PropertyMetadata(groups: ['a'], ignored: true);
 
         $this->assertFalse($pm->isEligibleForGroups(['a']));
     }
@@ -166,16 +150,14 @@ final class PropertyMetadataTest extends TestCase
 
     public function testToStringContainsPropertyName(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->name = 'myField';
+        $pm = new PropertyMetadata(name: 'myField');
 
         $this->assertStringContainsString('myField', (string) $pm);
     }
 
     public function testToStringContainsAccessorType(): void
     {
-        $pm = new PropertyMetadata();
-        $pm->accessorType = AccessorType::PROPERTY;
+        $pm = new PropertyMetadata(accessorType: AccessorType::PROPERTY);
 
         $this->assertStringContainsString('PROPERTY', (string) $pm);
     }

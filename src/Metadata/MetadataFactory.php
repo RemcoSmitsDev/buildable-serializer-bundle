@@ -148,7 +148,7 @@ final class MetadataFactory implements MetadataFactoryInterface
 
             $propertyMeta = $this->buildPropertyMetadataFromPromoted($reflectionClass, $param);
 
-            if ($propertyMeta === null || $propertyMeta->ignored) {
+            if ($propertyMeta === null || $propertyMeta->isIgnored()) {
                 $registered[$param->getName()] = true;
                 continue;
             }
@@ -168,7 +168,7 @@ final class MetadataFactory implements MetadataFactoryInterface
 
             $propertyMeta = $this->buildPropertyMetadataFromProperty($reflectionClass, $reflProperty);
 
-            if ($propertyMeta === null || $propertyMeta->ignored) {
+            if ($propertyMeta === null || $propertyMeta->isIgnored()) {
                 $registered[$name] = true;
                 continue;
             }
@@ -196,7 +196,7 @@ final class MetadataFactory implements MetadataFactoryInterface
 
             $propertyMeta = $this->buildPropertyMetadataFromGetter($reflectionClass, $method, $propertyName);
 
-            if ($propertyMeta === null || $propertyMeta->ignored) {
+            if ($propertyMeta === null || $propertyMeta->isIgnored()) {
                 $registered[$propertyName] = true;
                 continue;
             }
@@ -245,25 +245,45 @@ final class MetadataFactory implements MetadataFactoryInterface
         // Promoted params always have a matching ReflectionProperty
         $reflProperty = $reflectionClass->getProperty($name);
 
-        $propertyMeta = new PropertyMetadata();
-        $propertyMeta->name = $name;
-        $propertyMeta->accessor = $name;
-        $propertyMeta->accessorType = AccessorType::PROPERTY;
-        $propertyMeta->isReadonly = $reflProperty->isReadOnly();
+        // Collect attribute data
+        $attrData = $this->createEmptyAttributeData();
+        $this->collectAttributesFromProperty($reflProperty, $attrData);
 
-        // Read attributes from the property declaration (primary location)
-        $this->applyAttributesFromProperty($reflProperty, $propertyMeta);
-
-        if ($propertyMeta->ignored) {
-            return $propertyMeta;
+        // Early return for ignored properties
+        if ($attrData['ignored']) {
+            return new PropertyMetadata(
+                name: $name,
+                accessor: $name,
+                accessorType: AccessorType::PROPERTY,
+                isReadonly: $reflProperty->isReadOnly(),
+                ignored: true,
+                groups: $attrData['groups'],
+                serializedName: $attrData['serializedName'],
+                maxDepth: $attrData['maxDepth'],
+            );
         }
 
         // Also check param-level attributes; they may add groups etc.
-        $this->applyAttributesFromParameter($param, $propertyMeta);
+        $this->collectAttributesFromParameter($param, $attrData);
 
-        $this->resolveType($reflectionClass->getName(), $name, $param->getType(), $propertyMeta);
+        // Resolve type information
+        $typeData = $this->resolveTypeData($reflectionClass->getName(), $name, $param->getType());
 
-        return $propertyMeta;
+        return new PropertyMetadata(
+            name: $name,
+            serializedName: $attrData['serializedName'],
+            groups: $attrData['groups'],
+            ignored: false,
+            type: $typeData['type'],
+            isNested: $typeData['isNested'],
+            isCollection: $typeData['isCollection'],
+            collectionValueType: $typeData['collectionValueType'],
+            accessor: $name,
+            accessorType: AccessorType::PROPERTY,
+            maxDepth: $attrData['maxDepth'],
+            nullable: $typeData['nullable'],
+            isReadonly: $reflProperty->isReadOnly(),
+        );
     }
 
     /**
@@ -278,21 +298,42 @@ final class MetadataFactory implements MetadataFactoryInterface
     ): ?PropertyMetadata {
         $name = $reflProperty->getName();
 
-        $propertyMeta = new PropertyMetadata();
-        $propertyMeta->name = $name;
-        $propertyMeta->accessor = $name;
-        $propertyMeta->accessorType = AccessorType::PROPERTY;
-        $propertyMeta->isReadonly = $reflProperty->isReadOnly();
+        // Collect attribute data
+        $attrData = $this->createEmptyAttributeData();
+        $this->collectAttributesFromProperty($reflProperty, $attrData);
 
-        $this->applyAttributesFromProperty($reflProperty, $propertyMeta);
-
-        if ($propertyMeta->ignored) {
-            return $propertyMeta;
+        // Early return for ignored properties
+        if ($attrData['ignored']) {
+            return new PropertyMetadata(
+                name: $name,
+                accessor: $name,
+                accessorType: AccessorType::PROPERTY,
+                isReadonly: $reflProperty->isReadOnly(),
+                ignored: true,
+                groups: $attrData['groups'],
+                serializedName: $attrData['serializedName'],
+                maxDepth: $attrData['maxDepth'],
+            );
         }
 
-        $this->resolveType($reflectionClass->getName(), $name, $reflProperty->getType(), $propertyMeta);
+        // Resolve type information
+        $typeData = $this->resolveTypeData($reflectionClass->getName(), $name, $reflProperty->getType());
 
-        return $propertyMeta;
+        return new PropertyMetadata(
+            name: $name,
+            serializedName: $attrData['serializedName'],
+            groups: $attrData['groups'],
+            ignored: false,
+            type: $typeData['type'],
+            isNested: $typeData['isNested'],
+            isCollection: $typeData['isCollection'],
+            collectionValueType: $typeData['collectionValueType'],
+            accessor: $name,
+            accessorType: AccessorType::PROPERTY,
+            maxDepth: $attrData['maxDepth'],
+            nullable: $typeData['nullable'],
+            isReadonly: $reflProperty->isReadOnly(),
+        );
     }
 
     /**
@@ -306,28 +347,50 @@ final class MetadataFactory implements MetadataFactoryInterface
         \ReflectionMethod $method,
         string $propertyName,
     ): ?PropertyMetadata {
-        $propertyMeta = new PropertyMetadata();
-        $propertyMeta->name = $propertyName;
-        $propertyMeta->accessor = $method->getName();
-        $propertyMeta->accessorType = AccessorType::METHOD;
-        $propertyMeta->isReadonly = false;
+        // Collect attribute data
+        $attrData = $this->createEmptyAttributeData();
 
         // Read attributes from the backing property first (private/protected properties
         // are the canonical location for #[Groups], #[Ignore], #[SerializedName], #[MaxDepth]).
         if ($reflectionClass->hasProperty($propertyName)) {
-            $this->applyAttributesFromProperty($reflectionClass->getProperty($propertyName), $propertyMeta);
+            $this->collectAttributesFromProperty($reflectionClass->getProperty($propertyName), $attrData);
         }
 
         // Overlay method-level attributes (getter annotations take precedence).
-        $this->applyAttributesFromMethod($method, $propertyMeta);
+        $this->collectAttributesFromMethod($method, $attrData);
 
-        if ($propertyMeta->ignored) {
-            return $propertyMeta;
+        // Early return for ignored properties
+        if ($attrData['ignored']) {
+            return new PropertyMetadata(
+                name: $propertyName,
+                accessor: $method->getName(),
+                accessorType: AccessorType::METHOD,
+                isReadonly: false,
+                ignored: true,
+                groups: $attrData['groups'],
+                serializedName: $attrData['serializedName'],
+                maxDepth: $attrData['maxDepth'],
+            );
         }
 
-        $this->resolveType($reflectionClass->getName(), $propertyName, $method->getReturnType(), $propertyMeta);
+        // Resolve type information
+        $typeData = $this->resolveTypeData($reflectionClass->getName(), $propertyName, $method->getReturnType());
 
-        return $propertyMeta;
+        return new PropertyMetadata(
+            name: $propertyName,
+            serializedName: $attrData['serializedName'],
+            groups: $attrData['groups'],
+            ignored: false,
+            type: $typeData['type'],
+            isNested: $typeData['isNested'],
+            isCollection: $typeData['isCollection'],
+            collectionValueType: $typeData['collectionValueType'],
+            accessor: $method->getName(),
+            accessorType: AccessorType::METHOD,
+            maxDepth: $attrData['maxDepth'],
+            nullable: $typeData['nullable'],
+            isReadonly: false,
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -335,35 +398,56 @@ final class MetadataFactory implements MetadataFactoryInterface
     // -------------------------------------------------------------------------
 
     /**
-     * Read Symfony Serializer attributes from a ReflectionProperty and apply
-     * the results to the given PropertyMetadata.
+     * Create an empty attribute data array with default values.
+     *
+     * @return array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int}
      */
-    private function applyAttributesFromProperty(\ReflectionProperty $reflProperty, PropertyMetadata $meta): void
+    private function createEmptyAttributeData(): array
+    {
+        return [
+            'groups' => [],
+            'ignored' => false,
+            'serializedName' => null,
+            'maxDepth' => null,
+        ];
+    }
+
+    /**
+     * Read Symfony Serializer attributes from a ReflectionProperty and collect
+     * the results into the given data array.
+     *
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
+     */
+    private function collectAttributesFromProperty(\ReflectionProperty $reflProperty, array &$data): void
     {
         foreach ($reflProperty->getAttributes() as $attr) {
-            $this->applyAttribute($attr, $meta);
+            $this->collectAttribute($attr, $data);
         }
     }
 
     /**
      * Read Symfony Serializer attributes from a ReflectionParameter (promoted
-     * constructor params) and merge them into the given PropertyMetadata.
+     * constructor params) and merge them into the given data array.
+     *
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
      */
-    private function applyAttributesFromParameter(\ReflectionParameter $param, PropertyMetadata $meta): void
+    private function collectAttributesFromParameter(\ReflectionParameter $param, array &$data): void
     {
         foreach ($param->getAttributes() as $attr) {
-            $this->applyAttribute($attr, $meta);
+            $this->collectAttribute($attr, $data);
         }
     }
 
     /**
      * Read Symfony Serializer attributes from a ReflectionMethod (getter) and
-     * apply the results to the given PropertyMetadata.
+     * collect the results into the given data array.
+     *
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
      */
-    private function applyAttributesFromMethod(\ReflectionMethod $method, PropertyMetadata $meta): void
+    private function collectAttributesFromMethod(\ReflectionMethod $method, array &$data): void
     {
         foreach ($method->getAttributes() as $attr) {
-            $this->applyAttribute($attr, $meta);
+            $this->collectAttribute($attr, $data);
         }
     }
 
@@ -373,8 +457,9 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Unknown attributes are silently ignored to remain forward-compatible.
      *
      * @param \ReflectionAttribute<object> $attr
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
      */
-    private function applyAttribute(\ReflectionAttribute $attr, PropertyMetadata $meta): void
+    private function collectAttribute(\ReflectionAttribute $attr, array &$data): void
     {
         switch ($attr->getName()) {
             case Groups::class:
@@ -382,23 +467,23 @@ final class MetadataFactory implements MetadataFactoryInterface
                 $instance = $attr->newInstance();
                 // Merge rather than overwrite – promoted params can carry the
                 // attribute on both the property and the parameter position.
-                $meta->groups = array_values(array_unique([...$meta->groups, ...$instance->getGroups()]));
+                $data['groups'] = array_values(array_unique([...$data['groups'], ...$instance->getGroups()]));
                 break;
 
             case Ignore::class:
-                $meta->ignored = true;
+                $data['ignored'] = true;
                 break;
 
             case SerializedName::class:
                 /** @var SerializedName $instance */
                 $instance = $attr->newInstance();
-                $meta->serializedName = $instance->getSerializedName();
+                $data['serializedName'] = $instance->getSerializedName();
                 break;
 
             case MaxDepth::class:
                 /** @var MaxDepth $instance */
                 $instance = $attr->newInstance();
-                $meta->maxDepth = $instance->getMaxDepth();
+                $data['maxDepth'] = $instance->getMaxDepth();
                 break;
         }
     }
@@ -416,12 +501,31 @@ final class MetadataFactory implements MetadataFactoryInterface
      * @param string                                                                                $propertyName PHP property / virtual-property name
      * @param \ReflectionType|\ReflectionNamedType|\ReflectionUnionType|\ReflectionIntersectionType|null $reflType Raw reflection type for fallback
      */
-    private function resolveType(
-        string $className,
-        string $propertyName,
-        ?\ReflectionType $reflType,
-        PropertyMetadata $meta,
-    ): void {
+    /**
+     * Create an empty type data array with default values.
+     *
+     * @return array{type: ?string, isNested: bool, isCollection: bool, collectionValueType: ?string, nullable: bool}
+     */
+    private function createEmptyTypeData(): array
+    {
+        return [
+            'type' => null,
+            'isNested' => false,
+            'isCollection' => false,
+            'collectionValueType' => null,
+            'nullable' => false,
+        ];
+    }
+
+    /**
+     * Resolve type information for a property.
+     *
+     * @return array{type: ?string, isNested: bool, isCollection: bool, collectionValueType: ?string, nullable: bool}
+     */
+    private function resolveTypeData(string $className, string $propertyName, ?\ReflectionType $reflType): array
+    {
+        $data = $this->createEmptyTypeData();
+
         // --- Preferred path: Symfony PropertyInfo (richer / docblock-aware) ---
         try {
             $infoTypes = $this->propertyInfoExtractor->getTypes($className, $propertyName);
@@ -430,27 +534,30 @@ final class MetadataFactory implements MetadataFactoryInterface
         }
 
         if ($infoTypes !== null && $infoTypes !== []) {
-            $this->applyPropertyInfoTypes($infoTypes, $meta);
-            return;
+            $this->collectPropertyInfoTypes($infoTypes, $data);
+            return $data;
         }
 
         // --- Fallback: raw PHP ReflectionType ---
         if ($reflType !== null) {
-            $this->applyReflectionType($reflType, $meta);
+            $this->collectReflectionType($reflType, $data);
         }
+
+        return $data;
     }
 
     /**
-     * Apply type information returned by Symfony PropertyInfo extractors.
+     * Collect type information returned by Symfony PropertyInfo extractors.
      *
      * @param list<Type> $types
+     * @param array{type: ?string, isNested: bool, isCollection: bool, collectionValueType: ?string, nullable: bool} $data
      */
-    private function applyPropertyInfoTypes(array $types, PropertyMetadata $meta): void
+    private function collectPropertyInfoTypes(array $types, array &$data): void
     {
         // Mark as nullable if any type slot is null
         foreach ($types as $type) {
             if ($type->isNullable() || $type->getBuiltinType() === Type::BUILTIN_TYPE_NULL) {
-                $meta->nullable = true;
+                $data['nullable'] = true;
             }
         }
 
@@ -474,8 +581,8 @@ final class MetadataFactory implements MetadataFactoryInterface
             || $builtinType === Type::BUILTIN_TYPE_ARRAY
             || $builtinType === Type::BUILTIN_TYPE_ITERABLE
         ) {
-            $meta->isCollection = true;
-            $meta->type = $builtinType;
+            $data['isCollection'] = true;
+            $data['type'] = $builtinType;
 
             $valueTypes = $primary->getCollectionValueTypes();
 
@@ -483,7 +590,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 $valueType = $valueTypes[0];
 
                 if ($valueType->getBuiltinType() === Type::BUILTIN_TYPE_OBJECT) {
-                    $meta->collectionValueType = $valueType->getClassName();
+                    $data['collectionValueType'] = $valueType->getClassName();
                 }
             }
 
@@ -495,78 +602,87 @@ final class MetadataFactory implements MetadataFactoryInterface
             $fqcn = $primary->getClassName();
 
             if ($fqcn !== null) {
-                $meta->type = $fqcn;
-                $meta->isNested = true;
+                $data['type'] = $fqcn;
+                $data['isNested'] = true;
             } else {
-                $meta->type = Type::BUILTIN_TYPE_OBJECT;
+                $data['type'] = Type::BUILTIN_TYPE_OBJECT;
             }
 
             return;
         }
 
         // --- Scalar / built-in type ---
-        $meta->type = $builtinType;
+        $data['type'] = $builtinType;
     }
 
     /**
      * Apply type information obtained directly from PHP Reflection (fallback).
      */
-    private function applyReflectionType(\ReflectionType $reflType, PropertyMetadata $meta): void
+    /**
+     * Collect type information from a ReflectionType.
+     *
+     * @param array{type: ?string, isNested: bool, isCollection: bool, collectionValueType: ?string, nullable: bool} $data
+     */
+    private function collectReflectionType(\ReflectionType $reflType, array &$data): void
     {
         if ($reflType instanceof \ReflectionNamedType) {
-            $this->applyNamedReflectionType($reflType, $meta);
+            $this->collectNamedReflectionType($reflType, $data);
             return;
         }
 
         if ($reflType instanceof \ReflectionUnionType) {
-            $this->applyUnionReflectionType($reflType, $meta);
+            $this->collectUnionReflectionType($reflType, $data);
             return;
         }
 
         // ReflectionIntersectionType (PHP 8.1+): all parts are class/interface names
         if ($reflType instanceof \ReflectionIntersectionType) {
-            $meta->isNested = true;
+            $data['isNested'] = true;
 
             $parts = $reflType->getTypes();
 
             if ($parts !== []) {
                 /** @var \ReflectionNamedType $first */
                 $first = $parts[0];
-                $meta->type = $first->getName();
+                $data['type'] = $first->getName();
             }
         }
     }
 
     /**
-     * Apply a single {@see \ReflectionNamedType} to a PropertyMetadata.
+     * Collect type information from a single {@see \ReflectionNamedType}.
+     *
+     * @param array{type: ?string, isNested: bool, isCollection: bool, collectionValueType: ?string, nullable: bool} $data
      */
-    private function applyNamedReflectionType(\ReflectionNamedType $type, PropertyMetadata $meta): void
+    private function collectNamedReflectionType(\ReflectionNamedType $type, array &$data): void
     {
-        $meta->nullable = $meta->nullable || $type->allowsNull();
+        $data['nullable'] = $data['nullable'] || $type->allowsNull();
         $typeName = $type->getName();
 
         if ($type->isBuiltin()) {
             if ($typeName === Type::BUILTIN_TYPE_ARRAY || $typeName === Type::BUILTIN_TYPE_ITERABLE) {
-                $meta->isCollection = true;
+                $data['isCollection'] = true;
             }
 
-            $meta->type = $typeName;
+            $data['type'] = $typeName;
 
             return;
         }
 
         // Non-built-in → fully-qualified class / interface / enum name
-        $meta->type = $typeName;
-        $meta->isNested = !$this->isScalarTypeName($typeName);
+        $data['type'] = $typeName;
+        $data['isNested'] = !$this->isScalarTypeName($typeName);
     }
 
     /**
-     * Apply a {@see \ReflectionUnionType} (e.g. `string|int|null`) to a
-     * PropertyMetadata, using the first non-null type as the representative.
+     * Collect type information from a {@see \ReflectionUnionType} (e.g. `string|int|null`),
+     * using the first non-null type as the representative.
+     *
+     * @param array{type: ?string, isNested: bool, isCollection: bool, collectionValueType: ?string, nullable: bool} $data
      */
-    private function applyUnionReflectionType(\ReflectionUnionType $type, PropertyMetadata $meta): void
+    private function collectUnionReflectionType(\ReflectionUnionType $type, array &$data): void
     {
-        $meta->nullable = $meta->nullable || $type->allowsNull();
+        $data['nullable'] = $data['nullable'] || $type->allowsNull();
 
         $nonNull = array_values(array_filter(
             $type->getTypes(),
@@ -580,11 +696,11 @@ final class MetadataFactory implements MetadataFactoryInterface
         /** @var \ReflectionNamedType $first */
         $first = $nonNull[0];
 
-        // Apply but restore the nullable flag afterwards since applyNamedReflectionType
+        // Collect but restore the nullable flag afterwards since collectNamedReflectionType
         // may reset it based solely on the individual type's allowsNull() value.
-        $savedNullable = $meta->nullable;
-        $this->applyNamedReflectionType($first, $meta);
-        $meta->nullable = $savedNullable || $type->allowsNull();
+        $savedNullable = $data['nullable'];
+        $this->collectNamedReflectionType($first, $data);
+        $data['nullable'] = $savedNullable || $type->allowsNull();
     }
 
     // -------------------------------------------------------------------------

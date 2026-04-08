@@ -55,7 +55,7 @@ final class ClassMetadata implements \Stringable
     public function getProperty(string $name): ?PropertyMetadata
     {
         foreach ($this->properties as $property) {
-            if ($property->name === $name) {
+            if ($property->getName() === $name) {
                 return $property;
             }
         }
@@ -70,7 +70,7 @@ final class ClassMetadata implements \Stringable
     public function hasGroupConstraints(): bool
     {
         foreach ($this->properties as $property) {
-            if ($property->groups !== []) {
+            if ($property->getGroups() !== []) {
                 return true;
             }
         }
@@ -84,7 +84,7 @@ final class ClassMetadata implements \Stringable
     public function hasMaxDepthConstraints(): bool
     {
         foreach ($this->properties as $property) {
-            if ($property->maxDepth !== null) {
+            if ($property->getMaxDepth() !== null) {
                 return true;
             }
         }
@@ -99,7 +99,7 @@ final class ClassMetadata implements \Stringable
     public function hasNestedObjects(): bool
     {
         foreach ($this->properties as $property) {
-            if ($property->isNested) {
+            if ($property->isNested()) {
                 return true;
             }
         }
@@ -113,7 +113,7 @@ final class ClassMetadata implements \Stringable
     public function hasCollections(): bool
     {
         foreach ($this->properties as $property) {
-            if ($property->isCollection) {
+            if ($property->isCollection()) {
                 return true;
             }
         }
@@ -133,12 +133,12 @@ final class ClassMetadata implements \Stringable
         $types = [];
 
         foreach ($this->properties as $property) {
-            if ($property->isNested && $property->type !== null) {
-                $types[$property->type] = $property->type;
+            if ($property->isNested() && $property->getType() !== null) {
+                $types[$property->getType()] = $property->getType();
             }
 
-            if ($property->isCollection && $property->collectionValueType !== null) {
-                $types[$property->collectionValueType] = $property->collectionValueType;
+            if ($property->isCollection() && $property->getCollectionValueType() !== null) {
+                $types[$property->getCollectionValueType()] = $property->getCollectionValueType();
             }
         }
 

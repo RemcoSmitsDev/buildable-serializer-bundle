@@ -4,24 +4,9 @@ declare(strict_types=1);
 
 namespace Buildable\SerializerBundle\Metadata;
 
-/**
- * Describes how a property value is read from an object during normalization.
- *
- * - {@see self::METHOD}   – the value is retrieved by calling a public method
- *                           (a getter, isser, or hasser) on the object.
- * - {@see self::PROPERTY} – the value is read directly from a public property
- *                           (including promoted constructor parameters).
- */
 enum AccessorType: string
 {
-    /**
-     * Access via a public method call: $object->getName(), $object->isActive(), etc.
-     */
     case METHOD = 'METHOD';
-
-    /**
-     * Access via a public property read: $object->name, $object->active, etc.
-     */
     case PROPERTY = 'PROPERTY';
 
     /**

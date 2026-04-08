@@ -28,14 +28,21 @@ final class ClassMetadataTest extends TestCase
 
     private function makeProperty(string $name, array $overrides = []): PropertyMetadata
     {
-        $pm = new PropertyMetadata();
-        $pm->name = $name;
-
-        foreach ($overrides as $key => $value) {
-            $pm->{$key} = $value;
-        }
-
-        return $pm;
+        return new PropertyMetadata(
+            name: $name,
+            serializedName: $overrides['serializedName'] ?? null,
+            groups: $overrides['groups'] ?? [],
+            ignored: $overrides['ignored'] ?? false,
+            type: $overrides['type'] ?? null,
+            isNested: $overrides['isNested'] ?? false,
+            isCollection: $overrides['isCollection'] ?? false,
+            collectionValueType: $overrides['collectionValueType'] ?? null,
+            accessor: $overrides['accessor'] ?? '',
+            accessorType: $overrides['accessorType'] ?? AccessorType::METHOD,
+            maxDepth: $overrides['maxDepth'] ?? null,
+            nullable: $overrides['nullable'] ?? false,
+            isReadonly: $overrides['isReadonly'] ?? false,
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -96,7 +103,7 @@ final class ClassMetadataTest extends TestCase
         $result = $cm->getProperty('foo');
 
         $this->assertNotNull($result);
-        $this->assertSame('foo', $result->name);
+        $this->assertSame('foo', $result->getName());
     }
 
     public function testGetPropertyReturnsNullWhenNameDoesNotMatch(): void
@@ -117,7 +124,7 @@ final class ClassMetadataTest extends TestCase
         $result = $cm->getProperty('beta');
 
         $this->assertNotNull($result);
-        $this->assertSame('beta', $result->name);
+        $this->assertSame('beta', $result->getName());
     }
 
     // -------------------------------------------------------------------------

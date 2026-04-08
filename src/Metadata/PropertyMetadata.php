@@ -14,103 +14,125 @@ namespace Buildable\SerializerBundle\Metadata;
 final class PropertyMetadata implements \Stringable
 {
     /**
-     * The property's original name as declared in the PHP class.
+     * @param string $name The property's original name as declared in the PHP class.
+     * @param string|null $serializedName The name to use in the serialized output.
+     *                                    When null the property's original name (possibly transformed by a name
+     *                                    converter) is used.
+     *                                    Populated from the {@see \Symfony\Component\Serializer\Attribute\SerializedName} attribute.
+     * @param string[] $groups The serialization groups this property belongs to.
+     *                         An empty array means the property is included in every group (no filtering).
+     *                         Populated from the {@see \Symfony\Component\Serializer\Attribute\Groups} attribute.
+     * @param bool $ignored When true this property must be skipped entirely during normalization /
+     *                      denormalization.
+     *                      Populated from the {@see \Symfony\Component\Serializer\Attribute\Ignore} attribute.
+     * @param string|null $type The resolved PHP type string for this property (e.g. "string", "int",
+     *                          "float", "bool", "array", "DateTimeImmutable", "App\Entity\User").
+     *                          Null when the type cannot be determined.
+     * @param bool $isNested Whether the property's type is a non-scalar, non-collection object that
+     *                       requires its own normalizer to be invoked recursively.
+     *                       A property is considered nested when its resolved type is a class name
+     *                       that is not one of the built-in PHP scalar or pseudo-types.
+     * @param bool $isCollection Whether the property holds a collection of values (typed as "array" or
+     *                           "iterable", or detected via docblock as Type[]).
+     * @param string|null $collectionValueType The fully-qualified class name of the collection's value type.
+     *                                         Only populated when {@see $isCollection} is true and the element type
+     *                                         could be resolved (e.g. from "@var array<App\Entity\Tag>" or "Tag[]").
+     * @param string $accessor The name of the method or property used to read the value during
+     *                         normalization (e.g. "getName", "isActive", "publicField").
+     * @param AccessorType $accessorType How the accessor is resolved at runtime.
+     *                                   - "METHOD"   – call $object->{accessor}()
+     *                                   - "PROPERTY" – read $object->{accessor} directly
+     * @param int|null $maxDepth The maximum serialization depth for this property.
+     *                           Null means no depth limit is enforced.
+     *                           Populated from the {@see \Symfony\Component\Serializer\Attribute\MaxDepth} attribute.
+     * @param bool $nullable Whether the property's type is nullable (declared as "?Type" or
+     *                       "Type|null").
+     * @param bool $isReadonly Whether the underlying class property was declared with the "readonly"
+     *                         modifier (PHP 8.1+).
      */
-    public string $name = '';
+    public function __construct(
+        private string $name = '',
+        private ?string $serializedName = null,
+        private array $groups = [],
+        private bool $ignored = false,
+        private ?string $type = null,
+        private bool $isNested = false,
+        private bool $isCollection = false,
+        private ?string $collectionValueType = null,
+        private string $accessor = '',
+        private AccessorType $accessorType = AccessorType::METHOD,
+        private ?int $maxDepth = null,
+        private bool $nullable = false,
+        private bool $isReadonly = false,
+    ) {}
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getSerializedName(): ?string
+    {
+        return $this->serializedName;
+    }
 
     /**
-     * The name to use in the serialized output.
-     * When null the property's original name (possibly transformed by a name
-     * converter) is used.
-     *
-     * Populated from the {@see \Symfony\Component\Serializer\Attribute\SerializedName} attribute.
+     * @return string[]
      */
-    public ?string $serializedName = null;
+    public function getGroups(): array
+    {
+        return $this->groups;
+    }
 
-    /**
-     * The serialization groups this property belongs to.
-     * An empty array means the property is included in every group (no filtering).
-     *
-     * Populated from the {@see \Symfony\Component\Serializer\Attribute\Groups} attribute.
-     *
-     * @var string[]
-     */
-    public array $groups = [];
+    public function isIgnored(): bool
+    {
+        return $this->ignored;
+    }
 
-    /**
-     * When true this property must be skipped entirely during normalization /
-     * denormalization.
-     *
-     * Populated from the {@see \Symfony\Component\Serializer\Attribute\Ignore} attribute.
-     */
-    public bool $ignored = false;
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
 
-    /**
-     * The resolved PHP type string for this property (e.g. "string", "int",
-     * "float", "bool", "array", "DateTimeImmutable", "App\Entity\User").
-     * Null when the type cannot be determined.
-     */
-    public ?string $type = null;
+    public function isNested(): bool
+    {
+        return $this->isNested;
+    }
 
-    /**
-     * Whether the property's type is a non-scalar, non-collection object that
-     * requires its own normalizer to be invoked recursively.
-     *
-     * A property is considered nested when its resolved type is a class name
-     * that is not one of the built-in PHP scalar or pseudo-types.
-     */
-    public bool $isNested = false;
+    public function isCollection(): bool
+    {
+        return $this->isCollection;
+    }
 
-    /**
-     * Whether the property holds a collection of values (typed as "array" or
-     * "iterable", or detected via docblock as Type[]).
-     */
-    public bool $isCollection = false;
+    public function getCollectionValueType(): ?string
+    {
+        return $this->collectionValueType;
+    }
 
-    /**
-     * The fully-qualified class name of the collection's value type.
-     * Only populated when {@see $isCollection} is true and the element type
-     * could be resolved (e.g. from "@var array<App\Entity\Tag>" or "Tag[]").
-     */
-    public ?string $collectionValueType = null;
+    public function getAccessor(): string
+    {
+        return $this->accessor;
+    }
 
-    /**
-     * The name of the method or property used to read the value during
-     * normalization (e.g. "getName", "isActive", "publicField").
-     */
-    public string $accessor = '';
+    public function getAccessorType(): AccessorType
+    {
+        return $this->accessorType;
+    }
 
-    /**
-     * How the accessor is resolved at runtime.
-     *
-     * - "METHOD"   – call $object->{accessor}()
-     * - "PROPERTY" – read $object->{accessor} directly
-     */
-    public AccessorType $accessorType = AccessorType::METHOD;
+    public function getMaxDepth(): ?int
+    {
+        return $this->maxDepth;
+    }
 
-    /**
-     * The maximum serialization depth for this property.
-     * Null means no depth limit is enforced.
-     *
-     * Populated from the {@see \Symfony\Component\Serializer\Attribute\MaxDepth} attribute.
-     */
-    public ?int $maxDepth = null;
+    public function isNullable(): bool
+    {
+        return $this->nullable;
+    }
 
-    /**
-     * Whether the property's type is nullable (declared as "?Type" or
-     * "Type|null").
-     */
-    public bool $nullable = false;
-
-    /**
-     * Whether the underlying class property was declared with the "readonly"
-     * modifier (PHP 8.1+).
-     */
-    public bool $isReadonly = false;
-
-    // -------------------------------------------------------------------------
-    // Convenience helpers
-    // -------------------------------------------------------------------------
+    public function isReadonly(): bool
+    {
+        return $this->isReadonly;
+    }
 
     /**
      * Returns true when this property participates in the given serialization

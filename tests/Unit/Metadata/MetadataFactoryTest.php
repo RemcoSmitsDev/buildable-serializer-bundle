@@ -80,7 +80,7 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
-        $names = array_map(static fn($p) => $p->name, $metadata->properties);
+        $names = array_map(static fn($p) => $p->getName(), $metadata->properties);
         $this->assertContains('id', $names);
         $this->assertContains('title', $names);
         $this->assertContains('content', $names);
@@ -91,7 +91,7 @@ final class MetadataFactoryTest extends TestCase
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
         foreach ($metadata->properties as $property) {
-            $this->assertFalse($property->ignored, "Property '{$property->name}' should not be ignored.");
+            $this->assertFalse($property->isIgnored(), "Property '{$property->getName()}' should not be ignored.");
         }
     }
 
@@ -106,8 +106,8 @@ final class MetadataFactoryTest extends TestCase
         foreach ($metadata->properties as $property) {
             $this->assertSame(
                 AccessorType::METHOD,
-                $property->accessorType,
-                "Property '{$property->name}' should use METHOD accessor.",
+                $property->getAccessorType(),
+                "Property '{$property->getName()}' should use METHOD accessor.",
             );
         }
     }
@@ -118,7 +118,7 @@ final class MetadataFactoryTest extends TestCase
 
         $idProp = $metadata->getProperty('id');
         $this->assertNotNull($idProp, 'Property "id" should be discoverable.');
-        $this->assertSame('getId', $idProp->accessor);
+        $this->assertSame('getId', $idProp->getAccessor());
     }
 
     public function testSimpleBlogTitleGetterName(): void
@@ -127,7 +127,7 @@ final class MetadataFactoryTest extends TestCase
 
         $titleProp = $metadata->getProperty('title');
         $this->assertNotNull($titleProp);
-        $this->assertSame('getTitle', $titleProp->accessor);
+        $this->assertSame('getTitle', $titleProp->getAccessor());
     }
 
     // -------------------------------------------------------------------------
@@ -140,8 +140,8 @@ final class MetadataFactoryTest extends TestCase
 
         $idProp = $metadata->getProperty('id');
         $this->assertNotNull($idProp, 'Property "id" should exist in BlogWithGroups.');
-        $this->assertContains('blog:read', $idProp->groups);
-        $this->assertContains('blog:list', $idProp->groups);
+        $this->assertContains('blog:read', $idProp->getGroups());
+        $this->assertContains('blog:list', $idProp->getGroups());
     }
 
     public function testBlogWithGroupsHasGroupConstraints(): void
@@ -155,7 +155,7 @@ final class MetadataFactoryTest extends TestCase
     {
         $metadata = $this->factory->getMetadataFor(BlogWithGroups::class);
 
-        $names = array_map(static fn($p) => $p->name, $metadata->properties);
+        $names = array_map(static fn($p) => $p->getName(), $metadata->properties);
         $this->assertNotContains('internalField', $names, '"internalField" carries #[Ignore] and must be excluded.');
     }
 
@@ -165,7 +165,7 @@ final class MetadataFactoryTest extends TestCase
 
         $authorName = $metadata->getProperty('authorName');
         $this->assertNotNull($authorName, 'Property "authorName" should exist.');
-        $this->assertSame('author_name', $authorName->serializedName);
+        $this->assertSame('author_name', $authorName->getSerializedName());
     }
 
     public function testBlogWithGroupsContentOnlyInReadGroup(): void
@@ -174,7 +174,7 @@ final class MetadataFactoryTest extends TestCase
 
         $contentProp = $metadata->getProperty('content');
         $this->assertNotNull($contentProp);
-        $this->assertSame(['blog:read'], $contentProp->groups);
+        $this->assertSame(['blog:read'], $contentProp->getGroups());
     }
 
     // -------------------------------------------------------------------------
@@ -187,7 +187,7 @@ final class MetadataFactoryTest extends TestCase
 
         $authorProp = $metadata->getProperty('author');
         $this->assertNotNull($authorProp, 'Property "author" should be discoverable.');
-        $this->assertTrue($authorProp->isNested, '"author" should be marked as nested.');
+        $this->assertTrue($authorProp->isNested(), '"author" should be marked as nested.');
     }
 
     public function testBlogWithAuthorHasNestedObjects(): void
@@ -203,7 +203,7 @@ final class MetadataFactoryTest extends TestCase
 
         $authorProp = $metadata->getProperty('author');
         $this->assertNotNull($authorProp);
-        $this->assertSame(Author::class, $authorProp->type);
+        $this->assertSame(Author::class, $authorProp->getType());
     }
 
     // -------------------------------------------------------------------------
@@ -216,7 +216,7 @@ final class MetadataFactoryTest extends TestCase
 
         $excerptProp = $metadata->getProperty('excerpt');
         $this->assertNotNull($excerptProp, 'Property "excerpt" should be discoverable.');
-        $this->assertTrue($excerptProp->nullable, '"excerpt" is nullable and should be detected.');
+        $this->assertTrue($excerptProp->isNullable(), '"excerpt" is nullable and should be detected.');
     }
 
     public function testNonNullablePropertyNotMarkedNullable(): void
@@ -225,7 +225,7 @@ final class MetadataFactoryTest extends TestCase
 
         $idProp = $metadata->getProperty('id');
         $this->assertNotNull($idProp);
-        $this->assertFalse($idProp->nullable, '"id" is not nullable.');
+        $this->assertFalse($idProp->isNullable(), '"id" is not nullable.');
     }
 
     // -------------------------------------------------------------------------
