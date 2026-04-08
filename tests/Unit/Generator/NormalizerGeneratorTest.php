@@ -11,6 +11,7 @@ use BuildableSerializerBundle\Tests\AbstractTestCase;
 use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
+use BuildableSerializerBundle\Tests\Fixtures\Model\ScalarTypesFixture;
 use BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
@@ -305,6 +306,47 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $content = file_get_contents($path);
 
         $this->assertStringContainsString('skipNullValues', $content);
+    }
+
+    public function testMixedPropertyKeepsNullGuardWhenSkipNullValuesActive(): void
+    {
+        // A `mixed` property can hold null at runtime, so the null-guard
+        // ($val !== null || !$skipNullValues) must still be emitted for it.
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(ScalarTypesFixture::class);
+        $path = $this->generator->generateAndWrite($metadata);
+        $content = file_get_contents($path);
+
+        // The guard must be present and reference the mixed accessor
+        $this->assertStringContainsString('->getMeta()', $content);
+        $this->assertStringContainsString('skipNullValues', $content);
+
+        // Locate the getMeta() block and verify the null-guard wraps it
+        $metaPos = strpos($content, '->getMeta()');
+        $nullGuardPos = strpos($content, 'skipNullValues');
+        $this->assertNotFalse($metaPos);
+        $this->assertNotFalse($nullGuardPos);
+
+        // The _val assignment and the if-guard must appear before the data assignment for meta
+        $valAssignPos = strpos($content, '_val = $object->getMeta()');
+        $this->assertNotFalse($valAssignPos, 'Expected $_val = $object->getMeta() assignment for mixed property');
+    }
+
+    public function testNonNullableScalarPropertyOmitsNullGuard(): void
+    {
+        // A non-nullable scalar (e.g. `string $name`) can never be null, so the
+        // null-guard must NOT be emitted — the value should be assigned directly.
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(ScalarTypesFixture::class);
+        $path = $this->generator->generateAndWrite($metadata);
+        $content = file_get_contents($path);
+
+        $this->assertStringContainsString('->getName()', $content);
+
+        // There must be no intermediate $_val assignment for the non-nullable name property;
+        // the getter must be used directly in the data assignment.
+        $this->assertStringContainsString("\$data['name'] = \$object->getName()", $content);
+
+        // And no $_val = $object->getName() temp variable should appear
+        $this->assertStringNotContainsString('_val = $object->getName()', $content);
     }
 
     public function testGenerateAndWriteOverwritesExistingFile(): void

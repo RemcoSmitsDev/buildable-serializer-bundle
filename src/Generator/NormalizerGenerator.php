@@ -32,8 +32,8 @@ use PhpParser\Node\Expr\Cast\Int_ as CastInt;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Expr\Instanceof_;
+use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\PreInc;
@@ -481,13 +481,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             );
 
             $stmts[] = new Expression(
-                new Assign(
-                    new Variable('groupsLookup'),
-                    new FuncCall(new Name('array_fill_keys'), [
-                        new Arg(new Variable('groups')),
-                        new Arg(new ConstFetch(new Name('true'))),
-                    ]),
-                ),
+                new Assign(new Variable('groupsLookup'), new FuncCall(new Name('array_fill_keys'), [
+                    new Arg(new Variable('groups')),
+                    new Arg(new ConstFetch(new Name('true'))),
+                ])),
             );
         }
 
@@ -797,16 +794,13 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         // --- groups wrapper --------------------------------------------------
         if ($needsGroupBlock) {
             // if ($groups === [] || isset($groupsLookup['group1']) || isset($groupsLookup['group2']) || ...) { ... }
-            $groupCondition = new Identical(
-                new Variable('groups'),
-                new Array_([], ['kind' => Array_::KIND_SHORT]),
-            );
+            $groupCondition = new Identical(new Variable('groups'), new Array_([], ['kind' => Array_::KIND_SHORT]));
 
             foreach ($property->getGroups() as $group) {
-                $groupCondition = new Expr\BinaryOp\BooleanOr(
-                    $groupCondition,
-                    new Isset_([new ArrayDimFetch(new Variable('groupsLookup'), new String_($group))]),
-                );
+                $groupCondition = new Expr\BinaryOp\BooleanOr($groupCondition, new Isset_([new ArrayDimFetch(
+                    new Variable('groupsLookup'),
+                    new String_($group),
+                )]));
             }
 
             return [new If_($groupCondition, ['stmts' => $coreStmts])];
@@ -834,7 +828,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             return $this->buildCollectionValueAssignment($property, $rawValueExpr, $keyExpr, $hasSkipNull);
         }
 
-        return $this->buildScalarValueAssignment($rawValueExpr, $keyExpr, $hasSkipNull);
+        return $this->buildScalarValueAssignment($property, $rawValueExpr, $keyExpr, $hasSkipNull);
     }
 
     /**
@@ -953,12 +947,23 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *
      * @return Stmt[]
      */
-    private function buildScalarValueAssignment(Expr $rawValueExpr, Expr $keyExpr, bool $hasSkipNull): array
-    {
+    private function buildScalarValueAssignment(
+        PropertyMetadata $property,
+        Expr $rawValueExpr,
+        Expr $keyExpr,
+        bool $hasSkipNull,
+    ): array {
         $null = new ConstFetch(new Name('null'));
         $dataSet = fn(Expr $val) => new Expression(new Assign(new ArrayDimFetch(new Variable('data'), $keyExpr), $val));
 
-        if (!$hasSkipNull) {
+        // When the property cannot be null (not nullable and type is known/not mixed),
+        // skip the null-guard entirely and assign the value directly, even when
+        // skip_null_values is active. Unknown types (null) and mixed must keep the guard
+        // since they can legitimately hold null at runtime.
+        if (
+            $hasSkipNull === false
+            || $property->isNullable() === false && is_string($property->getType()) && $property->getType() !== 'mixed'
+        ) {
             return [$dataSet($rawValueExpr)];
         }
 
