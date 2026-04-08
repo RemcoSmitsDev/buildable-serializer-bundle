@@ -103,12 +103,6 @@ All options are optional and fall back to the defaults shown above.
 ### 1. Mark your models
 
 ```php
-use BuildableSerializerBundle\Attribute\Serializable;
-use BuildableSerializerBundle\Attribute\Groups;
-use BuildableSerializerBundle\Attribute\SerializedName;
-use BuildableSerializerBundle\Attribute\Ignore;
-use BuildableSerializerBundle\Attribute\MaxDepth;
-
 #[Serializable]
 class User
 {
@@ -366,28 +360,16 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
         if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
-            $_val = $object->getId();
-            if ($_val !== null || !$skipNullValues) {
-                $data['id'] = $_val;
-            }
+            $data['id'] = $object->getId();
         }
         if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
-            $_val = $object->getFirstName();
-            if ($_val !== null || !$skipNullValues) {
-                $data['firstName'] = $_val;
-            }
+            $data['firstName'] = $object->getFirstName();
         }
         if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
-            $_val = $object->getLastName();
-            if ($_val !== null || !$skipNullValues) {
-                $data['lastName'] = $_val;
-            }
+            $data['lastName'] = $object->getLastName();
         }
         if ($groups === [] || isset($groupsLookup['user:read'])) {
-            $_val = $object->getEmail();
-            if ($_val !== null || !$skipNullValues) {
-                $data['email_address'] = $_val;
-            }
+            $data['email_address'] = $object->getEmail();
         }
         if ($groups === [] || isset($groupsLookup['user:read'])) {
             $_val = $object->getAddress();
@@ -398,10 +380,7 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
             }
         }
         if ($groups === [] || isset($groupsLookup['user:read'])) {
-            $_val = $object->isActive();
-            if ($_val !== null || !$skipNullValues) {
-                $data['active'] = $_val;
-            }
+            $data['active'] = $object->isActive();
         }
         return $data;
     }
@@ -464,22 +443,13 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
         if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
-            $_val = $object->getId();
-            if ($_val !== null || !$skipNullValues) {
-                $data['id'] = $_val;
-            }
+            $data['id'] = $object->getId();
         }
         if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
-            $_val = $object->getTitle();
-            if ($_val !== null || !$skipNullValues) {
-                $data['title'] = $_val;
-            }
+            $data['title'] = $object->getTitle();
         }
         if ($groups === [] || isset($groupsLookup['post:read'])) {
-            $_val = $object->getContent();
-            if ($_val !== null || !$skipNullValues) {
-                $data['content'] = $_val;
-            }
+            $data['content'] = $object->getContent();
         }
         if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
             $_depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, 'App\Model\Post', 'author');
@@ -539,28 +509,16 @@ final class AddressNormalizer implements NormalizerInterface, GeneratedNormalize
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
         if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $_val = $object->street;
-            if ($_val !== null || !$skipNullValues) {
-                $data['street'] = $_val;
-            }
+            $data['street'] = $object->street;
         }
         if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $_val = $object->city;
-            if ($_val !== null || !$skipNullValues) {
-                $data['city'] = $_val;
-            }
+            $data['city'] = $object->city;
         }
         if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $_val = $object->postalCode;
-            if ($_val !== null || !$skipNullValues) {
-                $data['postal_code'] = $_val;
-            }
+            $data['postal_code'] = $object->postalCode;
         }
         if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $_val = $object->country;
-            if ($_val !== null || !$skipNullValues) {
-                $data['country'] = $_val;
-            }
+            $data['country'] = $object->country;
         }
         return $data;
     }
