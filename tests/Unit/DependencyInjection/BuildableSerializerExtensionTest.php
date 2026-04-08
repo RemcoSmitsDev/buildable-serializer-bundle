@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Unit\DependencyInjection;
+namespace BuildableSerializerBundle\Tests\Unit\DependencyInjection;
 
-use Buildable\SerializerBundle\DependencyInjection\BuildableSerializerExtension;
+use BuildableSerializerBundle\DependencyInjection\BuildableSerializerExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
- * @covers \Buildable\SerializerBundle\DependencyInjection\BuildableSerializerExtension
+ * @covers \BuildableSerializerBundle\DependencyInjection\BuildableSerializerExtension
  */
 final class BuildableSerializerExtensionTest extends TestCase
 {
@@ -327,7 +327,7 @@ final class BuildableSerializerExtensionTest extends TestCase
         $container = $this->loadExtensionForServices([[]]);
 
         $this->assertTrue(
-            $container->hasDefinition("Buildable\SerializerBundle\Generator\NormalizerGenerator"),
+            $container->hasDefinition("BuildableSerializerBundle\Generator\NormalizerGenerator"),
             'NormalizerGenerator service should be registered.',
         );
     }
@@ -337,7 +337,7 @@ final class BuildableSerializerExtensionTest extends TestCase
         $container = $this->loadExtensionForServices([[]]);
 
         $this->assertTrue(
-            $container->hasDefinition("Buildable\SerializerBundle\Metadata\MetadataFactory"),
+            $container->hasDefinition("BuildableSerializerBundle\Metadata\MetadataFactory"),
             'MetadataFactory service should be registered.',
         );
     }

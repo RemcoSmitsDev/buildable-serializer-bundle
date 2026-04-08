@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Fixtures\Model;
+namespace BuildableSerializerBundle\Tests\Fixtures\Model;
 
 class BlogWithCollections
 {

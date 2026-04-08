@@ -4,40 +4,40 @@ services:
     autoconfigure: false
     public: false
 
-  Buildable\SerializerBundle\Metadata\MetadataFactory:
+  BuildableSerializerBundle\Metadata\MetadataFactory:
     arguments:
       $propertyInfoExtractor: "@property_info"
     tags:
       - { name: buildable_serializer.metadata_factory }
 
-  Buildable\SerializerBundle\Discovery\FinderClassDiscovery:
+  BuildableSerializerBundle\Discovery\FinderClassDiscovery:
     arguments:
-      $metadataFactory: '@Buildable\SerializerBundle\Metadata\MetadataFactory'
+      $metadataFactory: '@BuildableSerializerBundle\Metadata\MetadataFactory'
       $paths: "%buildable_serializer.paths%"
     tags:
       - { name: buildable_serializer.discovery }
 
-  Buildable\SerializerBundle\Discovery\ClassDiscoveryInterface:
-    alias: 'Buildable\SerializerBundle\Discovery\FinderClassDiscovery'
+  BuildableSerializerBundle\Discovery\ClassDiscoveryInterface:
+    alias: 'BuildableSerializerBundle\Discovery\FinderClassDiscovery'
     public: false
 
-  Buildable\SerializerBundle\Generator\NormalizerGenerator:
+  BuildableSerializerBundle\Generator\NormalizerGenerator:
     arguments:
-      $metadataFactory: '@Buildable\SerializerBundle\Metadata\MetadataFactory'
+      $metadataFactory: '@BuildableSerializerBundle\Metadata\MetadataFactory'
       $cacheDir: "%buildable_serializer.cache_dir%"
       $generatedNamespace: "%buildable_serializer.generated_namespace%"
       $features: "%buildable_serializer.features%"
       $generation: "%buildable_serializer.generation%"
 
   # Alias so consumers that type-hint against the interface receive the concrete service.
-  Buildable\SerializerBundle\Generator\NormalizerGeneratorInterface:
-    alias: 'Buildable\SerializerBundle\Generator\NormalizerGenerator'
+  BuildableSerializerBundle\Generator\NormalizerGeneratorInterface:
+    alias: 'BuildableSerializerBundle\Generator\NormalizerGenerator'
     public: false
 
-  Buildable\SerializerBundle\CacheWarmer\NormalizerCacheWarmer:
+  BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer:
     arguments:
-      $generator: '@Buildable\SerializerBundle\Generator\NormalizerGenerator'
-      $discovery: '@Buildable\SerializerBundle\Discovery\FinderClassDiscovery'
+      $generator: '@BuildableSerializerBundle\Generator\NormalizerGenerator'
+      $discovery: '@BuildableSerializerBundle\Discovery\FinderClassDiscovery'
       $cacheDir: "%buildable_serializer.cache_dir%"
     tags:
       - { name: kernel.cache_warmer, priority: 10 }

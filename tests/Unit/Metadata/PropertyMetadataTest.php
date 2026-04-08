@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Unit\Metadata;
+namespace BuildableSerializerBundle\Tests\Unit\Metadata;
 
-use Buildable\SerializerBundle\Metadata\AccessorType;
-use Buildable\SerializerBundle\Metadata\PropertyMetadata;
+use BuildableSerializerBundle\Metadata\AccessorType;
+use BuildableSerializerBundle\Metadata\PropertyMetadata;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \Buildable\SerializerBundle\Metadata\PropertyMetadata
+ * @covers \BuildableSerializerBundle\Metadata\PropertyMetadata
  */
 final class PropertyMetadataTest extends TestCase
 {

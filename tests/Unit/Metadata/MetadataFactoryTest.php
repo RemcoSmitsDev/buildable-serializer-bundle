@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Unit\Metadata;
+namespace BuildableSerializerBundle\Tests\Unit\Metadata;
 
-use Buildable\SerializerBundle\Metadata\AccessorType;
-use Buildable\SerializerBundle\Metadata\MetadataFactory;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\Author;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\SimpleBlog;
+use BuildableSerializerBundle\Metadata\AccessorType;
+use BuildableSerializerBundle\Metadata\MetadataFactory;
+use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
+use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
+use BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
- * @covers \Buildable\SerializerBundle\Metadata\MetadataFactory
+ * @covers \BuildableSerializerBundle\Metadata\MetadataFactory
  */
 final class MetadataFactoryTest extends TestCase
 {

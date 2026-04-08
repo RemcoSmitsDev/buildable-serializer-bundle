@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Metadata;
+namespace BuildableSerializerBundle\Metadata;
 
 enum AccessorType: string
 {

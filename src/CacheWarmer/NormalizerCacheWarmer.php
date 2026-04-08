@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\CacheWarmer;
+namespace BuildableSerializerBundle\CacheWarmer;
 
-use Buildable\SerializerBundle\Discovery\ClassDiscoveryInterface;
-use Buildable\SerializerBundle\Generator\NormalizerGenerator;
-use Buildable\SerializerBundle\Generator\NormalizerGeneratorInterface;
+use BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
+use BuildableSerializerBundle\Generator\NormalizerGenerator;
+use BuildableSerializerBundle\Generator\NormalizerGeneratorInterface;
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 
 /**
@@ -15,7 +15,7 @@ use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
  *
  * This cache warmer is registered with the `kernel.cache_warmer` tag (priority 10)
  * so it runs early in the warm-up sequence, before the container is dumped. This
- * ensures that the {@see \Buildable\SerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass}
+ * ensures that the {@see \BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass}
  * can locate the generated files on the subsequent container rebuild triggered by
  * `cache:warmup --no-debug` or `cache:clear`.
  *

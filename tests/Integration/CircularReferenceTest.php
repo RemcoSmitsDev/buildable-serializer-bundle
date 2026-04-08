@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Integration;
+namespace BuildableSerializerBundle\Tests\Integration;
 
-use Buildable\SerializerBundle\Tests\AbstractTestCase;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\CircularReference;
+use BuildableSerializerBundle\Tests\AbstractTestCase;
+use BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
 use Symfony\Component\Serializer\Exception\CircularReferenceException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -107,7 +107,7 @@ final class CircularReferenceTest extends AbstractTestCase
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
         $this->assertInstanceOf(
-            \Buildable\SerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
             $this->normalizer,
         );
     }

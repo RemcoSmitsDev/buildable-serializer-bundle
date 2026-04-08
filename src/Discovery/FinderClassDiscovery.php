@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Discovery;
+namespace BuildableSerializerBundle\Discovery;
 
-use Buildable\SerializerBundle\Attribute\Serializable;
-use Buildable\SerializerBundle\Metadata\ClassMetadata;
-use Buildable\SerializerBundle\Metadata\MetadataFactoryInterface;
+use BuildableSerializerBundle\Attribute\Serializable;
+use BuildableSerializerBundle\Metadata\ClassMetadata;
+use BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
 use Symfony\Component\Finder\Finder;
 
 /**

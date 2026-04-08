@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Fixtures\Discovery;
+namespace BuildableSerializerBundle\Tests\Fixtures\Discovery;
 
-use Buildable\SerializerBundle\Attribute\Serializable;
+use BuildableSerializerBundle\Attribute\Serializable;
 
 /** Abstract class — must be skipped by discovery even with #[Serializable]. */
 #[Serializable]

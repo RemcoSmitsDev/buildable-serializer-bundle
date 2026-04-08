@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Fixtures\Discovery\Sub;
+namespace BuildableSerializerBundle\Tests\Fixtures\Discovery\Sub;
 
-use Buildable\SerializerBundle\Attribute\Serializable;
+use BuildableSerializerBundle\Attribute\Serializable;
 
 #[Serializable]
 final class NestedSerializableModel

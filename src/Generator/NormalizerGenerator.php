@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Generator;
+namespace BuildableSerializerBundle\Generator;
 
-use Buildable\SerializerBundle\Metadata\AccessorType;
-use Buildable\SerializerBundle\Metadata\ClassMetadata;
-use Buildable\SerializerBundle\Metadata\MetadataFactoryInterface;
-use Buildable\SerializerBundle\Metadata\PropertyMetadata;
+use BuildableSerializerBundle\Metadata\AccessorType;
+use BuildableSerializerBundle\Metadata\ClassMetadata;
+use BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
+use BuildableSerializerBundle\Metadata\PropertyMetadata;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment;
 use PhpParser\Comment\Doc;
@@ -108,7 +108,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      * Return the metadata factory used by this generator.
      *
      * Exposed so that consumers (e.g. the console command) can retrieve
-     * {@see \Buildable\SerializerBundle\Metadata\ClassMetadata} for a class
+     * {@see \BuildableSerializerBundle\Metadata\ClassMetadata} for a class
      * without having to inject the factory separately.
      */
     public function getMetadataFactory(): MetadataFactoryInterface

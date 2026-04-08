@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Metadata;
+namespace BuildableSerializerBundle\Metadata;
 
 /**
  * Contract for building class metadata used during normalizer generation.

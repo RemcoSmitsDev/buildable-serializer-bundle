@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Integration;
+namespace BuildableSerializerBundle\Tests\Integration;
 
-use Buildable\SerializerBundle\Tests\AbstractTestCase;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\SimpleBlog;
+use BuildableSerializerBundle\Tests\AbstractTestCase;
+use BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -183,7 +183,7 @@ final class GeneratedNormalizerTest extends AbstractTestCase
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
         $this->assertInstanceOf(
-            \Buildable\SerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
             $this->normalizer,
         );
     }

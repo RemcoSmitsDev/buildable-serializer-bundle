@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\DependencyInjection\Compiler;
+namespace BuildableSerializerBundle\DependencyInjection\Compiler;
 
-use Buildable\SerializerBundle\Discovery\FinderClassDiscovery;
-use Buildable\SerializerBundle\Generator\NormalizerGenerator;
-use Buildable\SerializerBundle\Metadata\MetadataFactory;
-use Buildable\SerializerBundle\Normalizer\GeneratedNormalizerInterface;
+use BuildableSerializerBundle\Discovery\FinderClassDiscovery;
+use BuildableSerializerBundle\Generator\NormalizerGenerator;
+use BuildableSerializerBundle\Metadata\MetadataFactory;
+use BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;

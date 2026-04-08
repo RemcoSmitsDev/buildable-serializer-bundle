@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Unit\Generator;
+namespace BuildableSerializerBundle\Tests\Unit\Generator;
 
-use Buildable\SerializerBundle\Generator\NormalizerGenerator;
-use Buildable\SerializerBundle\Metadata\ClassMetadata;
-use Buildable\SerializerBundle\Metadata\MetadataFactory;
-use Buildable\SerializerBundle\Tests\AbstractTestCase;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\Author;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\CircularReference;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\SimpleBlog;
+use BuildableSerializerBundle\Generator\NormalizerGenerator;
+use BuildableSerializerBundle\Metadata\ClassMetadata;
+use BuildableSerializerBundle\Metadata\MetadataFactory;
+use BuildableSerializerBundle\Tests\AbstractTestCase;
+use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
+use BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
+use BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
- * @covers \Buildable\SerializerBundle\Generator\NormalizerGenerator
+ * @covers \BuildableSerializerBundle\Generator\NormalizerGenerator
  */
 final class NormalizerGeneratorTest extends AbstractTestCase
 {

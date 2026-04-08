@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests;
+namespace BuildableSerializerBundle\Tests;
 
-use Buildable\SerializerBundle\Generator\NormalizerGenerator;
-use Buildable\SerializerBundle\Metadata\MetadataFactory;
+use BuildableSerializerBundle\Generator\NormalizerGenerator;
+use BuildableSerializerBundle\Metadata\MetadataFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;

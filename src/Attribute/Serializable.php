@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Attribute;
+namespace BuildableSerializerBundle\Attribute;
 
 /**
  * Marks a class for build-time normalizer generation.
@@ -14,7 +14,7 @@ namespace Buildable\SerializerBundle\Attribute;
  *
  * Example:
  *
- *     use Buildable\SerializerBundle\Attribute\Serializable;
+ *     use BuildableSerializerBundle\Attribute\Serializable;
  *
  *     #[Serializable]
  *     final class ProductDto

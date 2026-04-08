@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Discovery;
+namespace BuildableSerializerBundle\Discovery;
 
-use Buildable\SerializerBundle\Metadata\ClassMetadata;
+use BuildableSerializerBundle\Metadata\ClassMetadata;
 
 /**
  * Contract for discovering PHP classes that should have normalizers generated.
@@ -12,7 +12,7 @@ use Buildable\SerializerBundle\Metadata\ClassMetadata;
  * Implementations may discover classes in different ways:
  *
  * - {@see FinderClassDiscovery} — scans PSR-4 namespace-prefix → directory
- *   mappings for classes marked with {@see \Buildable\SerializerBundle\Attribute\Serializable}.
+ *   mappings for classes marked with {@see \BuildableSerializerBundle\Attribute\Serializable}.
  */
 interface ClassDiscoveryInterface
 {

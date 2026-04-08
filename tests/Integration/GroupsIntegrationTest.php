@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Integration;
+namespace BuildableSerializerBundle\Tests\Integration;
 
-use Buildable\SerializerBundle\Tests\AbstractTestCase;
-use Buildable\SerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
+use BuildableSerializerBundle\Tests\AbstractTestCase;
+use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 /**

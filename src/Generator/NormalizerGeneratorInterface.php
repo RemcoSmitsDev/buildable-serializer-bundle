@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Generator;
+namespace BuildableSerializerBundle\Generator;
 
-use Buildable\SerializerBundle\Metadata\ClassMetadata;
+use BuildableSerializerBundle\Metadata\ClassMetadata;
 
 interface NormalizerGeneratorInterface
 {

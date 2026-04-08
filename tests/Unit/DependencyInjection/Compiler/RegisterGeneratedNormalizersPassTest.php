@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Buildable\SerializerBundle\Tests\Unit\DependencyInjection\Compiler;
+namespace BuildableSerializerBundle\Tests\Unit\DependencyInjection\Compiler;
 
-use Buildable\SerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
-use Buildable\SerializerBundle\Normalizer\GeneratedNormalizerInterface;
-use Buildable\SerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
+use BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
+use BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
+use BuildableSerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -14,7 +14,7 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Serializer\Serializer;
 
 /**
- * @covers \Buildable\SerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass
+ * @covers \BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass
  */
 final class RegisterGeneratedNormalizersPassTest extends TestCase
 {
