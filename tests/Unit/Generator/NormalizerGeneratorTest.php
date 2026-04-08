@@ -254,8 +254,9 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $path = $this->generator->generateAndWrite($metadata);
         $content = file_get_contents($path);
 
-        // Generator emits inline array_intersect() group checks (no GROUPS_MAP constant)
-        $this->assertStringContainsString('array_intersect', $content);
+        // Generator emits a lookup table (array_fill_keys) and isset() group checks
+        $this->assertStringContainsString('array_fill_keys', $content);
+        $this->assertStringContainsString('isset($groupsLookup[', $content);
         $this->assertStringContainsString('blog:read', $content);
     }
 

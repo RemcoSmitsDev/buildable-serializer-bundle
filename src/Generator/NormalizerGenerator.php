@@ -32,6 +32,7 @@ use PhpParser\Node\Expr\Cast\Int_ as CastInt;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Expr\Instanceof_;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
@@ -462,6 +463,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         }
 
         // $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
+        // $groupsLookup = array_fill_keys($groups, true);
         if ($hasGroups) {
             $stmts[] = new Expression(
                 new Assign(
@@ -475,6 +477,16 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                             new Array_([], ['kind' => Array_::KIND_SHORT]),
                         ),
                     ),
+                ),
+            );
+
+            $stmts[] = new Expression(
+                new Assign(
+                    new Variable('groupsLookup'),
+                    new FuncCall(new Name('array_fill_keys'), [
+                        new Arg(new Variable('groups')),
+                        new Arg(new ConstFetch(new Name('true'))),
+                    ]),
                 ),
             );
         }
@@ -784,17 +796,18 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // --- groups wrapper --------------------------------------------------
         if ($needsGroupBlock) {
-            $groupItems = array_map(fn(string $g) => new ArrayItem(new String_($g)), $property->getGroups());
-            $groupsArray = new Array_($groupItems, ['kind' => Array_::KIND_SHORT]);
-
-            // if ($groups === [] || array_intersect([...], $groups) !== []) { ... }
-            $groupCondition = new Expr\BinaryOp\BooleanOr(
-                new Identical(new Variable('groups'), new Array_([], ['kind' => Array_::KIND_SHORT])),
-                new NotIdentical(new FuncCall(new Name('array_intersect'), [
-                    new Arg($groupsArray),
-                    new Arg(new Variable('groups')),
-                ]), new Array_([], ['kind' => Array_::KIND_SHORT])),
+            // if ($groups === [] || isset($groupsLookup['group1']) || isset($groupsLookup['group2']) || ...) { ... }
+            $groupCondition = new Identical(
+                new Variable('groups'),
+                new Array_([], ['kind' => Array_::KIND_SHORT]),
             );
+
+            foreach ($property->getGroups() as $group) {
+                $groupCondition = new Expr\BinaryOp\BooleanOr(
+                    $groupCondition,
+                    new Isset_([new ArrayDimFetch(new Variable('groupsLookup'), new String_($group))]),
+                );
+            }
 
             return [new If_($groupCondition, ['stmts' => $coreStmts])];
         }
