@@ -14,10 +14,6 @@ use PHPUnit\Framework\TestCase;
  */
 final class ClassMetadataTest extends TestCase
 {
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
     private function makeClassMetadata(): ClassMetadata
     {
         return new ClassMetadata(
@@ -45,10 +41,6 @@ final class ClassMetadataTest extends TestCase
         );
     }
 
-    // -------------------------------------------------------------------------
-    // getShortName()
-    // -------------------------------------------------------------------------
-
     public function testGetShortNameReturnsShortName(): void
     {
         $cm = $this->makeClassMetadata();
@@ -58,14 +50,10 @@ final class ClassMetadataTest extends TestCase
 
     public function testGetShortNameUsesReflectionClass(): void
     {
-        $cm = new ClassMetadata(new \ReflectionClass(\stdClass::class));
+        $cm = new ClassMetadata(new \ReflectionClass(\stdClass::class), \stdClass::class);
 
         $this->assertSame('stdClass', $cm->getShortName());
     }
-
-    // -------------------------------------------------------------------------
-    // getNamespace()
-    // -------------------------------------------------------------------------
 
     public function testGetNamespaceReturnsNamespace(): void
     {
@@ -76,15 +64,11 @@ final class ClassMetadataTest extends TestCase
 
     public function testGetNamespaceReturnsEmptyStringForRootClass(): void
     {
-        $cm = new ClassMetadata(new \ReflectionClass(\stdClass::class));
+        $cm = new ClassMetadata(new \ReflectionClass(\stdClass::class), \stdClass::class);
 
         // stdClass has no namespace
         $this->assertSame('', $cm->getNamespace());
     }
-
-    // -------------------------------------------------------------------------
-    // getProperty()
-    // -------------------------------------------------------------------------
 
     public function testGetPropertyReturnsNullForUnknownProperty(): void
     {
@@ -127,10 +111,6 @@ final class ClassMetadataTest extends TestCase
         $this->assertSame('beta', $result->getName());
     }
 
-    // -------------------------------------------------------------------------
-    // hasGroupConstraints()
-    // -------------------------------------------------------------------------
-
     public function testHasGroupConstraintsReturnsFalseWhenNoProperties(): void
     {
         $cm = $this->makeClassMetadata();
@@ -166,10 +146,6 @@ final class ClassMetadataTest extends TestCase
         $this->assertTrue($cm->hasGroupConstraints());
     }
 
-    // -------------------------------------------------------------------------
-    // hasMaxDepthConstraints()
-    // -------------------------------------------------------------------------
-
     public function testHasMaxDepthConstraintsReturnsFalseWhenNoMaxDepth(): void
     {
         $cm = $this->makeClassMetadata();
@@ -186,10 +162,6 @@ final class ClassMetadataTest extends TestCase
 
         $this->assertTrue($cm->hasMaxDepthConstraints());
     }
-
-    // -------------------------------------------------------------------------
-    // hasNestedObjects()
-    // -------------------------------------------------------------------------
 
     public function testHasNestedObjectsReturnsFalseByDefault(): void
     {
@@ -218,10 +190,6 @@ final class ClassMetadataTest extends TestCase
         $this->assertTrue($cm->hasNestedObjects());
     }
 
-    // -------------------------------------------------------------------------
-    // hasCollections()
-    // -------------------------------------------------------------------------
-
     public function testHasCollectionsReturnsFalseByDefault(): void
     {
         $cm = $this->makeClassMetadata();
@@ -248,10 +216,6 @@ final class ClassMetadataTest extends TestCase
 
         $this->assertTrue($cm->hasCollections());
     }
-
-    // -------------------------------------------------------------------------
-    // getNestedClassTypes()
-    // -------------------------------------------------------------------------
 
     public function testGetNestedClassTypesReturnsEmptyWhenNoNested(): void
     {
@@ -329,10 +293,6 @@ final class ClassMetadataTest extends TestCase
 
         $this->assertCount(1, $types);
     }
-
-    // -------------------------------------------------------------------------
-    // __toString()
-    // -------------------------------------------------------------------------
 
     public function testToStringContainsClassName(): void
     {

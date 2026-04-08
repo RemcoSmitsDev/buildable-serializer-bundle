@@ -74,16 +74,16 @@ final class MetadataFactory implements MetadataFactoryInterface
         private readonly PropertyInfoExtractorInterface $propertyInfoExtractor,
     ) {}
 
-    // -------------------------------------------------------------------------
-    // MetadataFactoryInterface
-    // -------------------------------------------------------------------------
-
     /**
      * Build and return fully-populated metadata for the given class name.
      *
      * Results are cached in-memory so repeated calls are cheap.
      *
-     * @param class-string $className
+     * @template TValue of object
+     *
+     * @param class-string<TValue> $className
+     *
+     * @return ClassMetadata<TValue>
      *
      * @throws \InvalidArgumentException When the class does not exist.
      */
@@ -100,7 +100,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             ));
         }
 
-        /** @var \ReflectionClass<object> $reflectionClass */
+        /** @var \ReflectionClass<TValue> $reflectionClass */
         $reflectionClass = new \ReflectionClass($className);
         $metadata = $this->buildClassMetadata($reflectionClass);
 
@@ -116,10 +116,6 @@ final class MetadataFactory implements MetadataFactoryInterface
     {
         return isset($this->cache[$className]) || class_exists($className);
     }
-
-    // -------------------------------------------------------------------------
-    // Internal builders
-    // -------------------------------------------------------------------------
 
     /**
      * Build a fully-populated ClassMetadata for the given ReflectionClass.

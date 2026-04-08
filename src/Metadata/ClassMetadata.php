@@ -19,14 +19,10 @@ final class ClassMetadata implements \Stringable
         /** @var \ReflectionClass<T> */
         public \ReflectionClass $reflectionClass,
         /** @var class-string<T> */
-        public string $className = '',
+        public string $className,
         /** @var PropertyMetadata[] */
         public array $properties = [],
     ) {}
-
-    // -------------------------------------------------------------------------
-    // Convenience helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Returns the unqualified (short) class name.

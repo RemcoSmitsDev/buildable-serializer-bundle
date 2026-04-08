@@ -405,10 +405,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return $uses;
     }
 
-    // -------------------------------------------------------------------------
-    // Feature-dependency queries
-    // -------------------------------------------------------------------------
-
     /**
      * Whether the generated class needs the NormalizerAware interface/trait for
      * recursive delegation (nested objects or typed collections).
@@ -441,10 +437,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             || $this->features['skip_null_values']
         );
     }
-
-    // -------------------------------------------------------------------------
-    // AST method builders
-    // -------------------------------------------------------------------------
 
     /**
      * Build the normalize() method AST node.
@@ -1013,10 +1005,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         return $method->getNode();
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Compute which features are actually active for the given class.
