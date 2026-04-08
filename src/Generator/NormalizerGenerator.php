@@ -436,7 +436,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $buf->blank();
 
         // -- Properties ------------------------------------------------------
-        $visibleProperties = array_filter($metadata->properties, static fn(PropertyMetadata $p): bool => !$p->ignored);
+        $visibleProperties = array_filter(
+            $metadata->properties,
+            static fn(PropertyMetadata $p): bool => !$p->isIgnored(),
+        );
 
         if ($visibleProperties === []) {
             $buf->line('return $data;');
@@ -525,16 +528,16 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasMaxDepth,
     ): void {
         // Groups wrapper
-        $needsGroupBlock = $hasGroups && $property->groups !== [];
+        $needsGroupBlock = $hasGroups && $property->getGroups() !== [];
 
         if ($needsGroupBlock) {
-            $groupsLiteral = $this->buildStringArrayLiteral($property->groups);
+            $groupsLiteral = $this->buildStringArrayLiteral($property->getGroups());
             $buf->line('if ($groups === [] || array_intersect(' . $groupsLiteral . ', $groups) !== []) {');
             $buf->indent();
         }
 
         // Key expression
-        $rawKey = $property->serializedName ?? $property->name;
+        $rawKey = $property->getSerializedName() ?? $property->getName();
         $keyExpr = $hasNameConv ? $this->buildNameConverterKeyExpr($rawKey, $ownerClass) : $this->q($rawKey);
 
         if ($hasNameConv) {
@@ -544,15 +547,15 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // Value expression
         $accessorType = $this->resolveAccessorType($property);
-        $rawValueExpr = $accessorType->toExpression($property->accessor);
+        $rawValueExpr = $accessorType->toExpression($property->getAccessor());
 
         // Max-depth wrapper
         $needsMaxDepth =
-            $hasMaxDepth && $property->maxDepth !== null && ($property->isNested || $property->isCollection);
+            $hasMaxDepth && $property->getMaxDepth() !== null && ($property->isNested() || $property->isCollection());
 
         if ($needsMaxDepth) {
             $ownerClassLiteral = $this->q($ownerClass);
-            $propertyNameLiteral = $this->q($property->name);
+            $propertyNameLiteral = $this->q($property->getName());
             $buf->line(
                 '$_depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, '
                 . $ownerClassLiteral
@@ -562,16 +565,16 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             );
             $buf->line('$_currentDepth = (int) ($context[$_depthKey] ?? 0);');
             $buf->blank();
-            $buf->line('if ($_currentDepth < ' . (int) $property->maxDepth . ') {');
+            $buf->line('if ($_currentDepth < ' . (int) $property->getMaxDepth() . ') {');
             $buf->indent();
             $buf->line('$context[$_depthKey] = $_currentDepth + 1;');
             $buf->blank();
         }
 
         // Core value assignment
-        if ($property->isNested) {
+        if ($property->isNested()) {
             $this->writeNestedValue($buf, $property, $rawValueExpr, $keyExpr, $hasSkipNull);
-        } elseif ($property->isCollection) {
+        } elseif ($property->isCollection()) {
             $this->writeCollectionValue($buf, $property, $rawValueExpr, $keyExpr, $hasSkipNull);
         } else {
             $this->writeScalarValue($buf, $property, $rawValueExpr, $keyExpr, $hasSkipNull);
@@ -580,13 +583,13 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         // Close max-depth block
         if ($needsMaxDepth) {
             $buf->outdent();
-            $buf->line('} // max-depth: ' . $property->name . ' (limit=' . $property->maxDepth . ')');
+            $buf->line('} // max-depth: ' . $property->getName() . ' (limit=' . $property->getMaxDepth() . ')');
         }
 
         // Close groups block
         if ($needsGroupBlock) {
             $buf->outdent();
-            $buf->line('} // groups: ' . implode(', ', $property->groups));
+            $buf->line('} // groups: ' . implode(', ', $property->getGroups()));
         }
 
         $buf->blank();
@@ -604,7 +607,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         string $keyExpr,
         bool $hasSkipNull,
     ): void {
-        $needsNullCheck = $property->nullable || $hasSkipNull;
+        $needsNullCheck = $property->isNullable() || $hasSkipNull;
 
         if (!$needsNullCheck) {
             // Non-nullable, no skip-null logic needed — simplest possible path
@@ -617,7 +620,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $buf->line('$_val = ' . $rawValueExpr . ';');
         $buf->blank();
 
-        if ($property->nullable && $hasSkipNull) {
+        if ($property->isNullable() && $hasSkipNull) {
             $buf->line('if ($_val !== null) {');
             $buf->indent();
             $buf->line('$data[' . $keyExpr . '] = $this->normalizer->normalize($_val, $format, $context);');
@@ -627,7 +630,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             $buf->line('$data[' . $keyExpr . '] = null;');
             $buf->outdent();
             $buf->line('}');
-        } elseif ($property->nullable) {
+        } elseif ($property->isNullable()) {
             $buf->line('if ($_val !== null) {');
             $buf->indent();
             $buf->line('$data[' . $keyExpr . '] = $this->normalizer->normalize($_val, $format, $context);');
@@ -667,7 +670,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         string $keyExpr,
         bool $hasSkipNull,
     ): void {
-        $needsNullCheck = $property->nullable || $hasSkipNull;
+        $needsNullCheck = $property->isNullable() || $hasSkipNull;
 
         if ($needsNullCheck) {
             $buf->line('$_collection = ' . $rawValueExpr . ';');
@@ -818,7 +821,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      */
     private function resolveAccessorType(PropertyMetadata $property): AccessorType
     {
-        $raw = $property->accessorType;
+        $raw = $property->getAccessorType();
 
         if ($raw instanceof AccessorType) {
             return $raw;
