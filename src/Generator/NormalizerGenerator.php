@@ -14,6 +14,7 @@ use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\ArrayItem;
+use PhpParser\Node\DeclareItem;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayDimFetch;
@@ -60,6 +61,7 @@ use PhpParser\Node\Stmt\TraitUse;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\Node\Stmt\UseUse;
 use PhpParser\Node\UnionType;
+use PhpParser\Node\UseItem;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
 
@@ -175,6 +177,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      * resolved file path, creating parent directories as necessary.
      *
      * Returns the absolute path of the written file.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     public function generateAndWrite(ClassMetadata $metadata): string
     {
@@ -196,6 +202,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      * class that handles the class described by the given {@see ClassMetadata}.
      *
      * The returned string is ready to be written verbatim to a `.php` file.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     public function generate(ClassMetadata $metadata): string
     {
@@ -214,7 +224,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // declare(strict_types=1)
         if ($this->generation['strict_types']) {
-            $stmts[] = new Declare_([new DeclareDeclare('strict_types', new Int_(1))]);
+            $stmts[] = new Declare_([new DeclareItem('strict_types', new Int_(1))]);
         }
 
         // use statements
@@ -229,7 +239,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         $useStmts = [];
         foreach ($uses as $use) {
-            $useStmts[] = new Use_([new UseUse(new Name($use))]);
+            $useStmts[] = new Use_([new UseItem(new Name($use))]);
         }
 
         // implements list
@@ -301,6 +311,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Return the FQCN of the normalizer class that will be generated for the
      * given metadata (namespace + class name, separated by backslash).
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     public function resolveNormalizerFqcn(ClassMetadata $metadata): string
     {
@@ -310,6 +324,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Return the absolute filesystem path where the generated normalizer source
      * file will be written.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     public function resolveFilePath(ClassMetadata $metadata): string
     {
@@ -320,10 +338,11 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         );
     }
 
-    // -------------------------------------------------------------------------
-    // Namespace / class-name resolution
-    // -------------------------------------------------------------------------
-
+    /**
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
+     */
     private function resolveNormalizerNamespace(ClassMetadata $metadata): string
     {
         $classNs = $metadata->getNamespace();
@@ -332,6 +351,11 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return $classNs !== '' ? $base . "\\" . $classNs : $base;
     }
 
+    /**
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
+     */
     private function resolveNormalizerClassName(ClassMetadata $metadata): string
     {
         return $metadata->getShortName() . 'Normalizer';
@@ -355,10 +379,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         return str_replace("\\", \DIRECTORY_SEPARATOR, $classNs) . \DIRECTORY_SEPARATOR . $fileName;
     }
-
-    // -------------------------------------------------------------------------
-    // Use-statement assembly
-    // -------------------------------------------------------------------------
 
     /**
      * @return list<string>
@@ -408,6 +428,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Whether the generated class needs the NormalizerAware interface/trait for
      * recursive delegation (nested objects or typed collections).
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     private function needsNormalizerAware(ClassMetadata $metadata): bool
     {
@@ -417,6 +441,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Whether any AbstractNormalizer constant references are needed in the
      * generated normalize() method body.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     private function needsAbstractNormalizerConstants(ClassMetadata $metadata): bool
     {
@@ -429,6 +457,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
     /**
      * Whether any AbstractObjectNormalizer constant references are needed.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     private function needsAbstractObjectNormalizerConstants(ClassMetadata $metadata): bool
     {
@@ -440,6 +472,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
     /**
      * Build the normalize() method AST node.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
      */
     private function buildNormalizeMethod(ClassMetadata $metadata, bool $needsCircularRef): Stmt\ClassMethod
     {
