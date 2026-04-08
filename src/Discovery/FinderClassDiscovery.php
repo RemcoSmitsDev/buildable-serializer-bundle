@@ -6,6 +6,7 @@ namespace Buildable\SerializerBundle\Discovery;
 
 use Buildable\SerializerBundle\Attribute\Serializable;
 use Buildable\SerializerBundle\Metadata\ClassMetadata;
+use Buildable\SerializerBundle\Metadata\MetadataFactoryInterface;
 use Symfony\Component\Finder\Finder;
 
 /**
@@ -26,9 +27,11 @@ use Symfony\Component\Finder\Finder;
 final class FinderClassDiscovery implements ClassDiscoveryInterface
 {
     /**
-     * @param array<string, string> $paths Namespace-prefix => absolute directory path.
+     * @param MetadataFactoryInterface $metadataFactory Factory used to build fully-populated ClassMetadata.
+     * @param array<string, string>    $paths           Namespace-prefix => absolute directory path.
      */
     public function __construct(
+        private readonly MetadataFactoryInterface $metadataFactory,
         private readonly array $paths,
     ) {}
 
@@ -71,7 +74,7 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
                     continue;
                 }
 
-                $metadataCollection[] = new ClassMetadata($ref, $fqcn);
+                $metadataCollection[] = $this->metadataFactory->getMetadataFor($fqcn);
             }
         }
 

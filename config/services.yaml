@@ -12,6 +12,7 @@ services:
 
   Buildable\SerializerBundle\Discovery\FinderClassDiscovery:
     arguments:
+      $metadataFactory: '@Buildable\SerializerBundle\Metadata\MetadataFactory'
       $paths: "%buildable_serializer.paths%"
     tags:
       - { name: buildable_serializer.discovery }

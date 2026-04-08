@@ -145,7 +145,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
         $generator = new NormalizerGenerator($metadataFactory, $cacheDir, $generatedNamespace, $features, $generation);
 
-        $discovery = new FinderClassDiscovery($resolvedPaths);
+        $discovery = new FinderClassDiscovery($metadataFactory, $resolvedPaths);
 
         $metadataCollection = $discovery->discoverClasses();
 

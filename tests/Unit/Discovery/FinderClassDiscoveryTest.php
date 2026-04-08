@@ -6,11 +6,14 @@ namespace Buildable\SerializerBundle\Tests\Unit\Discovery;
 
 use Buildable\SerializerBundle\Discovery\FinderClassDiscovery;
 use Buildable\SerializerBundle\Metadata\ClassMetadata;
+use Buildable\SerializerBundle\Metadata\MetadataFactory;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\AnotherSerializableModel;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\NotSerializableModel;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
 use Buildable\SerializerBundle\Tests\Fixtures\Discovery\Sub\NestedSerializableModel;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
+use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
  * @covers \Buildable\SerializerBundle\Discovery\FinderClassDiscovery
@@ -18,11 +21,21 @@ use PHPUnit\Framework\TestCase;
 final class FinderClassDiscoveryTest extends TestCase
 {
     private string $fixturesDir;
+    private MetadataFactory $metadataFactory;
 
     protected function setUp(): void
     {
         // Absolute path to tests/Fixtures/Discovery/
         $this->fixturesDir = realpath(__DIR__ . '/../../Fixtures/Discovery');
+
+        $reflection = new ReflectionExtractor();
+        $this->metadataFactory = new MetadataFactory(
+            new PropertyInfoExtractor(
+                listExtractors: [$reflection],
+                typeExtractors: [$reflection],
+                accessExtractors: [$reflection],
+            ),
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -46,7 +59,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testDiscoversSingleSerializableClass(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -57,7 +70,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testDiscoversAllSerializableClassesInDirectory(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -69,7 +82,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testDiscoversClassesInSubdirectories(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -80,14 +93,14 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testEmptyPathsReturnsEmptyArray(): void
     {
-        $discovery = new FinderClassDiscovery([]);
+        $discovery = new FinderClassDiscovery($this->metadataFactory, []);
 
         $this->assertSame([], $discovery->discoverClasses());
     }
 
     public function testResultIsSorted(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -100,7 +113,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testResultIsDeduplicatedWhenSameDirectoryGivenTwice(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
             // Simulate duplicate by using a slightly different path that resolves to the same dir
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir . '/',
@@ -118,7 +131,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testExcludesClassesWithoutSerializableAttribute(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -129,7 +142,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testExcludesAbstractClasses(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -145,7 +158,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testThrowsInvalidArgumentExceptionForNonExistentDirectory(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'App\Model' => '/this/path/does/absolutely/not/exist',
         ]);
 
@@ -163,7 +176,7 @@ final class FinderClassDiscoveryTest extends TestCase
     {
         $subDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Sub';
 
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery\Sub' => $subDir,
         ]);
@@ -180,7 +193,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
     public function testDiscoveredItemsAreClassMetadataObjects(): void
     {
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
@@ -193,7 +206,7 @@ final class FinderClassDiscoveryTest extends TestCase
     {
         // This verifies the FQCN is correct by checking the class is findable
         // via the standard autoloader after discovery (no manual require needed).
-        $discovery = new FinderClassDiscovery([
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'Buildable\SerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
         ]);
 
