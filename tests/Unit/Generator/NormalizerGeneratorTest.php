@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Buildable\SerializerBundle\Tests\Unit\Generator;
 
 use Buildable\SerializerBundle\Generator\NormalizerGenerator;
+use Buildable\SerializerBundle\Metadata\ClassMetadata;
 use Buildable\SerializerBundle\Metadata\MetadataFactory;
 use Buildable\SerializerBundle\Tests\AbstractTestCase;
 use Buildable\SerializerBundle\Tests\Fixtures\Model\Author;
@@ -196,7 +197,10 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
     public function testGenerateAllCreatesFilesForAllClasses(): void
     {
-        $paths = $this->generator->generateAll([SimpleBlog::class, Author::class]);
+        $paths = $this->generator->generateAll([
+            new ClassMetadata(new \ReflectionClass(SimpleBlog::class), SimpleBlog::class),
+            new ClassMetadata(new \ReflectionClass(Author::class), Author::class),
+        ]);
 
         $this->assertCount(2, $paths);
 
@@ -207,7 +211,10 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
     public function testGenerateAllReturnsPathsInInputOrder(): void
     {
-        $paths = $this->generator->generateAll([SimpleBlog::class, Author::class]);
+        $paths = $this->generator->generateAll([
+            new ClassMetadata(new \ReflectionClass(SimpleBlog::class), SimpleBlog::class),
+            new ClassMetadata(new \ReflectionClass(Author::class), Author::class),
+        ]);
 
         $this->assertStringContainsString('SimpleBlog', $paths[0]);
         $this->assertStringContainsString('Author', $paths[1]);
@@ -215,7 +222,9 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
     public function testGenerateAllWithSingleClassReturnsSinglePath(): void
     {
-        $paths = $this->generator->generateAll([SimpleBlog::class]);
+        $paths = $this->generator->generateAll([
+            new ClassMetadata(new \ReflectionClass(SimpleBlog::class), SimpleBlog::class),
+        ]);
 
         $this->assertCount(1, $paths);
         $this->assertFileExists($paths[0]);
