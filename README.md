@@ -1,5 +1,7 @@
 # Buildable Serializer Bundle
 
+> ⚠️ **This bundle is currently under active development and is not yet ready for production use. Expect breaking changes between releases.**
+
 A Symfony bundle that generates optimised, build-time normalizer classes for the Symfony Serializer component.
 
 Instead of relying on the generic reflection-based `ObjectNormalizer` at runtime, this bundle analyses your classes at compile time and writes plain PHP normalizer classes tailored to each model. The result is a faster serializer with zero runtime reflection overhead.
