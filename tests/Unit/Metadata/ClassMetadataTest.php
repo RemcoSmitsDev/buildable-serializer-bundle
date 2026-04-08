@@ -14,6 +14,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class ClassMetadataTest extends TestCase
 {
+    /** @return ClassMetadata<object> */
     private function makeClassMetadata(): ClassMetadata
     {
         return new ClassMetadata(
