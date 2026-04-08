@@ -15,14 +15,26 @@ namespace Buildable\SerializerBundle\Metadata;
  */
 final class ClassMetadata implements \Stringable
 {
+    /**
+     * @param \ReflectionClass<T> $reflectionClass
+     * @param class-string<T> $className
+     * @param PropertyMetadata[] $properties
+     */
     public function __construct(
-        /** @var \ReflectionClass<T> */
-        public \ReflectionClass $reflectionClass,
-        /** @var class-string<T> */
-        public string $className,
-        /** @var PropertyMetadata[] */
-        public array $properties = [],
+        private \ReflectionClass $reflectionClass,
+        private string $className,
+        private array $properties = [],
     ) {}
+
+    /**
+     * Returns the fully qualified class name (including namespace).
+     *
+     * Example: for "App\Entity\User" this returns "App\Entity\User".
+     */
+    public function getClassName(): string
+    {
+        return $this->className;
+    }
 
     /**
      * Returns the unqualified (short) class name.
@@ -45,18 +57,30 @@ final class ClassMetadata implements \Stringable
     }
 
     /**
+     * Adds a property metadata object to the class metadata.
+     */
+    public function addProperty(PropertyMetadata $property): void
+    {
+        $this->properties[$property->getName()] = $property;
+    }
+
+    /**
      * Returns a property metadata object by its PHP property name, or null
      * when no such property has been registered.
      */
     public function getProperty(string $name): ?PropertyMetadata
     {
-        foreach ($this->properties as $property) {
-            if ($property->getName() === $name) {
-                return $property;
-            }
-        }
+        return $this->properties[$name] ?? null;
+    }
 
-        return null;
+    /**
+     * Returns an array of all property metadata objects.
+     *
+     * @return PropertyMetadata[]
+     */
+    public function getProperties(): array
+    {
+        return $this->properties;
     }
 
     /**

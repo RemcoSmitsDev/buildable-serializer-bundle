@@ -193,7 +193,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     {
         $normalizerNs = $this->resolveNormalizerNamespace($metadata);
         $normalizerClass = $this->resolveNormalizerClassName($metadata);
-        $targetFqcn = $metadata->className;
+        $targetFqcn = $metadata->getClassName();
 
         $needsAware = $this->needsNormalizerAware($metadata);
         $needsAbstractNorm = $this->needsAbstractNormalizerConstants($metadata);
@@ -458,7 +458,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // Circular-reference guard
         if ($needsCircularRef) {
-            $stmts = array_merge($stmts, $this->buildCircularReferenceGuard($metadata->className));
+            $stmts = array_merge($stmts, $this->buildCircularReferenceGuard($metadata->getClassName()));
         }
 
         // $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
@@ -517,7 +517,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $stmts[] = new Expression(new Assign(new Variable('data'), new Array_([], ['kind' => Array_::KIND_SHORT])));
 
         $visibleProperties = array_filter(
-            $metadata->properties,
+            $metadata->getProperties(),
             static fn(PropertyMetadata $p): bool => !$p->isIgnored(),
         );
 
@@ -527,7 +527,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             foreach ($visibleProperties as $property) {
                 $stmts = array_merge($stmts, $this->buildPropertyStatements(
                     $property,
-                    $metadata->className,
+                    $metadata->getClassName(),
                     $hasGroups,
                     $hasSkipNull,
                     $hasNameConv,
@@ -562,7 +562,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             ->setDocComment(new Doc(
                 "/**\n"
                 . " * @param \\"
-                . $metadata->className
+                . $metadata->getClassName()
                 . " \$object\n"
                 . " * @param array<string, mixed>      \$context\n"
                 . " *\n"

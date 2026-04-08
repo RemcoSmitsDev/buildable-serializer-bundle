@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Buildable\SerializerBundle\Discovery;
 
+use Buildable\SerializerBundle\Metadata\ClassMetadata;
+
 /**
  * Contract for discovering PHP classes that should have normalizers generated.
  *
@@ -22,10 +24,8 @@ interface ClassDiscoveryInterface
      *
      * - Return only concrete, instantiable classes (no interfaces, abstract
      *   classes, traits, or enums).
-     * - Deduplicate the returned list.
-     * - Sort the returned list for deterministic output.
      *
-     * @return iterable<class-string> Sorted, deduplicated list of FQCNs.
+     * @return iterable<ClassMetadata<object>>
      */
     public function discoverClasses(): iterable;
 }

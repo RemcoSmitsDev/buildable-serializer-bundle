@@ -64,15 +64,9 @@ final class NormalizerCacheWarmer implements CacheWarmerInterface
      */
     public function warmUp(string $cacheDir, ?string $buildDir = null): array
     {
-        $classes = $this->discovery->discoverClasses();
-
-        if ($classes === []) {
-            return [];
-        }
-
         $this->ensureCacheDirectoryExists();
 
-        return $this->generator->generateAll($classes);
+        return $this->generator->generateAll($this->discovery->discoverClasses());
     }
 
     /**

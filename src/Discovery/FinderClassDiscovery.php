@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Buildable\SerializerBundle\Discovery;
 
 use Buildable\SerializerBundle\Attribute\Serializable;
+use Buildable\SerializerBundle\Metadata\ClassMetadata;
 use Symfony\Component\Finder\Finder;
 
 /**
@@ -31,10 +32,10 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
         private readonly array $paths,
     ) {}
 
-    /** @return list<class-string> */
+    /** @return list<ClassMetadata<object>> */
     public function discoverClasses(): array
     {
-        $classes = [];
+        $metadataCollection = [];
 
         foreach ($this->paths as $namespacePrefix => $directory) {
             $realDir = realpath($directory);
@@ -70,13 +71,11 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
                     continue;
                 }
 
-                $classes[] = $fqcn;
+                $metadataCollection[] = new ClassMetadata($ref, $fqcn);
             }
         }
 
-        sort($classes, SORT_STRING);
-
-        return array_values(array_unique($classes));
+        return $metadataCollection;
     }
 
     /**

@@ -147,15 +147,9 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
         $discovery = new FinderClassDiscovery($resolvedPaths);
 
-        try {
-            $classes = $discovery->discoverClasses();
-        } catch (\Throwable) {
-            // Discovery failure (e.g. a configured directory does not exist
-            // yet) must not abort container compilation.
-            return;
-        }
+        $metadataCollection = $discovery->discoverClasses();
 
-        if ($classes === []) {
+        if ($metadataCollection === []) {
             return;
         }
 
@@ -169,21 +163,15 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         /** @var array<string, string> $classmap  fqcn => absolute file path */
         $classmap = [];
 
-        foreach ($classes as $className) {
-            try {
-                $metadata = $metadataFactory->getMetadataFor($className);
-                $fqcn = $generator->resolveNormalizerFqcn($metadata);
-                $filePath = $generator->generateAndWrite($metadata);
-            } catch (\Throwable) {
-                // Skip classes that cannot be processed (e.g. missing deps).
+        foreach ($metadataCollection as $classMetadata) {
+            $fqcn = $generator->resolveNormalizerFqcn($classMetadata);
+            $filePath = $generator->generateAndWrite($classMetadata);
+
+            if ($this->loadClass($fqcn, $filePath) === false) {
                 continue;
             }
 
-            if (!$this->loadClass($fqcn, $filePath)) {
-                continue;
-            }
-
-            if (!is_a($fqcn, GeneratedNormalizerInterface::class, true)) {
+            if (is_a($fqcn, GeneratedNormalizerInterface::class, true) === false) {
                 continue;
             }
 

@@ -149,7 +149,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 continue;
             }
 
-            $metadata->properties[] = $propertyMeta;
+            $metadata->addProperty($propertyMeta);
             $registered[$param->getName()] = true;
         }
 
@@ -169,7 +169,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 continue;
             }
 
-            $metadata->properties[] = $propertyMeta;
+            $metadata->addProperty($propertyMeta);
             $registered[$name] = true;
         }
 
@@ -197,7 +197,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 continue;
             }
 
-            $metadata->properties[] = $propertyMeta;
+            $metadata->addProperty($propertyMeta);
             $registered[$propertyName] = true;
         }
 
