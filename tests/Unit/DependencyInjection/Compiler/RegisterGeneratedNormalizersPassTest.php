@@ -99,7 +99,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessGeneratesNormalizerFilesForSerializableClasses(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -116,7 +116,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessGeneratesAutoloadClassmap(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -130,7 +130,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testAutoloadClassmapContainsValidPhpArray(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -154,7 +154,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessRegistersNormalizerServicesInContainer(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -165,7 +165,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesImplementGeneratedNormalizerInterface(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -181,7 +181,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesAreTaggedWithSerializerNormalizerTag(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -198,7 +198,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesUseDefaultPriority200(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -215,7 +215,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesArePrivate(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -233,7 +233,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testAbstractClassWithAttributeIsNotRegistered(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -251,7 +251,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testNonSerializableClassIsNotRegistered(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -274,7 +274,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -306,7 +306,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -364,7 +364,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertDirectoryDoesNotExist($newCacheDir);
 
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ], $newCacheDir);
 
         $this->pass->process($this->container);
@@ -379,7 +379,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessIsIdempotentWhenRunTwice(): void
     {
         $this->setupContainerParameters([
-            "Buildable\\SerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);

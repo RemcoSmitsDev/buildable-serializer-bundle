@@ -363,7 +363,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $set = [];
 
         $set[$targetFqcn] = true;
-        $set["Buildable\\SerializerBundle\\Normalizer\\GeneratedNormalizerInterface"] = true;
+        $set["BuildableSerializerBundle\\Normalizer\\GeneratedNormalizerInterface"] = true;
         $set["Symfony\\Component\\Serializer\\Normalizer\\NormalizerInterface"] = true;
 
         if ($needsAware) {
