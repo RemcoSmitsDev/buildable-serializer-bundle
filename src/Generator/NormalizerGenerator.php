@@ -725,7 +725,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         }
 
         // --- accessor expression ---------------------------------------------
-        $accessorType = $this->resolveAccessorType($property);
+        $accessorType = $property->getAccessorType();
         $rawValueExpr = $this->buildAccessorExpr($accessorType, $property->getAccessor());
 
         // --- value assignment (possibly wrapped in max-depth if) -------------
@@ -1044,20 +1044,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             AccessorType::PROPERTY => new PropertyFetch(new Variable('object'), $accessor),
             AccessorType::METHOD => new MethodCall(new Variable('object'), $accessor),
         };
-    }
-
-    /**
-     * Resolve the AccessorType enum instance from a PropertyMetadata.
-     */
-    private function resolveAccessorType(PropertyMetadata $property): AccessorType
-    {
-        $raw = $property->getAccessorType();
-
-        if ($raw instanceof AccessorType) {
-            return $raw;
-        }
-
-        return AccessorType::tryFrom((string) $raw) ?? AccessorType::METHOD;
     }
 
     /**
