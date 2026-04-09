@@ -6,7 +6,6 @@ namespace BuildableSerializerBundle\Tests\Unit\DependencyInjection\Compiler;
 
 use BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
 use BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
-use BuildableSerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -96,7 +95,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     // Normalizer generation
     // =========================================================================
 
-    public function testProcessGeneratesNormalizerFilesForSerializableClasses(): void
+    public function testProcessGeneratesNormalizerFilesForDiscoveredClasses(): void
     {
         $this->setupContainerParameters([
             "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
@@ -227,10 +226,10 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     }
 
     // =========================================================================
-    // Abstract / non-serializable classes are excluded
+    // Abstract classes excluded; concrete classes under configured paths included
     // =========================================================================
 
-    public function testAbstractClassWithAttributeIsNotRegistered(): void
+    public function testAbstractClassIsNotRegistered(): void
     {
         $this->setupContainerParameters([
             "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
@@ -238,7 +237,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
         $this->pass->process($this->container);
 
-        // AbstractModel has #[Serializable] but is abstract — must be excluded.
+        // AbstractModel is abstract — must be excluded.
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
             $this->assertStringNotContainsStringIgnoringCase(
                 'AbstractModel',
@@ -248,7 +247,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         }
     }
 
-    public function testNonSerializableClassIsNotRegistered(): void
+    public function testConcreteClassInScannedDirectoryIsRegistered(): void
     {
         $this->setupContainerParameters([
             "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
@@ -256,13 +255,18 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
         $this->pass->process($this->container);
 
+        $found = false;
         foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
-            $this->assertStringNotContainsStringIgnoringCase(
-                'NotSerializableModel',
-                $fqcn,
-                'NotSerializableModel must not appear as a registered normalizer.',
-            );
+            if (stripos($fqcn, 'NotSerializableModel') !== false) {
+                $found = true;
+                break;
+            }
         }
+
+        $this->assertTrue(
+            $found,
+            'A normalizer for NotSerializableModel must be registered when its file lies under configured paths.',
+        );
     }
 
     // =========================================================================
@@ -334,7 +338,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     {
         $this->registerSerializerDefinition();
 
-        // Use an empty temp dir — no PHP files → no #[Serializable] classes.
+        // Use an empty temp dir — no PHP files → no discovered classes.
         $emptyDir = $this->tempDir . DIRECTORY_SEPARATOR . 'empty_src';
         mkdir($emptyDir, 0777, true);
 

@@ -12,7 +12,7 @@ use BuildableSerializerBundle\Metadata\ClassMetadata;
  * Implementations may discover classes in different ways:
  *
  * - {@see FinderClassDiscovery} — scans PSR-4 namespace-prefix → directory
- *   mappings for classes marked with {@see \BuildableSerializerBundle\Attribute\Serializable}.
+ *   mappings and includes every concrete class found under each directory.
  */
 interface ClassDiscoveryInterface
 {

@@ -50,7 +50,9 @@ final class Configuration implements ConfigurationInterface
             ->cannotBeEmpty()
             ->end()
             ->arrayNode('paths')
-            ->info('PSR-4 map of namespace-prefix => directory to scan for #[Serializable] classes.')
+            ->info(
+                'PSR-4 map of namespace-prefix => directory whose PHP files are scanned for concrete classes to generate normalizers for.',
+            )
             ->useAttributeAsKey('namespace')
             ->scalarPrototype()
             ->cannotBeEmpty()

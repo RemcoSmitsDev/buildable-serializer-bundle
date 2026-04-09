@@ -45,8 +45,8 @@ use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
  *  2. Instantiates `FinderClassDiscovery`, `MetadataFactory`, and
  *     `NormalizerGenerator` directly (without the DI container — all these
  *     objects are pure PHP with no circular dependencies).
- *  3. Discovers every class annotated with `#[Serializable]` inside the
- *     configured paths.
+ *  3. Discovers every concrete class under the configured PSR-4 paths (see
+ *     {@see FinderClassDiscovery}).
  *  4. Generates one PHP source file per class into `cache_dir` and creates a
  *     classmap `autoload.php` for runtime bootstrapping.
  *  5. Registers each generated normalizer as a private DI service tagged with

@@ -36,10 +36,9 @@ dd("Time: " . round($elapsed * 1000) . " ms");
 
 ## How it works
 
-1. **Mark your classes** with the `#[Serializable]` attribute.
-2. **Configure the bundle** with the namespaces and directories to scan.
-3. **On container compilation** (e.g. `cache:clear` or `cache:warmup`), the bundle:
-   - Scans the configured paths for classes carrying the `#[Serializable]` attribute.
+1. **Configure the bundle** with a PSR-4 map: each namespace prefix points at the directory whose `*.php` files define the model classes you want generated normalizers for.
+2. **On container compilation** (e.g. `cache:clear` or `cache:warmup`), the bundle:
+   - **Autodetects** concrete PHP classes under those directories: for each file, it derives the fully qualified class name from the path relative to the configured directory and the namespace prefix, then includes every **concrete** class (it skips interfaces, traits, enums, and abstract classes).
    - Inspects each class's properties, constructor parameters, and getter methods via reflection and property-info extractors to build rich `ClassMetadata`.
    - Generates a dedicated PHP normalizer class per model using [nikic/php-parser](https://github.com/nikic/PHP-Parser) and writes it to the configured cache directory.
    - Registers every generated normalizer as a Symfony service tagged with `serializer.normalizer` at priority **200** (well above `ObjectNormalizer`'s -1000), so they are used first.
@@ -78,7 +77,7 @@ buildable_serializer:
     # Root PHP namespace used for all generated normalizer classes.
     generated_namespace: 'BuildableSerializer\Generated'
 
-    # PSR-4 map of namespace-prefix => directory to scan for #[Serializable] classes.
+    # PSR-4 map of namespace-prefix => directory whose PHP files are scanned for concrete model classes.
     paths:
         'App\Model': '%kernel.project_dir%/src/Model'
         'App\Dto':   '%kernel.project_dir%/src/Dto'
@@ -102,10 +101,11 @@ All options are optional and fall back to the defaults shown above.
 
 ## Usage
 
-### 1. Mark your models
+### 1. Define your models under the configured paths
+
+Put your PHP classes in the directories listed under `paths`, using namespaces that match the configured prefixes (PSR-4). The bundle discovers them automatically; no extra attribute is required on the class.
 
 ```php
-#[Serializable]
 class User
 {
     #[Groups(["user:read", "user:list"])]
@@ -193,7 +193,6 @@ class User
     }
 }
 
-#[Serializable]
 class Post
 {
     #[Groups(["post:read", "post:list"])]
@@ -256,7 +255,6 @@ class Post
     }
 }
 
-#[Serializable]
 class Address
 {
     #[Groups(["address:read", "user:read"])]

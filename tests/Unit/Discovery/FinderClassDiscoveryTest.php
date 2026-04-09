@@ -115,7 +115,7 @@ final class FinderClassDiscoveryTest extends TestCase
         $this->assertCount(\count($unique), $classes, 'Result must not contain duplicates.');
     }
 
-    public function testExcludesClassesWithoutSerializableAttribute(): void
+    public function testIncludesConcreteClassesMatchedOnlyByPsr4Path(): void
     {
         $discovery = new FinderClassDiscovery($this->metadataFactory, [
             'BuildableSerializerBundle\Tests\Fixtures\Discovery' => $this->fixturesDir,
@@ -123,7 +123,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
         $classes = $this->classNames($discovery->discoverClasses());
 
-        $this->assertNotContains(NotSerializableModel::class, $classes);
+        $this->assertContains(NotSerializableModel::class, $classes);
     }
 
     public function testExcludesAbstractClasses(): void
@@ -134,7 +134,7 @@ final class FinderClassDiscoveryTest extends TestCase
 
         $classes = $this->classNames($discovery->discoverClasses());
 
-        // AbstractModel carries #[Serializable] but is abstract — must be skipped.
+        // AbstractModel is abstract — must be skipped.
         $this->assertNotContains('BuildableSerializerBundle\Tests\Fixtures\Discovery\AbstractModel', $classes);
     }
 

@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace BuildableSerializerBundle\Discovery;
 
-use BuildableSerializerBundle\Attribute\Serializable;
 use BuildableSerializerBundle\Metadata\ClassMetadata;
 use BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
 use Symfony\Component\Finder\Finder;
 
 /**
- * Discovers classes marked with #[Serializable] by scanning configured directories
- * with symfony/finder and confirming the attribute via ReflectionClass.
+ * Discovers concrete PHP classes by scanning configured PSR-4 directories with
+ * symfony/finder and loading each matching `*.php` file to reflect the class.
  *
  * Configuration shape:
  *
@@ -67,10 +66,6 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
                 $ref = new \ReflectionClass($fqcn);
 
                 if ($ref->isAbstract() || $ref->isInterface() || $ref->isTrait() || $ref->isEnum()) {
-                    continue;
-                }
-
-                if ($ref->getAttributes(Serializable::class, \ReflectionAttribute::IS_INSTANCEOF) === []) {
                     continue;
                 }
 
