@@ -17,7 +17,10 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *         cache_dir: '%kernel.project_dir%/var/buildable_serializer'
  *         generated_namespace: 'BuildableSerializer\Generated'
  *         paths:
+ *             # Directory mode: scans all PHP files recursively
  *             'App\Model': '%kernel.project_dir%/src/Model'
+ *             # Glob mode: scans only files matching the filename pattern
+ *             'App\Command': '%kernel.project_dir%/src/Command/*Command.php'
  *         features:
  *             groups: true
  *             max_depth: true
@@ -51,7 +54,9 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->arrayNode('paths')
             ->info(
-                'PSR-4 map of namespace-prefix => directory whose PHP files are scanned for concrete classes to generate normalizers for.',
+                'PSR-4 map of namespace-prefix => directory or glob pattern. '
+                . 'Directory paths scan all *.php files recursively. '
+                . 'Glob patterns (containing *, ?, or [) filter files by name (e.g. "src/**/*Command.php").',
             )
             ->useAttributeAsKey('namespace')
             ->scalarPrototype()

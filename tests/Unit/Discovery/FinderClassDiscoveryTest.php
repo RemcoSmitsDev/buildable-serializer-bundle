@@ -8,6 +8,11 @@ use BuildableSerializerBundle\Discovery\FinderClassDiscovery;
 use BuildableSerializerBundle\Metadata\ClassMetadata;
 use BuildableSerializerBundle\Metadata\MetadataFactory;
 use BuildableSerializerBundle\Tests\Fixtures\Discovery\AnotherSerializableModel;
+use BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands\CommandHandler;
+use BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands\CreateUserCommand;
+use BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands\DeleteUserCommand;
+use BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands\Sub\OrderService;
+use BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands\Sub\UpdateOrderCommand;
 use BuildableSerializerBundle\Tests\Fixtures\Discovery\NotSerializableModel;
 use BuildableSerializerBundle\Tests\Fixtures\Discovery\SerializableModel;
 use BuildableSerializerBundle\Tests\Fixtures\Discovery\Sub\NestedSerializableModel;
@@ -190,5 +195,104 @@ final class FinderClassDiscoveryTest extends TestCase
                 sprintf('Class "%s" should be loadable after discovery.', $metadata->getClassName()),
             );
         }
+    }
+
+    public function testGlobPatternMatchesOnlyFilesWithSuffix(): void
+    {
+        $commandsDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Commands';
+
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands' => $commandsDir . '/*Command.php',
+        ]);
+
+        $classes = $this->classNames($discovery->discoverClasses());
+
+        $this->assertContains(CreateUserCommand::class, $classes);
+        $this->assertContains(DeleteUserCommand::class, $classes);
+        $this->assertNotContains(CommandHandler::class, $classes);
+    }
+
+    public function testGlobPatternExcludesNonMatchingFiles(): void
+    {
+        $commandsDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Commands';
+
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands' => $commandsDir . '/*Command.php',
+        ]);
+
+        $classes = $this->classNames($discovery->discoverClasses());
+
+        $this->assertNotContains(CommandHandler::class, $classes, 'CommandHandler should not match *Command.php');
+    }
+
+    public function testGlobPatternIncludesSubdirectories(): void
+    {
+        $commandsDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Commands';
+
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands' => $commandsDir . '/*Command.php',
+        ]);
+
+        $classes = $this->classNames($discovery->discoverClasses());
+
+        $this->assertContains(UpdateOrderCommand::class, $classes, 'Glob should find files in subdirectories');
+    }
+
+    public function testGlobPatternExcludesNonMatchingFilesInSubdirectories(): void
+    {
+        $commandsDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Commands';
+
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands' => $commandsDir . '/*Command.php',
+        ]);
+
+        $classes = $this->classNames($discovery->discoverClasses());
+
+        $this->assertNotContains(CommandHandler::class, $classes);
+        $this->assertNotContains(OrderService::class, $classes);
+    }
+
+    public function testGlobPatternResultIsSorted(): void
+    {
+        $commandsDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Commands';
+
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands' => $commandsDir . '/*Command.php',
+        ]);
+
+        $classes = $this->classNames($discovery->discoverClasses());
+
+        $sorted = $classes;
+        sort($sorted);
+        $this->assertSame($sorted, $classes);
+    }
+
+    public function testGlobPatternThrowsForNonExistentBaseDirectory(): void
+    {
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'App\Command' => '/this/path/does/not/exist/*Command.php',
+        ]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/does not exist|not a directory/i');
+
+        $discovery->discoverClasses();
+    }
+
+    public function testDirectoryModeFindsAllPhpFiles(): void
+    {
+        $commandsDir = $this->fixturesDir . \DIRECTORY_SEPARATOR . 'Commands';
+
+        $discovery = new FinderClassDiscovery($this->metadataFactory, [
+            'BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands' => $commandsDir,
+        ]);
+
+        $classes = $this->classNames($discovery->discoverClasses());
+
+        $this->assertContains(CreateUserCommand::class, $classes);
+        $this->assertContains(DeleteUserCommand::class, $classes);
+        $this->assertContains(CommandHandler::class, $classes);
+        $this->assertContains(UpdateOrderCommand::class, $classes);
+        $this->assertContains(OrderService::class, $classes);
     }
 }
