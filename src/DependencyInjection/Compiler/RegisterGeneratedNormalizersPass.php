@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery;
+use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
-use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
-use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
-use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
  * Generates optimised normalizer classes at container compile time and wires
@@ -91,74 +87,22 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
     public function process(ContainerBuilder $container): void
     {
         foreach ([self::CACHE_DIR_PARAM, self::NAMESPACE_PARAM, self::PATHS_PARAM] as $param) {
-            if (!$container->hasParameter($param)) {
+            if ($container->hasParameter($param) === false) {
                 return;
             }
         }
 
-        $bag = $container->getParameterBag();
+        /** @var NormalizerGenerator $generator */
+        $generator = $container->get(NormalizerGenerator::class);
 
-        /** @var string $cacheDir */
-        $cacheDir = (string) $bag->resolveValue($container->getParameter(self::CACHE_DIR_PARAM));
-        $cacheDir = realpath($cacheDir) ?: $cacheDir;
-
-        /** @var string $generatedNamespace */
-        $generatedNamespace = (string) $container->getParameter(self::NAMESPACE_PARAM);
-
-        /** @var array<string, array{path: string, exclude: string|string[]|null}> $rawPaths */
-        $rawPaths = $container->getParameter(self::PATHS_PARAM);
-
-        if ($rawPaths === []) {
-            return;
-        }
-
-        // Resolve Symfony parameter placeholders (e.g. %kernel.project_dir%) in every path.
-        $resolvedPaths = [];
-        foreach ($rawPaths as $namespace => $config) {
-            $resolvedPaths[$namespace] = [
-                'path' => (string) $bag->resolveValue($config['path']),
-                'exclude' => $config['exclude'],
-            ];
-        }
-
-        /** @var array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool} $features */
-        $features = $container->hasParameter(self::FEATURES_PARAM)
-            ? (array) $container->getParameter(self::FEATURES_PARAM)
-            : self::DEFAULT_FEATURES;
-
-        /** @var array{strict_types: bool} $generation */
-        $generation = $container->hasParameter(self::GENERATION_PARAM)
-            ? (array) $container->getParameter(self::GENERATION_PARAM)
-            : ['strict_types' => true];
-
-        if (!is_dir($cacheDir) && !mkdir($cacheDir, 0755, true) && !is_dir($cacheDir)) {
-            // Cannot create the output directory — skip silently so the
-            // application can still boot without generated normalizers.
-            return;
-        }
-
-        // Re-resolve after potential mkdir (realpath now valid).
-        $cacheDir = realpath($cacheDir) ?: $cacheDir;
-
-        // ------------------------------------------------------------------
-        // 3. Instantiate discovery and generation objects directly
-        //    (no DI container needed — pure PHP objects)
-        // ------------------------------------------------------------------
-        $metadataFactory = $this->createMetadataFactory();
-
-        $generator = new NormalizerGenerator($metadataFactory, $cacheDir, $generatedNamespace, $features, $generation);
-
-        $discovery = new FinderClassDiscovery($metadataFactory, $resolvedPaths);
+        /** @var ClassDiscoveryInterface $discovery */
+        $discovery = $container->get(ClassDiscoveryInterface::class);
 
         $metadataCollection = $discovery->discoverClasses();
 
         if ($metadataCollection === []) {
             return;
         }
-
-        // ------------------------------------------------------------------
-        // 5. Generate normalizer files and register DI services
-        // ------------------------------------------------------------------
 
         /** @var array<string, int> $registered  fqcn => priority */
         $registered = [];
@@ -207,55 +151,16 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
             return;
         }
 
-        // ------------------------------------------------------------------
-        // 6. Write classmap for runtime autoloading
-        // ------------------------------------------------------------------
+        /** @var string $cacheDir */
+        $cacheDir = (string) $container->getParameterBag()->resolveValue(
+            $container->getParameter(self::CACHE_DIR_PARAM)
+        );
+
         $this->writeClassmap($cacheDir, $classmap);
 
-        // ------------------------------------------------------------------
-        // 7. Sort and inject into the Symfony Serializer definition
-        // ------------------------------------------------------------------
         arsort($registered);
         $this->injectIntoSerializer($container, array_keys($registered));
     }
-
-    // =========================================================================
-    // MetadataFactory bootstrap
-    // =========================================================================
-
-    /**
-     * Create a standalone MetadataFactory suitable for use during container
-     * compilation (i.e. without the DI service container).
-     *
-     * `PhpDocExtractor` is used when `phpdocumentor/reflection-docblock` is
-     * installed (typically in development). In production deployments where
-     * dev dependencies are absent only `ReflectionExtractor` is used, which
-     * is sufficient for typed PHP 8.1+ properties.
-     */
-    private function createMetadataFactory(): MetadataFactory
-    {
-        $reflection = new ReflectionExtractor();
-        $typeExtractors = [$reflection];
-
-        // PhpDocExtractor enriches type resolution with @var / @return
-        // docblock annotations. It requires phpdocumentor/reflection-docblock
-        // which may not be present in production (require-dev only).
-        if (class_exists(PhpDocExtractor::class) && class_exists(\phpDocumentor\Reflection\DocBlockFactory::class)) {
-            array_unshift($typeExtractors, new PhpDocExtractor());
-        }
-
-        $extractor = new PropertyInfoExtractor(
-            listExtractors: [$reflection],
-            typeExtractors: $typeExtractors,
-            accessExtractors: [$reflection],
-        );
-
-        return new MetadataFactory($extractor);
-    }
-
-    // =========================================================================
-    // Classmap writer
-    // =========================================================================
 
     /**
      * Write a PHP classmap file to `{cacheDir}/autoload.php`.
@@ -274,14 +179,10 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         }
 
         $content =
-            "<?php\n\n// @generated by buildable/serializer-bundle\n\nreturn [\n" . implode("\n", $lines) . "\n];\n";
+            "<?php\n\n// @generated by RemcoSmitsDev/buildable-serializer-bundle\n\nreturn [\n" . implode("\n", $lines) . "\n];\n";
 
         file_put_contents($cacheDir . '/autoload.php', $content);
     }
-
-    // =========================================================================
-    // Direct serializer injection
-    // =========================================================================
 
     /**
      * Prepend a `Reference` for each generated normalizer into the Symfony
