@@ -219,6 +219,17 @@ final class MetadataFactory implements MetadataFactoryInterface
             return [];
         }
 
+        // Only collect promoted params when the constructor is declared on this
+        // exact class. If the constructor is inherited from a parent class the
+        // promoted properties belong to the parent's ReflectionClass, not to
+        // $reflectionClass. Calling $reflectionClass->getProperty() on them
+        // would throw "Property ChildClass::$prop does not exist".
+        // Those inherited properties are picked up in step 2 via getProperties()
+        // and in step 3 via getMethods(), so nothing is lost.
+        if ($constructor->getDeclaringClass()->getName() !== $reflectionClass->getName()) {
+            return [];
+        }
+
         return array_values(array_filter($constructor->getParameters(), static fn(\ReflectionParameter $p): bool => $p->isPromoted()));
     }
 
