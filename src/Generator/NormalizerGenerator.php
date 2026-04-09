@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
 
-use BuildableSerializerBundle\Metadata\AccessorType;
-use BuildableSerializerBundle\Metadata\ClassMetadata;
-use BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
-use BuildableSerializerBundle\Metadata\PropertyMetadata;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment;
 use PhpParser\Comment\Doc;
@@ -63,6 +59,10 @@ use PhpParser\Node\UnionType;
 use PhpParser\Node\UseItem;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
 
 final class NormalizerGenerator implements NormalizerGeneratorInterface
 {
@@ -109,7 +109,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      * Return the metadata factory used by this generator.
      *
      * Exposed so that consumers (e.g. the console command) can retrieve
-     * {@see \BuildableSerializerBundle\Metadata\ClassMetadata} for a class
+     * {@see \RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata} for a class
      * without having to inject the factory separately.
      */
     public function getMetadataFactory(): MetadataFactoryInterface
@@ -364,7 +364,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $set = [];
 
         $set[$targetFqcn] = true;
-        $set["BuildableSerializerBundle\\Normalizer\\GeneratedNormalizerInterface"] = true;
+        $set["RemcoSmitsDev\\BuildableSerializerBundle\\Normalizer\\GeneratedNormalizerInterface"] = true;
         $set["Symfony\\Component\\Serializer\\Normalizer\\NormalizerInterface"] = true;
 
         if ($needsAware) {

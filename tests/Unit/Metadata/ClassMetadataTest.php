@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Unit\Metadata;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Metadata;
 
-use BuildableSerializerBundle\Metadata\AccessorType;
-use BuildableSerializerBundle\Metadata\ClassMetadata;
-use BuildableSerializerBundle\Metadata\PropertyMetadata;
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
 
 /**
- * @covers \BuildableSerializerBundle\Metadata\ClassMetadata
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata
  */
 final class ClassMetadataTest extends TestCase
 {
@@ -60,7 +60,7 @@ final class ClassMetadataTest extends TestCase
     {
         $cm = $this->makeClassMetadata();
 
-        $this->assertSame("BuildableSerializerBundle\Metadata", $cm->getNamespace());
+        $this->assertSame("RemcoSmitsDev\BuildableSerializerBundle\Metadata", $cm->getNamespace());
     }
 
     public function testGetNamespaceReturnsEmptyStringForRootClass(): void

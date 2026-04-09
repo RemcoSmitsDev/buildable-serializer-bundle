@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\DependencyInjection;
+namespace RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection;
 
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;

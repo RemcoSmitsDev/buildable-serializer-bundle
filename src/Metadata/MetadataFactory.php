@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Metadata;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Metadata;
 
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;

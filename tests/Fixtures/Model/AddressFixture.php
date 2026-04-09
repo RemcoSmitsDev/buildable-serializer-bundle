@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Fixtures\Model;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model;
 
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\SerializedName;
@@ -59,7 +59,7 @@ final class AddressFixture
      * Return the postal / ZIP code.
      *
      * Using a getter rather than a promoted parameter to exercise the
-     * getter-based accessor discovery in {@see \BuildableSerializerBundle\Metadata\MetadataFactory}.
+     * getter-based accessor discovery in {@see \RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory}.
      */
     #[Groups(['address', 'address:read'])]
     #[SerializedName('postal_code')]

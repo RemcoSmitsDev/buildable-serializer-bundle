@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Unit\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Generator;
 
-use BuildableSerializerBundle\Generator\NormalizerGenerator;
-use BuildableSerializerBundle\Metadata\ClassMetadata;
-use BuildableSerializerBundle\Metadata\MetadataFactory;
-use BuildableSerializerBundle\Tests\AbstractTestCase;
-use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
-use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
-use BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
-use BuildableSerializerBundle\Tests\Fixtures\Model\ScalarTypesFixture;
-use BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\ScalarTypesFixture;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
- * @covers \BuildableSerializerBundle\Generator\NormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator
  */
 final class NormalizerGeneratorTest extends AbstractTestCase
 {

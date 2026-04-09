@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Unit\Metadata;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Metadata;
 
-use BuildableSerializerBundle\Metadata\AccessorType;
-use BuildableSerializerBundle\Metadata\MetadataFactory;
-use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
-use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
-use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
-use BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
- * @covers \BuildableSerializerBundle\Metadata\MetadataFactory
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory
  */
 final class MetadataFactoryTest extends TestCase
 {

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle;
+namespace RemcoSmitsDev\BuildableSerializerBundle;
 
-use BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
+use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;

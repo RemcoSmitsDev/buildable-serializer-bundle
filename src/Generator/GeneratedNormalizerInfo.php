@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
 
 final class GeneratedNormalizerInfo implements \Stringable
 {

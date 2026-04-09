@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Integration;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use BuildableSerializerBundle\Tests\AbstractTestCase;
-use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use Symfony\Component\Serializer\Attribute\MaxDepth;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -397,7 +397,7 @@ final class MaxDepthTest extends AbstractTestCase
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
         $this->assertInstanceOf(
-            \BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
             $this->normalizer,
         );
     }

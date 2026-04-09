@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
 
-use BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 
 interface NormalizerGeneratorInterface
 {

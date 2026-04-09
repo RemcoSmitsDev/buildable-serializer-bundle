@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Fixtures\Discovery;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Discovery;
 
 final class AnotherSerializableModel
 {

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Unit\DependencyInjection;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\DependencyInjection;
 
-use BuildableSerializerBundle\DependencyInjection\Configuration;
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Configuration;
 use Symfony\Component\Config\Definition\Processor;
 
 /**
- * @covers \BuildableSerializerBundle\DependencyInjection\Configuration
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Configuration
  */
 final class ConfigurationTest extends TestCase
 {

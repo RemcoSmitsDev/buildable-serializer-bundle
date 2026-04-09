@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Discovery;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Discovery;
 
-use BuildableSerializerBundle\Metadata\ClassMetadata;
-use BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
 use Symfony\Component\Finder\Finder;
 
 /**

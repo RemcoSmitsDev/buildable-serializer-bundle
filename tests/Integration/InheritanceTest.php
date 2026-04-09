@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Integration;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use BuildableSerializerBundle\Tests\AbstractTestCase;
-use BuildableSerializerBundle\Tests\Fixtures\Model\ConcreteChildEntity;
-use BuildableSerializerBundle\Tests\Fixtures\Model\ExtendedChildEntity;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\ConcreteChildEntity;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\ExtendedChildEntity;
 
 /**
  * Integration tests for class-inheritance scenarios.
@@ -160,7 +160,10 @@ final class InheritanceTest extends AbstractTestCase
     {
         $normalizer = $this->buildNormalizer(ConcreteChildEntity::class);
 
-        $this->assertInstanceOf(\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class, $normalizer);
+        $this->assertInstanceOf(
+            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            $normalizer,
+        );
     }
 
     public function testExtendedChildMetadataContainsInheritedGetterProperties(): void
@@ -269,7 +272,10 @@ final class InheritanceTest extends AbstractTestCase
     {
         $normalizer = $this->buildNormalizer(ExtendedChildEntity::class);
 
-        $this->assertInstanceOf(\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class, $normalizer);
+        $this->assertInstanceOf(
+            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            $normalizer,
+        );
     }
 
     /**

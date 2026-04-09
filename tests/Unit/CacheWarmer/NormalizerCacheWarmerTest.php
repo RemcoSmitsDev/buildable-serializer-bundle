@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Unit\CacheWarmer;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\CacheWarmer;
 
-use BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer;
-use BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
-use BuildableSerializerBundle\Generator\NormalizerGeneratorInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer;
+use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGeneratorInterface;
 
 /**
- * @covers \BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer
  *
  * The actual NormalizerCacheWarmer delegates bulk generation to
  * NormalizerGenerator::generateAll(). Because the production NormalizerGenerator

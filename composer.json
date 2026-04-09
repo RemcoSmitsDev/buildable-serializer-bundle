@@ -1,7 +1,7 @@
 {
-  "name": "buildable/serializer-bundle",
+  "name": "remcosmitsdev/buildable-serializer-bundle",
   "version": "1.0.0",
-  "description": "Build-time optimized Symfony Serializer normalizer generation",
+  "description": "An OPT-in performance boost for the symfony serializer component. By moving runtime overhead to buildtime.",
   "type": "symfony-bundle",
   "license": "MIT",
   "require": {
@@ -29,12 +29,12 @@
   },
   "autoload": {
     "psr-4": {
-      "BuildableSerializerBundle\\": "src/"
+      "RemcoSmitsDev\\BuildableSerializerBundle\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "BuildableSerializerBundle\\Tests\\": "tests/"
+      "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\": "tests/"
     }
   },
   "config": {

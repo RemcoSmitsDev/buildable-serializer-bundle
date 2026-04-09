@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests;
 
-use BuildableSerializerBundle\Generator\NormalizerGenerator;
-use BuildableSerializerBundle\Metadata\MetadataFactory;
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;

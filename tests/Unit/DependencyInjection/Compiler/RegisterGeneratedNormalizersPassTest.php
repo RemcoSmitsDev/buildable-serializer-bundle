@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Unit\DependencyInjection\Compiler;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\DependencyInjection\Compiler;
 
-use BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
-use BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
+use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Serializer\Serializer;
 
 /**
- * @covers \BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass
  */
 final class RegisterGeneratedNormalizersPassTest extends TestCase
 {
@@ -98,7 +98,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessGeneratesNormalizerFilesForDiscoveredClasses(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -115,7 +115,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessGeneratesAutoloadClassmap(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -129,7 +129,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testAutoloadClassmapContainsValidPhpArray(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -153,7 +153,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessRegistersNormalizerServicesInContainer(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -164,7 +164,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesImplementGeneratedNormalizerInterface(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -180,7 +180,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesAreTaggedWithSerializerNormalizerTag(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -197,7 +197,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesUseDefaultPriority200(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -214,7 +214,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testRegisteredServicesArePrivate(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -232,7 +232,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testAbstractClassIsNotRegistered(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -250,7 +250,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testConcreteClassInScannedDirectoryIsRegistered(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -278,7 +278,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -310,7 +310,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->registerSerializerDefinition();
 
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);
@@ -368,7 +368,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertDirectoryDoesNotExist($newCacheDir);
 
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ], $newCacheDir);
 
         $this->pass->process($this->container);
@@ -383,7 +383,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     public function testProcessIsIdempotentWhenRunTwice(): void
     {
         $this->setupContainerParameters([
-            "BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
+            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
         ]);
 
         $this->pass->process($this->container);

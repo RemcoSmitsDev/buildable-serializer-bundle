@@ -4,40 +4,40 @@ services:
     autoconfigure: false
     public: false
 
-  BuildableSerializerBundle\Metadata\MetadataFactory:
+  RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory:
     arguments:
       $propertyInfoExtractor: "@property_info"
     tags:
       - { name: buildable_serializer.metadata_factory }
 
-  BuildableSerializerBundle\Discovery\FinderClassDiscovery:
+  RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery:
     arguments:
-      $metadataFactory: '@BuildableSerializerBundle\Metadata\MetadataFactory'
+      $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
       $paths: "%buildable_serializer.paths%"
     tags:
       - { name: buildable_serializer.discovery }
 
-  BuildableSerializerBundle\Discovery\ClassDiscoveryInterface:
-    alias: 'BuildableSerializerBundle\Discovery\FinderClassDiscovery'
+  RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery'
     public: false
 
-  BuildableSerializerBundle\Generator\NormalizerGenerator:
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator:
     arguments:
-      $metadataFactory: '@BuildableSerializerBundle\Metadata\MetadataFactory'
+      $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
       $cacheDir: "%buildable_serializer.cache_dir%"
       $generatedNamespace: "%buildable_serializer.generated_namespace%"
       $features: "%buildable_serializer.features%"
       $generation: "%buildable_serializer.generation%"
 
   # Alias so consumers that type-hint against the interface receive the concrete service.
-  BuildableSerializerBundle\Generator\NormalizerGeneratorInterface:
-    alias: 'BuildableSerializerBundle\Generator\NormalizerGenerator'
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGeneratorInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
     public: false
 
-  BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer:
+  RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer:
     arguments:
-      $generator: '@BuildableSerializerBundle\Generator\NormalizerGenerator'
-      $discovery: '@BuildableSerializerBundle\Discovery\FinderClassDiscovery'
+      $generator: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
+      $discovery: '@RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery'
       $cacheDir: "%buildable_serializer.cache_dir%"
     tags:
       - { name: kernel.cache_warmer, priority: 10 }

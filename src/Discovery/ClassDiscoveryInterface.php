@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Discovery;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Discovery;
 
-use BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 
 /**
  * Contract for discovering PHP classes that should have normalizers generated.

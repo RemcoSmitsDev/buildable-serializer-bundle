@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Integration;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use BuildableSerializerBundle\Tests\AbstractTestCase;
-use BuildableSerializerBundle\Tests\Fixtures\Model\Author;
-use BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithCollections;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithCollections;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -91,7 +91,7 @@ final class CollectionsTest extends AbstractTestCase
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
         $this->assertInstanceOf(
-            \BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
             $this->normalizer,
         );
     }

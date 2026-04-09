@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Tests\Fixtures\Model;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model;
 
 /**
  * Extended child entity that defines its own constructor and calls the parent.

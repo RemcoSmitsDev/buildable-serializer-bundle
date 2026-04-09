@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuildableSerializerBundle\Metadata;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Metadata;
 
 /**
  * Holds all serialization-relevant metadata for a single property of a class.

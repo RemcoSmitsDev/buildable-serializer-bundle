@@ -50,7 +50,7 @@ Generated normalizers are plain, human-readable PHP classes — you can inspect 
 ## Installation
 
 ```bash
-composer require buildable/serializer-bundle
+composer require remcosmitsdev/buildable-serializer-bundle
 ```
 
 Register the bundle in `config/bundles.php` if it is not picked up automatically by Symfony Flex:
@@ -58,7 +58,7 @@ Register the bundle in `config/bundles.php` if it is not picked up automatically
 ```php
 return [
     // ...
-    BuildableSerializerBundle\BuildableSerializerBundle::class => ['all' => true],
+    RemcoSmitsDev\BuildableSerializerBundle\BuildableSerializerBundle::class => ['all' => true],
 ];
 ```
 
