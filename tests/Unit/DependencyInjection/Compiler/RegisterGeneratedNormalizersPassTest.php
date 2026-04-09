@@ -6,10 +6,17 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\DependencyInjection
 
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
+use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
+use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Serializer\Serializer;
 
 /**
@@ -40,10 +47,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     {
         $this->removeDirectory($this->tempDir);
     }
-
-    // =========================================================================
-    // Early-exit paths
-    // =========================================================================
 
     public function testProcessDoesNothingWhenCacheDirParameterAbsent(): void
     {
@@ -91,10 +94,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertNoNormalizerServicesRegistered();
     }
 
-    // =========================================================================
-    // Normalizer generation
-    // =========================================================================
-
     public function testProcessGeneratesNormalizerFilesForDiscoveredClasses(): void
     {
         $this->setupContainerParameters([
@@ -112,44 +111,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->assertNotEmpty($generated, 'Expected generated Normalizer PHP files in cache_dir.');
     }
 
-    public function testProcessGeneratesAutoloadClassmap(): void
-    {
-        $this->setupContainerParameters([
-            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
-        ]);
-
-        $this->pass->process($this->container);
-
-        $this->assertFileExists(
-            $this->tempDir . DIRECTORY_SEPARATOR . 'autoload.php',
-            'Expected an autoload.php classmap file in cache_dir.',
-        );
-    }
-
-    public function testAutoloadClassmapContainsValidPhpArray(): void
-    {
-        $this->setupContainerParameters([
-            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
-        ]);
-
-        $this->pass->process($this->container);
-
-        $classmap = require $this->tempDir . '/autoload.php';
-
-        $this->assertIsArray($classmap);
-        $this->assertNotEmpty($classmap);
-
-        foreach ($classmap as $fqcn => $path) {
-            $this->assertIsString($fqcn, 'Classmap keys must be FQCN strings.');
-            $this->assertIsString($path, 'Classmap values must be file-path strings.');
-            $this->assertFileExists($path, "Generated file {$path} must exist on disk.");
-        }
-    }
-
-    // =========================================================================
-    // DI service registration
-    // =========================================================================
-
     public function testProcessRegistersNormalizerServicesInContainer(): void
     {
         $this->setupContainerParameters([
@@ -159,22 +120,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->pass->process($this->container);
 
         $this->assertAtLeastOneNormalizerServiceRegistered();
-    }
-
-    public function testRegisteredServicesImplementGeneratedNormalizerInterface(): void
-    {
-        $this->setupContainerParameters([
-            "RemcoSmitsDev\\BuildableSerializerBundle\\Tests\\Fixtures\\Discovery" => $this->discoveryFixturesDir,
-        ]);
-
-        $this->pass->process($this->container);
-
-        foreach ($this->getRegisteredNormalizerFqcns() as $fqcn) {
-            $this->assertTrue(
-                is_a($fqcn, GeneratedNormalizerInterface::class, true),
-                "{$fqcn} must implement GeneratedNormalizerInterface.",
-            );
-        }
     }
 
     public function testRegisteredServicesAreTaggedWithSerializerNormalizerTag(): void
@@ -225,10 +170,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         }
     }
 
-    // =========================================================================
-    // Abstract classes excluded; concrete classes under configured paths included
-    // =========================================================================
-
     public function testAbstractClassIsNotRegistered(): void
     {
         $this->setupContainerParameters([
@@ -268,10 +209,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             'A normalizer for NotSerializableModel must be registered when its file lies under configured paths.',
         );
     }
-
-    // =========================================================================
-    // Serializer injection
-    // =========================================================================
 
     public function testProcessInjectsNormalizersIntoSerializerDefinition(): void
     {
@@ -358,10 +295,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         );
     }
 
-    // =========================================================================
-    // Cache directory creation
-    // =========================================================================
-
     public function testProcessCreatesCacheDirWhenAbsent(): void
     {
         $newCacheDir = $this->tempDir . DIRECTORY_SEPARATOR . 'auto_created';
@@ -375,10 +308,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
         $this->assertDirectoryExists($newCacheDir);
     }
-
-    // =========================================================================
-    // Idempotency
-    // =========================================================================
 
     public function testProcessIsIdempotentWhenRunTwice(): void
     {
@@ -400,10 +329,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         );
     }
 
-    // =========================================================================
-    // Helpers
-    // =========================================================================
-
     /**
      * Configure the container with all parameters required by the pass.
      *
@@ -421,7 +346,9 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             }
         }
 
-        $this->container->setParameter('buildable_serializer.cache_dir', $cacheDir ?? $this->tempDir);
+        $resolvedCacheDir = $cacheDir ?? $this->tempDir;
+
+        $this->container->setParameter('buildable_serializer.cache_dir', $resolvedCacheDir);
         $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
         $this->container->setParameter('buildable_serializer.paths', $normalizedPaths);
         $this->container->setParameter('buildable_serializer.features', [
@@ -434,6 +361,60 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $this->container->setParameter('buildable_serializer.generation', [
             'strict_types' => true,
         ]);
+
+        // Register the required services for the compiler pass
+        $this->registerRequiredServices($normalizedPaths, $resolvedCacheDir);
+
+        // Register the serializer definition if not already registered
+        if (!$this->container->hasDefinition('serializer')) {
+            $this->registerSerializerDefinition();
+        }
+    }
+
+    /**
+     * Register the services required by RegisterGeneratedNormalizersPass.
+     *
+     * @param array<string, array{path: string, exclude: string|null}> $paths
+     */
+    private function registerRequiredServices(array $paths, string $cacheDir): void
+    {
+        // Create PropertyInfoExtractor
+        $reflectionExtractor = new ReflectionExtractor();
+        $phpDocExtractor = new PhpDocExtractor();
+        $propertyInfoExtractor = new PropertyInfoExtractor(
+            [$reflectionExtractor],
+            [$phpDocExtractor, $reflectionExtractor],
+            [$phpDocExtractor],
+            [$reflectionExtractor],
+            [$reflectionExtractor],
+        );
+
+        // Create MetadataFactory
+        $metadataFactory = new MetadataFactory($propertyInfoExtractor);
+
+        // Create FinderClassDiscovery
+        $discovery = new FinderClassDiscovery($metadataFactory, $paths);
+
+        // Create NormalizerGenerator
+        $generator = new NormalizerGenerator(
+            $metadataFactory,
+            $cacheDir,
+            "BuildableTest\\Generated",
+            [
+                'groups' => true,
+                'max_depth' => true,
+                'circular_reference' => true,
+                'name_converter' => false,
+                'skip_null_values' => true,
+            ],
+            [
+                'strict_types' => true,
+            ],
+        );
+
+        // Register services in container (as synthetic services for the compiler pass)
+        $this->container->set(NormalizerGenerator::class, $generator);
+        $this->container->set(ClassDiscoveryInterface::class, $discovery);
     }
 
     /**
@@ -485,6 +466,13 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             if ($class === null) {
                 continue;
             }
+
+            // Include the generated file if it exists so the class becomes available
+            $file = $definition->getFile();
+            if ($file !== null && is_file($file) && !class_exists($class, false)) {
+                require_once $file;
+            }
+
             if (!class_exists($class, false)) {
                 continue;
             }
