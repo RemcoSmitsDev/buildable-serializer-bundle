@@ -12,18 +12,19 @@ use Symfony\Component\Finder\Finder;
  * Discovers concrete PHP classes by scanning configured PSR-4 directories with
  * symfony/finder and loading each matching file to reflect the class.
  *
- * Configuration supports two modes:
+ * Configuration supports two formats:
  *
- * 1. Directory mode — scans all PHP files recursively:
+ * 1. Simple string — scans all PHP files recursively:
  *
  *        paths:
  *            'App\Model': '%kernel.project_dir%/src/Model'
  *
- * 2. Glob mode — scans only files matching the pattern:
+ * 2. With exclude — scans directory but excludes files matching the pattern:
  *
  *        paths:
- *            'App\Command': '%kernel.project_dir%/src/Command/*.php'
- *            'App\Handler': '%kernel.project_dir%/src/Handler/*Handler.php'
+ *            'App\Entity':
+ *                path: '%kernel.project_dir%/src/Entity'
+ *                exclude: '*Helper.php'
  *
  * For each configured path entry the namespace prefix is used together with the
  * file's relative location under the directory to compute the FQCN without
@@ -33,7 +34,7 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
 {
     /**
      * @param MetadataFactoryInterface $metadataFactory Factory used to build fully-populated ClassMetadata.
-     * @param array<string, string>    $paths           Namespace-prefix => absolute directory path or glob pattern.
+     * @param array<string, string|array{path: string, exclude: string|string[]|null}> $paths Namespace-prefix => path config.
      */
     public function __construct(
         private readonly MetadataFactoryInterface $metadataFactory,
@@ -45,12 +46,10 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
     {
         $metadataCollection = [];
 
-        foreach ($this->paths as $namespacePrefix => $pathOrPattern) {
-            if ($this->isGlobPattern($pathOrPattern)) {
-                $this->discoverFromGlob($namespacePrefix, $pathOrPattern, $metadataCollection);
-            } else {
-                $this->discoverFromDirectory($namespacePrefix, $pathOrPattern, $metadataCollection);
-            }
+        foreach ($this->paths as $namespacePrefix => $config) {
+            [$directory, $exclude] = $this->normalizeConfig($config);
+
+            $this->discoverFromDirectory($namespacePrefix, $directory, $exclude, $metadataCollection);
         }
 
         usort(
@@ -62,12 +61,32 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
     }
 
     /**
-     * Discover classes from a plain directory path (scans all PHP files recursively).
+     * Normalize the path configuration to a consistent format.
      *
+     * @param string|array{path: string, exclude: string|string[]|null} $config
+     * @return array{0: string, 1: string|string[]|null} [directory, exclude]
+     */
+    private function normalizeConfig(string|array $config): array
+    {
+        if (\is_string($config)) {
+            return [$config, null];
+        }
+
+        return [$config['path'], $config['exclude'] ?? null];
+    }
+
+    /**
+     * Discover classes from a directory path, optionally excluding files matching pattern(s).
+     *
+     * @param string|string[]|null $exclude
      * @param list<ClassMetadata<object>> $metadataCollection
      */
-    private function discoverFromDirectory(string $namespacePrefix, string $directory, array &$metadataCollection): void
-    {
+    private function discoverFromDirectory(
+        string $namespacePrefix,
+        string $directory,
+        string|array|null $exclude,
+        array &$metadataCollection,
+    ): void {
         $realDir = realpath($directory);
 
         if ($realDir === false || is_dir($realDir) === false) {
@@ -80,32 +99,12 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
 
         $finder = Finder::create()->files()->in($realDir)->name('*.php');
 
-        foreach ($finder as $file) {
-            $this->processFile($file->getRealPath(), $realDir, $namespacePrefix, $metadataCollection);
+        if ($exclude !== null && $exclude !== []) {
+            $patterns = \is_array($exclude) ? $exclude : [$exclude];
+            foreach ($patterns as $pattern) {
+                $finder->notName($pattern);
+            }
         }
-    }
-
-    /**
-     * Discover classes from a glob pattern.
-     *
-     * @param list<ClassMetadata<object>> $metadataCollection
-     */
-    private function discoverFromGlob(string $namespacePrefix, string $pattern, array &$metadataCollection): void
-    {
-        [$baseDir, $namePattern] = $this->parseGlobPattern($pattern);
-
-        $realDir = realpath($baseDir);
-
-        if ($realDir === false || is_dir($realDir) === false) {
-            throw new \InvalidArgumentException(sprintf(
-                'The base directory "%s" (from pattern "%s") configured for namespace prefix "%s" does not exist or is not a directory.',
-                $baseDir,
-                $pattern,
-                $namespacePrefix,
-            ));
-        }
-
-        $finder = Finder::create()->files()->in($realDir)->name($namePattern);
 
         foreach ($finder as $file) {
             $this->processFile($file->getRealPath(), $realDir, $namespacePrefix, $metadataCollection);
@@ -144,54 +143,6 @@ final class FinderClassDiscovery implements ClassDiscoveryInterface
         }
 
         $metadataCollection[] = $this->metadataFactory->getMetadataFor($fqcn);
-    }
-
-    /**
-     * Check if a path contains glob pattern characters.
-     */
-    private function isGlobPattern(string $path): bool
-    {
-        return str_contains($path, '*') || str_contains($path, '?');
-    }
-
-    /**
-     * Parse a glob pattern into base directory and filename pattern.
-     *
-     * @return array{0: string, 1: string} [baseDir, namePattern]
-     */
-    private function parseGlobPattern(string $pattern): array
-    {
-        $lastSeparator = max((int) strrpos($pattern, '/'), (int) strrpos($pattern, \DIRECTORY_SEPARATOR));
-
-        if ($lastSeparator === 0) {
-            return ['.', $pattern];
-        }
-
-        $dirPart = substr($pattern, 0, $lastSeparator);
-        $namePart = substr($pattern, $lastSeparator + 1);
-
-        // If the directory part contains globs, find the non-glob prefix
-        if ($this->isGlobPattern($dirPart)) {
-            $firstGlobPos = min(
-                ($p1 = strpos($dirPart, '*')) === false ? \PHP_INT_MAX : $p1,
-                ($p2 = strpos($dirPart, '?')) === false ? \PHP_INT_MAX : $p2,
-            );
-
-            $prefixPart = substr($dirPart, 0, $firstGlobPos);
-            $lastSepBeforeGlob = max((int) strrpos($prefixPart, '/'), (int) strrpos($prefixPart, \DIRECTORY_SEPARATOR));
-
-            $baseDir = $lastSepBeforeGlob > 0 ? substr($dirPart, 0, $lastSepBeforeGlob) : $dirPart;
-
-            // Build a combined pattern: subdir glob + filename pattern
-            $subdirGlob = $lastSepBeforeGlob > 0 ? substr($dirPart, $lastSepBeforeGlob + 1) : '';
-            if ($subdirGlob !== '') {
-                $namePart = $subdirGlob . '/' . $namePart;
-            }
-
-            return [$baseDir, $namePart];
-        }
-
-        return [$dirPart, $namePart];
     }
 
     /**

@@ -105,7 +105,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         /** @var string $generatedNamespace */
         $generatedNamespace = (string) $container->getParameter(self::NAMESPACE_PARAM);
 
-        /** @var array<string, string> $rawPaths */
+        /** @var array<string, array{path: string, exclude: string|string[]|null}> $rawPaths */
         $rawPaths = $container->getParameter(self::PATHS_PARAM);
 
         if ($rawPaths === []) {
@@ -114,8 +114,11 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
         // Resolve Symfony parameter placeholders (e.g. %kernel.project_dir%) in every path.
         $resolvedPaths = [];
-        foreach ($rawPaths as $namespace => $directory) {
-            $resolvedPaths[$namespace] = (string) $bag->resolveValue($directory);
+        foreach ($rawPaths as $namespace => $config) {
+            $resolvedPaths[$namespace] = [
+                'path' => (string) $bag->resolveValue($config['path']),
+                'exclude' => $config['exclude'],
+            ];
         }
 
         /** @var array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool} $features */

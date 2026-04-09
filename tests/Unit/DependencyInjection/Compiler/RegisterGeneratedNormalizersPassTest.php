@@ -407,13 +407,23 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
     /**
      * Configure the container with all parameters required by the pass.
      *
-     * @param array<string, string> $paths namespace-prefix => directory
+     * @param array<string, string|array{path: string, exclude: string|null}> $paths namespace-prefix => directory or config
      */
     private function setupContainerParameters(array $paths, ?string $cacheDir = null): void
     {
+        // Normalize paths to new format
+        $normalizedPaths = [];
+        foreach ($paths as $namespace => $config) {
+            if (\is_string($config)) {
+                $normalizedPaths[$namespace] = ['path' => $config, 'exclude' => null];
+            } else {
+                $normalizedPaths[$namespace] = $config;
+            }
+        }
+
         $this->container->setParameter('buildable_serializer.cache_dir', $cacheDir ?? $this->tempDir);
         $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
-        $this->container->setParameter('buildable_serializer.paths', $paths);
+        $this->container->setParameter('buildable_serializer.paths', $normalizedPaths);
         $this->container->setParameter('buildable_serializer.features', [
             'groups' => true,
             'max_depth' => true,

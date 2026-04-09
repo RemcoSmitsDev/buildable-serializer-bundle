@@ -21,7 +21,7 @@ final class BuildableSerializerExtension extends Extension
         /** @var array{
          *     cache_dir: string,
          *     generated_namespace: string,
-         *     paths: array<string, string>,
+         *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
          *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
          *     generation: array{strict_types: bool}
          * } $config
@@ -40,7 +40,7 @@ final class BuildableSerializerExtension extends Extension
      * @param array{
      *     cache_dir: string,
      *     generated_namespace: string,
-     *     paths: array<string, string>,
+     *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
      *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
      *     generation: array{strict_types: bool}
      * } $config

@@ -77,10 +77,23 @@ buildable_serializer:
     # Root PHP namespace used for all generated normalizer classes.
     generated_namespace: 'BuildableSerializer\Generated'
 
-    # PSR-4 map of namespace-prefix => directory whose PHP files are scanned for concrete model classes.
+    # PSR-4 map of namespace-prefix => directory configuration.
+    # Value can be a simple directory path or an object with 'path' and optional 'exclude'.
     paths:
+        # Simple string: scans all PHP files recursively
         'App\Model': '%kernel.project_dir%/src/Model'
-        'App\Dto':   '%kernel.project_dir%/src/Dto'
+
+        # With single exclude pattern
+        'App\Entity':
+            path: '%kernel.project_dir%/src/Entity'
+            exclude: '*Repository.php'
+
+        # With multiple exclude patterns
+        'App\Dto':
+            path: '%kernel.project_dir%/src/Dto'
+            exclude:
+                - '*Helper.php'
+                - '*Test.php'
 
     # Toggle individual serializer features in the generated normalizers.
     features:

@@ -102,7 +102,7 @@ final class ConfigurationTest extends TestCase
             'paths' => ["App\Model" => '/tmp/src/Model'],
         ]);
 
-        $this->assertSame(["App\Model" => '/tmp/src/Model'], $config['paths']);
+        $this->assertSame(["App\Model" => ['path' => '/tmp/src/Model', 'exclude' => null]], $config['paths']);
     }
 
     public function testMultiplePaths(): void
@@ -115,8 +115,8 @@ final class ConfigurationTest extends TestCase
         ]);
 
         $this->assertCount(2, $config['paths']);
-        $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]);
-        $this->assertSame('/tmp/src/Entity', $config['paths']["App\Entity"]);
+        $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $config['paths']["App\Model"]);
+        $this->assertSame(['path' => '/tmp/src/Entity', 'exclude' => null], $config['paths']["App\Entity"]);
     }
 
     public function testCanDisableGroups(): void
@@ -229,8 +229,8 @@ final class ConfigurationTest extends TestCase
         $this->assertSame('/var/cache/serializer', $config['cache_dir']);
         $this->assertSame("My\Normalizers", $config['generated_namespace']);
         $this->assertCount(2, $config['paths']);
-        $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]);
-        $this->assertSame('/tmp/src/Entity', $config['paths']["App\Entity"]);
+        $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $config['paths']["App\Model"]);
+        $this->assertSame(['path' => '/tmp/src/Entity', 'exclude' => null], $config['paths']["App\Entity"]);
         $this->assertTrue($config['features']['groups']);
         $this->assertFalse($config['features']['max_depth']);
         $this->assertTrue($config['features']['circular_reference']);
@@ -238,5 +238,104 @@ final class ConfigurationTest extends TestCase
         $this->assertTrue($config['features']['skip_null_values']);
         $this->assertTrue($config['generation']['strict_types']);
         $this->assertArrayNotHasKey('psr4', $config['generation']);
+    }
+
+    public function testPathsWithExcludeOption(): void
+    {
+        $config = $this->processConfig([
+            'paths' => [
+                "App\Model" => [
+                    'path' => '/tmp/src/Model',
+                    'exclude' => '*Helper.php',
+                ],
+            ],
+        ]);
+
+        $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]['path']);
+        $this->assertSame('*Helper.php', $config['paths']["App\Model"]['exclude']);
+    }
+
+    public function testPathsWithExcludeDefaultsToNull(): void
+    {
+        $config = $this->processConfig([
+            'paths' => [
+                "App\Model" => [
+                    'path' => '/tmp/src/Model',
+                ],
+            ],
+        ]);
+
+        $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]['path']);
+        $this->assertNull($config['paths']["App\Model"]['exclude']);
+    }
+
+    public function testPathsStringAndArrayFormatCanBeMixed(): void
+    {
+        $config = $this->processConfig([
+            'paths' => [
+                "App\Model" => '/tmp/src/Model',
+                "App\Entity" => [
+                    'path' => '/tmp/src/Entity',
+                    'exclude' => '*Repository.php',
+                ],
+            ],
+        ]);
+
+        $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $config['paths']["App\Model"]);
+        $this->assertSame(
+            ['path' => '/tmp/src/Entity', 'exclude' => '*Repository.php'],
+            $config['paths']["App\Entity"],
+        );
+    }
+
+    public function testPathsWithExcludeAsArray(): void
+    {
+        $config = $this->processConfig([
+            'paths' => [
+                "App\Model" => [
+                    'path' => '/tmp/src/Model',
+                    'exclude' => ['*Helper.php', '*Test.php'],
+                ],
+            ],
+        ]);
+
+        $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]['path']);
+        $this->assertSame(['*Helper.php', '*Test.php'], $config['paths']["App\Model"]['exclude']);
+    }
+
+    public function testPathsWithExcludeAsEmptyArray(): void
+    {
+        $config = $this->processConfig([
+            'paths' => [
+                "App\Model" => [
+                    'path' => '/tmp/src/Model',
+                    'exclude' => [],
+                ],
+            ],
+        ]);
+
+        $this->assertSame('/tmp/src/Model', $config['paths']["App\Model"]['path']);
+        $this->assertSame([], $config['paths']["App\Model"]['exclude']);
+    }
+
+    public function testPathsMixedExcludeFormats(): void
+    {
+        $config = $this->processConfig([
+            'paths' => [
+                "App\Model" => '/tmp/src/Model',
+                "App\Entity" => [
+                    'path' => '/tmp/src/Entity',
+                    'exclude' => '*Repository.php',
+                ],
+                "App\Command" => [
+                    'path' => '/tmp/src/Command',
+                    'exclude' => ['*Helper.php', '*Test.php'],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $config['paths']["App\Model"]);
+        $this->assertSame('*Repository.php', $config['paths']["App\Entity"]['exclude']);
+        $this->assertSame(['*Helper.php', '*Test.php'], $config['paths']["App\Command"]['exclude']);
     }
 }

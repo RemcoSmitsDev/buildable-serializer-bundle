@@ -17,10 +17,20 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *         cache_dir: '%kernel.project_dir%/var/buildable_serializer'
  *         generated_namespace: 'BuildableSerializer\Generated'
  *         paths:
- *             # Directory mode: scans all PHP files recursively
+ *             # Simple string: scans all PHP files recursively
  *             'App\Model': '%kernel.project_dir%/src/Model'
- *             # Glob mode: scans only files matching the filename pattern
- *             'App\Command': '%kernel.project_dir%/src/Command/*Command.php'
+ *
+ *             # With single exclude pattern
+ *             'App\Entity':
+ *                 path: '%kernel.project_dir%/src/Entity'
+ *                 exclude: '*Helper.php'
+ *
+ *             # With multiple exclude patterns
+ *             'App\Command':
+ *                 path: '%kernel.project_dir%/src/Command'
+ *                 exclude:
+ *                     - '*Helper.php'
+ *                     - '*Test.php'
  *         features:
  *             groups: true
  *             max_depth: true
@@ -54,13 +64,41 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->arrayNode('paths')
             ->info(
-                'PSR-4 map of namespace-prefix => directory or glob pattern. '
-                . 'Directory paths scan all *.php files recursively. '
-                . 'Glob patterns (containing *, ?, or [) filter files by name (e.g. "src/**/*Command.php").',
+                'PSR-4 map of namespace-prefix => path configuration. '
+                . 'Value can be a string (directory) or an array with "path" and optional "exclude" keys.',
             )
             ->useAttributeAsKey('namespace')
-            ->scalarPrototype()
+            ->arrayPrototype()
+            ->beforeNormalization()
+            ->ifString()
+            ->then(static fn(string $v): array => ['path' => $v])
+            ->end()
+            ->children()
+            ->scalarNode('path')
+            ->isRequired()
             ->cannotBeEmpty()
+            ->info('Directory path or glob pattern to scan for PHP files.')
+            ->end()
+            ->variableNode('exclude')
+            ->defaultNull()
+            ->info(
+                'Glob pattern(s) for files to exclude. Can be a string or array of strings (e.g. "*Helper.php" or ["*Helper.php", "*Test.php"]).',
+            )
+            ->validate()
+            ->ifTrue(static fn($v): bool => $v !== null && !\is_string($v) && !\is_array($v))
+            ->thenInvalid('The "exclude" option must be a string, an array of strings, or null.')
+            ->end()
+            ->validate()
+            ->ifTrue(
+                static fn($v): bool => (
+                    \is_array($v)
+                    && \count(array_filter($v, static fn($item): bool => !\is_string($item))) > 0
+                ),
+            )
+            ->thenInvalid('The "exclude" option array must contain only strings.')
+            ->end()
+            ->end()
+            ->end()
             ->end()
             ->defaultValue([])
             ->end()

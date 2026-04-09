@@ -99,7 +99,10 @@ final class BuildableSerializerExtensionTest extends TestCase
         ]);
 
         $this->assertTrue($container->hasParameter('buildable_serializer.paths'));
-        $this->assertSame(["App\Model" => '/tmp'], $container->getParameter('buildable_serializer.paths'));
+        $this->assertSame(
+            ["App\Model" => ['path' => '/tmp', 'exclude' => null]],
+            $container->getParameter('buildable_serializer.paths'),
+        );
     }
 
     public function testLoadRegistersEmptyPathsByDefault(): void
@@ -124,8 +127,8 @@ final class BuildableSerializerExtensionTest extends TestCase
         $paths = $container->getParameter('buildable_serializer.paths');
 
         $this->assertCount(2, $paths);
-        $this->assertSame('/tmp/src/Model', $paths["App\Model"]);
-        $this->assertSame('/tmp/src/Entity', $paths["App\Entity"]);
+        $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $paths["App\Model"]);
+        $this->assertSame(['path' => '/tmp/src/Entity', 'exclude' => null], $paths["App\Entity"]);
     }
 
     public function testLoadRegistersDefaultCacheDir(): void
