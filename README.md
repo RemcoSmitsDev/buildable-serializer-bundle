@@ -70,9 +70,6 @@ Create `config/packages/buildable_serializer.yaml`:
 
 ```yaml
 buildable_serializer:
-    # Root PHP namespace used for all generated normalizer classes.
-    generated_namespace: 'BuildableSerializer\Generated'
-
     # PSR-4 map of namespace-prefix => directory configuration.
     # Value can be a simple directory path or an object with 'path' and optional 'exclude'.
     paths:

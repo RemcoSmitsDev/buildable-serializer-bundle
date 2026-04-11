@@ -15,7 +15,6 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 {
     use PriorityTaggedServiceTrait;
 
-    private const NAMESPACE_PARAM = 'buildable_serializer.generated_namespace';
     private const PATHS_PARAM = 'buildable_serializer.paths';
     private const NORMALIZER_TAG = 'serializer.normalizer';
     private const SERIALIZER_SERVICE = 'serializer';
@@ -23,10 +22,8 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
     public function process(ContainerBuilder $container): void
     {
-        foreach ([self::NAMESPACE_PARAM, self::PATHS_PARAM] as $param) {
-            if ($container->hasParameter($param) === false) {
-                return;
-            }
+        if ($container->hasParameter(self::PATHS_PARAM) === false) {
+            return;
         }
 
         /** @var array<string, string> $paths */

@@ -14,7 +14,6 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  * Example YAML configuration:
  *
  *     buildable_serializer:
- *         generated_namespace: 'BuildableSerializer\Generated'
  *         paths:
  *             # Simple string: scans all PHP files recursively
  *             'App\Model': '%kernel.project_dir%/src/Model'
@@ -51,11 +50,6 @@ final class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-            ->scalarNode('generated_namespace')
-            ->defaultValue("BuildableSerializer\Generated")
-            ->info('Root PHP namespace used for all generated normalizer classes.')
-            ->cannotBeEmpty()
-            ->end()
             ->arrayNode('paths')
             ->info(
                 'PSR-4 map of namespace-prefix => path configuration. '

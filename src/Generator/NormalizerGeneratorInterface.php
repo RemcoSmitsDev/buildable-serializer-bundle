@@ -33,8 +33,8 @@ interface NormalizerGeneratorInterface
      * `$generatedNamespace`, the source class namespace, and the source class short name.
      * It is safe to call before or after {@see generateAndWrite()}.
      *
-     * Example: for `App\Entity\User` with namespace `BuildableSerializer\Generated`
-     * the result would be `BuildableSerializer\Generated\App\Entity\UserNormalizer`.
+     * Example: for `App\Entity\User` with namespace `BuildableSerializerBundle\Generated`
+     * the result would be `BuildableSerializerBundle\Generated\App\Entity\UserNormalizer`.
      *
      * @template T of object
      *

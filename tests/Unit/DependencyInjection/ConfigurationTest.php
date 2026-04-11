@@ -27,11 +27,11 @@ final class ConfigurationTest extends TestCase
     {
         $config = $this->processConfig([]);
 
-        $this->assertSame("BuildableSerializer\Generated", $config['generated_namespace']);
         $this->assertSame([], $config['paths']);
         $this->assertArrayNotHasKey('classes', $config);
         $this->assertArrayNotHasKey('namespaces', $config);
         $this->assertArrayNotHasKey('exclude', $config);
+        $this->assertArrayNotHasKey('generated_namespace', $config);
     }
 
     public function testDefaultFeaturesValues(): void
@@ -51,24 +51,6 @@ final class ConfigurationTest extends TestCase
 
         $this->assertTrue($config['generation']['strict_types']);
         $this->assertArrayNotHasKey('psr4', $config['generation']);
-    }
-
-    public function testCanSetGeneratedNamespace(): void
-    {
-        $config = $this->processConfig([
-            'generated_namespace' => "My\Generated\Normalizers",
-        ]);
-
-        $this->assertSame("My\Generated\Normalizers", $config['generated_namespace']);
-    }
-
-    public function testGeneratedNamespaceWithBackslash(): void
-    {
-        $config = $this->processConfig([
-            'generated_namespace' => "App\\Normalizer\\Generated",
-        ]);
-
-        $this->assertSame("App\\Normalizer\\Generated", $config['generated_namespace']);
     }
 
     public function testPathsDefaultsToEmptyArray(): void
@@ -191,7 +173,6 @@ final class ConfigurationTest extends TestCase
     public function testFullConfiguration(): void
     {
         $config = $this->processConfig([
-            'generated_namespace' => "My\Normalizers",
             'paths' => [
                 "App\Model" => '/tmp/src/Model',
                 "App\Entity" => '/tmp/src/Entity',
@@ -208,7 +189,6 @@ final class ConfigurationTest extends TestCase
             ],
         ]);
 
-        $this->assertSame("My\Normalizers", $config['generated_namespace']);
         $this->assertCount(2, $config['paths']);
         $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $config['paths']["App\Model"]);
         $this->assertSame(['path' => '/tmp/src/Entity', 'exclude' => null], $config['paths']["App\Entity"]);

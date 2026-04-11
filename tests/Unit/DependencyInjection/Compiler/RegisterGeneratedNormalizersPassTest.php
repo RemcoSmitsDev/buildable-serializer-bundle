@@ -50,16 +50,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     public function testProcessDoesNothingWhenPathsIsEmptyWithoutFullSetup(): void
     {
-        $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
-        $this->container->setParameter('buildable_serializer.paths', []);
-
-        $this->pass->process($this->container);
-
-        $this->assertNoNormalizerServicesRegistered();
-    }
-
-    public function testProcessDoesNothingWhenGeneratedNamespaceParameterAbsent(): void
-    {
         $this->container->setParameter('buildable_serializer.paths', []);
 
         $this->pass->process($this->container);
@@ -69,8 +59,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
     public function testProcessDoesNothingWhenPathsParameterAbsent(): void
     {
-        $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
-
         $this->pass->process($this->container);
 
         $this->assertNoNormalizerServicesRegistered();
@@ -346,7 +334,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
         $resolvedCacheDir = $cacheDir ?? $this->tempDir;
 
-        $this->container->setParameter('buildable_serializer.generated_namespace', "BuildableTest\\Generated");
         $this->container->setParameter('buildable_serializer.paths', $normalizedPaths);
         $this->container->setParameter('buildable_serializer.features', [
             'groups' => true,

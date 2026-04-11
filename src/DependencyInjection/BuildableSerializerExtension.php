@@ -12,6 +12,7 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 final class BuildableSerializerExtension extends Extension
 {
     private const PARAMETER_PREFIX = 'buildable_serializer';
+    public const GENERATED_NAMESPACE = 'BuildableSerializerBundle\\Generated';
 
     /** @inheritdoc */
     public function load(array $configs, ContainerBuilder $container): void
@@ -19,7 +20,6 @@ final class BuildableSerializerExtension extends Extension
         $configuration = new Configuration();
 
         /** @var array{
-         *     generated_namespace: string,
          *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
          *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
          *     generation: array{strict_types: bool}
@@ -37,7 +37,6 @@ final class BuildableSerializerExtension extends Extension
      * that service definitions in services.yaml can reference them.
      *
      * @param array{
-     *     generated_namespace: string,
      *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
      *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
      *     generation: array{strict_types: bool}
@@ -48,7 +47,6 @@ final class BuildableSerializerExtension extends Extension
         $prefix = self::PARAMETER_PREFIX;
 
         // ---- Top-level scalar parameters ----------------------------------------
-        $container->setParameter("{$prefix}.generated_namespace", $config['generated_namespace']);
         $container->setParameter("{$prefix}.paths", $config['paths']);
 
         // ---- Structured sub-tree parameters (whole arrays) ----------------------

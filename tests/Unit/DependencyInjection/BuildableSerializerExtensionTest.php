@@ -130,26 +130,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertSame(['path' => '/tmp/src/Entity', 'exclude' => null], $paths["App\Entity"]);
     }
 
-    public function testLoadRegistersGeneratedNamespace(): void
-    {
-        $container = $this->loadExtension([[]]);
-
-        $this->assertTrue($container->hasParameter('buildable_serializer.generated_namespace'));
-
-        $namespace = $container->getParameter('buildable_serializer.generated_namespace');
-        $this->assertIsString($namespace);
-        $this->assertNotEmpty($namespace);
-    }
-
-    public function testLoadRegistersCustomGeneratedNamespace(): void
-    {
-        $container = $this->loadExtension([
-            ['generated_namespace' => "My\Custom\Namespace"],
-        ]);
-
-        $this->assertSame("My\Custom\Namespace", $container->getParameter('buildable_serializer.generated_namespace'));
-    }
-
     public function testLoadRegistersFeatureParameters(): void
     {
         $container = $this->loadExtension([[]]);

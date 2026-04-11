@@ -25,7 +25,7 @@ services:
     arguments:
       $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
       $cacheDir: "%kernel.cache_dir%/buildable_serializer"
-      $generatedNamespace: "%buildable_serializer.generated_namespace%"
+      $generatedNamespace: 'BuildableSerializerBundle\Generated'
       $features: "%buildable_serializer.features%"
       $generation: "%buildable_serializer.generation%"
 
