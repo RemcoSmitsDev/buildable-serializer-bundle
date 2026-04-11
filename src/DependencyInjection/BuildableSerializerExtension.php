@@ -21,7 +21,7 @@ final class BuildableSerializerExtension extends Extension
 
         /** @var array{
          *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
-         *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
+         *     features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool},
          *     generation: array{strict_types: bool}
          * } $config
          */
@@ -38,7 +38,7 @@ final class BuildableSerializerExtension extends Extension
      *
      * @param array{
      *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
-     *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
+     *     features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool},
      *     generation: array{strict_types: bool}
      * } $config
      */
@@ -57,7 +57,6 @@ final class BuildableSerializerExtension extends Extension
         $container->setParameter("{$prefix}.features.groups", $config['features']['groups']);
         $container->setParameter("{$prefix}.features.max_depth", $config['features']['max_depth']);
         $container->setParameter("{$prefix}.features.circular_reference", $config['features']['circular_reference']);
-        $container->setParameter("{$prefix}.features.name_converter", $config['features']['name_converter']);
         $container->setParameter("{$prefix}.features.skip_null_values", $config['features']['skip_null_values']);
 
         $container->setParameter("{$prefix}.generation.strict_types", $config['generation']['strict_types']);

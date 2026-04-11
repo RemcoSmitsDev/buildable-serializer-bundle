@@ -93,7 +93,6 @@ buildable_serializer:
         groups: true                # Emit group-filtering logic.
         max_depth: true             # Emit max-depth checking logic.
         circular_reference: true    # Emit circular-reference detection logic.
-        name_converter: false       # Respect a name converter service.
         skip_null_values: true      # Emit logic to skip null-valued properties.
 
     # Options controlling the generated PHP source files.
@@ -556,7 +555,6 @@ A few things worth noting in the generated output:
 | `groups` | `true` | Honours the `groups` serialization context key |
 | `max_depth` | `true` | Enforces the `max_depth` context constraint |
 | `circular_reference` | `true` | Detects and handles circular object references |
-| `name_converter` | `false` | Applies a name converter service to property keys |
 | `skip_null_values` | `true` | Omits `null` properties when the context flag is set |
 
 Disabling a feature you don't need produces leaner, faster generated code.

@@ -33,7 +33,6 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *             groups: true
  *             max_depth: true
  *             circular_reference: true
- *             name_converter: false
  *             skip_null_values: true
  *         generation:
  *             strict_types: true
@@ -107,10 +106,6 @@ final class Configuration implements ConfigurationInterface
             ->booleanNode('circular_reference')
             ->defaultTrue()
             ->info('Emit circular-reference detection logic in generated normalizers.')
-            ->end()
-            ->booleanNode('name_converter')
-            ->defaultFalse()
-            ->info('Respect a name converter service when mapping PHP property ' . 'names to serialized keys.')
             ->end()
             ->booleanNode('skip_null_values')
             ->defaultTrue()

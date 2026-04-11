@@ -339,7 +339,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             'groups' => true,
             'max_depth' => true,
             'circular_reference' => true,
-            'name_converter' => false,
             'skip_null_values' => true,
         ]);
         $this->container->setParameter('buildable_serializer.generation', [
@@ -388,7 +387,6 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
                 'groups' => true,
                 'max_depth' => true,
                 'circular_reference' => true,
-                'name_converter' => false,
                 'skip_null_values' => true,
             ],
             [

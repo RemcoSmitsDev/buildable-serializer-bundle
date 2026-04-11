@@ -41,7 +41,6 @@ final class ConfigurationTest extends TestCase
         $this->assertTrue($config['features']['groups']);
         $this->assertTrue($config['features']['max_depth']);
         $this->assertTrue($config['features']['circular_reference']);
-        $this->assertFalse($config['features']['name_converter']);
         $this->assertTrue($config['features']['skip_null_values']);
     }
 
@@ -107,24 +106,6 @@ final class ConfigurationTest extends TestCase
         $this->assertFalse($config['features']['circular_reference']);
     }
 
-    public function testCanEnableNameConverter(): void
-    {
-        $config = $this->processConfig([
-            'features' => ['name_converter' => true],
-        ]);
-
-        $this->assertTrue($config['features']['name_converter']);
-    }
-
-    public function testCanDisableNameConverter(): void
-    {
-        $config = $this->processConfig([
-            'features' => ['name_converter' => false],
-        ]);
-
-        $this->assertFalse($config['features']['name_converter']);
-    }
-
     public function testCanDisableSkipNullValues(): void
     {
         $config = $this->processConfig([
@@ -141,7 +122,6 @@ final class ConfigurationTest extends TestCase
                 'groups' => false,
                 'max_depth' => false,
                 'circular_reference' => false,
-                'name_converter' => false,
                 'skip_null_values' => false,
             ],
         ]);
@@ -149,7 +129,6 @@ final class ConfigurationTest extends TestCase
         $this->assertFalse($config['features']['groups']);
         $this->assertFalse($config['features']['max_depth']);
         $this->assertFalse($config['features']['circular_reference']);
-        $this->assertFalse($config['features']['name_converter']);
         $this->assertFalse($config['features']['skip_null_values']);
     }
 
@@ -181,7 +160,6 @@ final class ConfigurationTest extends TestCase
                 'groups' => true,
                 'max_depth' => false,
                 'circular_reference' => true,
-                'name_converter' => false,
                 'skip_null_values' => true,
             ],
             'generation' => [
@@ -195,7 +173,6 @@ final class ConfigurationTest extends TestCase
         $this->assertTrue($config['features']['groups']);
         $this->assertFalse($config['features']['max_depth']);
         $this->assertTrue($config['features']['circular_reference']);
-        $this->assertFalse($config['features']['name_converter']);
         $this->assertTrue($config['features']['skip_null_values']);
         $this->assertTrue($config['generation']['strict_types']);
         $this->assertArrayNotHasKey('psr4', $config['generation']);

@@ -141,7 +141,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertArrayHasKey('groups', $features);
         $this->assertArrayHasKey('max_depth', $features);
         $this->assertArrayHasKey('circular_reference', $features);
-        $this->assertArrayHasKey('name_converter', $features);
         $this->assertArrayHasKey('skip_null_values', $features);
     }
 
@@ -153,7 +152,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertTrue($features['groups']);
         $this->assertTrue($features['max_depth']);
         $this->assertTrue($features['circular_reference']);
-        $this->assertFalse($features['name_converter']);
         $this->assertTrue($features['skip_null_values']);
     }
 
@@ -164,7 +162,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertTrue($container->hasParameter('buildable_serializer.features.groups'));
         $this->assertTrue($container->hasParameter('buildable_serializer.features.max_depth'));
         $this->assertTrue($container->hasParameter('buildable_serializer.features.circular_reference'));
-        $this->assertTrue($container->hasParameter('buildable_serializer.features.name_converter'));
         $this->assertTrue($container->hasParameter('buildable_serializer.features.skip_null_values'));
     }
 
@@ -176,7 +173,6 @@ final class BuildableSerializerExtensionTest extends TestCase
                     'groups' => false,
                     'max_depth' => false,
                     'circular_reference' => true,
-                    'name_converter' => false,
                     'skip_null_values' => true,
                 ],
             ],
@@ -186,24 +182,12 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertFalse($features['groups']);
         $this->assertFalse($features['max_depth']);
         $this->assertTrue($features['circular_reference']);
-        $this->assertFalse($features['name_converter']);
         $this->assertTrue($features['skip_null_values']);
 
         // Flat aliases must match
         $this->assertFalse($container->getParameter('buildable_serializer.features.groups'));
         $this->assertFalse($container->getParameter('buildable_serializer.features.max_depth'));
         $this->assertTrue($container->getParameter('buildable_serializer.features.circular_reference'));
-    }
-
-    public function testLoadRegistersFeatureNameConverterCanBeEnabled(): void
-    {
-        $container = $this->loadExtension([
-            ['features' => ['name_converter' => true]],
-        ]);
-
-        $features = $container->getParameter('buildable_serializer.features');
-        $this->assertTrue($features['name_converter']);
-        $this->assertTrue($container->getParameter('buildable_serializer.features.name_converter'));
     }
 
     public function testLoadRegistersGenerationParameters(): void

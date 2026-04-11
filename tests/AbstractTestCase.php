@@ -64,7 +64,6 @@ abstract class AbstractTestCase extends TestCase
                 'groups' => true,
                 'max_depth' => true,
                 'circular_reference' => true,
-                'name_converter' => false,
                 'skip_null_values' => true,
             ],
             generation: [

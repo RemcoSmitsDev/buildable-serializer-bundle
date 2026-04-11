@@ -65,7 +65,6 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\Serializer\Exception\CircularReferenceException;
-use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
@@ -85,7 +84,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     groups: bool,
      *     max_depth: bool,
      *     circular_reference: bool,
-     *     name_converter: bool,
      *     skip_null_values: bool,
      * } $features Active code-generation feature flags.
      * @param array{
@@ -165,7 +163,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $needsAware = $this->needsNormalizerAware($metadata);
         $needsAbstractNorm = $this->needsAbstractNormalizerConstants($metadata);
         $needsAbstractObj = $this->needsAbstractObjectNormalizerConstants($metadata);
-        $needsNameConv = $this->features['name_converter'];
         $needsCircularRef = $this->features['circular_reference'] && $metadata->hasNestedObjects();
 
         // Top-level statements
@@ -182,7 +179,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             $needsAware,
             $needsAbstractNorm,
             $needsAbstractObj,
-            $needsNameConv,
             $needsCircularRef,
         );
 
@@ -314,7 +310,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $needsAware,
         bool $needsAbstractNorm,
         bool $needsAbstractObj,
-        bool $needsNameConv,
         bool $needsCircularRef,
     ): array {
         /** @var array<string, true> $set */
@@ -335,10 +330,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         if ($needsAbstractObj) {
             $set[AbstractObjectNormalizer::class] = true;
-        }
-
-        if ($needsNameConv) {
-            $set[NameConverterInterface::class] = true;
         }
 
         if ($needsCircularRef) {
@@ -377,7 +368,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return (
             $this->features['groups'] && $metadata->hasGroupConstraints()
             || $this->features['circular_reference'] && $metadata->hasNestedObjects()
-            || $this->features['name_converter']
         );
     }
 
@@ -409,7 +399,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         $hasGroups = $activeFeatures['groups'];
         $hasSkipNull = $activeFeatures['skip_null_values'];
-        $hasNameConv = $activeFeatures['name_converter'];
         $hasMaxDepth = $activeFeatures['max_depth'];
 
         $stmts = [];
@@ -463,22 +452,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             );
         }
 
-        // $nameConverter = $context[AbstractNormalizer::NAME_CONVERTER] ?? null;
-        if ($hasNameConv) {
-            $stmts[] = new Expression(
-                new Assign(
-                    new Variable('nameConverter'),
-                    new Coalesce(
-                        new ArrayDimFetch(
-                            new Variable('context'),
-                            new ClassConstFetch(new Name('AbstractNormalizer'), 'NAME_CONVERTER'),
-                        ),
-                        new ConstFetch(new Name('null')),
-                    ),
-                ),
-            );
-        }
-
         // $data = [];
         $stmts[] = new Expression(new Assign(new Variable('data'), new Array_([], ['kind' => Array_::KIND_SHORT])));
 
@@ -496,7 +469,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                     $metadata->getClassName(),
                     $hasGroups,
                     $hasSkipNull,
-                    $hasNameConv,
                     $hasMaxDepth,
                 ));
             }
@@ -650,7 +622,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         string $ownerClass,
         bool $hasGroups,
         bool $hasSkipNull,
-        bool $hasNameConv,
         bool $hasMaxDepth,
     ): array {
         $needsGroupBlock = $hasGroups && $property->getGroups() !== [];
@@ -661,30 +632,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // --- key expression --------------------------------------------------
         $coreStmts = [];
-
-        if ($hasNameConv) {
-            // $_key = $nameConverter instanceof NameConverterInterface
-            //     ? $nameConverter->normalize('rawKey', 'OwnerClass', $format, $context)
-            //     : 'rawKey';
-            $coreStmts[] = new Expression(
-                new Assign(
-                    new Variable('_key'),
-                    new Ternary(
-                        new Instanceof_(new Variable('nameConverter'), new Name('NameConverterInterface')),
-                        new MethodCall(new Variable('nameConverter'), 'normalize', [
-                            new Arg(new String_($rawKey)),
-                            new Arg(new String_($ownerClass)),
-                            new Arg(new Variable('format')),
-                            new Arg(new Variable('context')),
-                        ]),
-                        new String_($rawKey),
-                    ),
-                ),
-            );
-            $keyExpr = new Variable('_key');
-        } else {
-            $keyExpr = new String_($rawKey);
-        }
+        $keyExpr = new String_($rawKey);
 
         // --- accessor expression ---------------------------------------------
         $accessorType = $property->getAccessorType();
@@ -988,7 +936,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Compute which features are actually active for the given class.
      *
-     * @return array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool}
+     * @return array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool}
      */
     private function resolveActiveFeatures(ClassMetadata $metadata): array
     {
@@ -996,7 +944,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             'groups' => $this->features['groups'] && $metadata->hasGroupConstraints(),
             'max_depth' => $this->features['max_depth'] && $metadata->hasMaxDepthConstraints(),
             'circular_reference' => $this->features['circular_reference'] && $metadata->hasNestedObjects(),
-            'name_converter' => $this->features['name_converter'],
             'skip_null_values' => $this->features['skip_null_values'],
         ];
     }
