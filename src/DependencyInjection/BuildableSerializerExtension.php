@@ -19,7 +19,6 @@ final class BuildableSerializerExtension extends Extension
         $configuration = new Configuration();
 
         /** @var array{
-         *     cache_dir: string,
          *     generated_namespace: string,
          *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
          *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
@@ -38,7 +37,6 @@ final class BuildableSerializerExtension extends Extension
      * that service definitions in services.yaml can reference them.
      *
      * @param array{
-     *     cache_dir: string,
      *     generated_namespace: string,
      *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
      *     features: array{groups: bool, max_depth: bool, circular_reference: bool, name_converter: bool, skip_null_values: bool},
@@ -50,7 +48,6 @@ final class BuildableSerializerExtension extends Extension
         $prefix = self::PARAMETER_PREFIX;
 
         // ---- Top-level scalar parameters ----------------------------------------
-        $container->setParameter("{$prefix}.cache_dir", $config['cache_dir']);
         $container->setParameter("{$prefix}.generated_namespace", $config['generated_namespace']);
         $container->setParameter("{$prefix}.paths", $config['paths']);
 

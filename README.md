@@ -70,10 +70,6 @@ Create `config/packages/buildable_serializer.yaml`:
 
 ```yaml
 buildable_serializer:
-    # Directory where generated normalizer PHP files are written.
-    # Defaults to %kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer
-    cache_dir: '%kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer'
-
     # Root PHP namespace used for all generated normalizer classes.
     generated_namespace: 'BuildableSerializer\Generated'
 
@@ -329,7 +325,7 @@ That's it. The Symfony Serializer will now use the generated normalizers automat
 
 ### 3. Generated normalizers
 
-The bundle writes one normalizer per model into the configured `cache_dir`. For the models above it produces:
+The bundle writes one normalizer per model into the configured `/var/cache/%kernel.environment%`. For the models above it produces:
 
 **`UserNormalizer.php`**
 

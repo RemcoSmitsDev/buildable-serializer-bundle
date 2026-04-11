@@ -26,7 +26,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         // Kernel parameters referenced by services.yaml parameter placeholders
         $container->setParameter('kernel.debug', true);
         $container->setParameter('kernel.project_dir', '/tmp/project');
-        $container->setParameter('kernel.cache_dir', '/tmp/project/var/cache/test');
 
         // Stub the property_info service that MetadataFactory depends on
         $container->register('property_info', \stdClass::class);
@@ -129,29 +128,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertCount(2, $paths);
         $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $paths["App\Model"]);
         $this->assertSame(['path' => '/tmp/src/Entity', 'exclude' => null], $paths["App\Entity"]);
-    }
-
-    public function testLoadRegistersDefaultCacheDir(): void
-    {
-        $container = $this->loadExtension([[]]);
-
-        $this->assertTrue($container->hasParameter('buildable_serializer.cache_dir'));
-
-        // The default value uses a kernel parameter placeholder that the
-        // ContainerBuilder does not resolve until compile time, so we assert
-        // that the stored value references the expected path fragment.
-        $cacheDir = $container->getParameter('buildable_serializer.cache_dir');
-        $this->assertIsString($cacheDir);
-        $this->assertStringContainsString('buildable_serializer', $cacheDir);
-    }
-
-    public function testLoadRegistersCustomCacheDir(): void
-    {
-        $container = $this->loadExtension([
-            ['cache_dir' => '/custom/cache/dir'],
-        ]);
-
-        $this->assertSame('/custom/cache/dir', $container->getParameter('buildable_serializer.cache_dir'));
     }
 
     public function testLoadRegistersGeneratedNamespace(): void

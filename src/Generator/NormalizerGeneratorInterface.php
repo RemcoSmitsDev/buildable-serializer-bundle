@@ -13,7 +13,7 @@ interface NormalizerGeneratorInterface
      * and write it to the generator's configured output directory.
      *
      * The output directory is determined by the generator's own internal configuration
-     * (`buildable_serializer.cache_dir`). If the target directory does not exist it
+     * (`%kernel.cache_dir%/buildable_serializer`). If the target directory does not exist it
      * must be created recursively. Existing files are overwritten on re-generation.
      *
      * @param ClassMetadata $metadata Fully-built metadata for the domain class.

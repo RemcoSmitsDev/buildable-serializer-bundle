@@ -24,7 +24,7 @@ services:
   RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator:
     arguments:
       $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
-      $cacheDir: "%buildable_serializer.cache_dir%"
+      $cacheDir: "%kernel.cache_dir%/buildable_serializer"
       $generatedNamespace: "%buildable_serializer.generated_namespace%"
       $features: "%buildable_serializer.features%"
       $generation: "%buildable_serializer.generation%"
@@ -38,6 +38,5 @@ services:
     arguments:
       $generator: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
       $discovery: '@RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery'
-      $cacheDir: "%buildable_serializer.cache_dir%"
     tags:
       - { name: kernel.cache_warmer, priority: 10 }

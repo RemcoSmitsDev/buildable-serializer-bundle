@@ -27,10 +27,6 @@ final class ConfigurationTest extends TestCase
     {
         $config = $this->processConfig([]);
 
-        $this->assertSame(
-            '%kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer',
-            $config['cache_dir'],
-        );
         $this->assertSame("BuildableSerializer\Generated", $config['generated_namespace']);
         $this->assertSame([], $config['paths']);
         $this->assertArrayNotHasKey('classes', $config);
@@ -55,22 +51,6 @@ final class ConfigurationTest extends TestCase
 
         $this->assertTrue($config['generation']['strict_types']);
         $this->assertArrayNotHasKey('psr4', $config['generation']);
-    }
-
-    public function testCanSetCacheDir(): void
-    {
-        $config = $this->processConfig(['cache_dir' => '/tmp/my_cache']);
-
-        $this->assertSame('/tmp/my_cache', $config['cache_dir']);
-    }
-
-    public function testCacheDirWithKernelParameter(): void
-    {
-        $config = $this->processConfig([
-            'cache_dir' => '%kernel.cache_dir%/custom',
-        ]);
-
-        $this->assertSame('%kernel.cache_dir%/custom', $config['cache_dir']);
     }
 
     public function testCanSetGeneratedNamespace(): void
@@ -211,7 +191,6 @@ final class ConfigurationTest extends TestCase
     public function testFullConfiguration(): void
     {
         $config = $this->processConfig([
-            'cache_dir' => '/var/cache/serializer',
             'generated_namespace' => "My\Normalizers",
             'paths' => [
                 "App\Model" => '/tmp/src/Model',
@@ -229,7 +208,6 @@ final class ConfigurationTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('/var/cache/serializer', $config['cache_dir']);
         $this->assertSame("My\Normalizers", $config['generated_namespace']);
         $this->assertCount(2, $config['paths']);
         $this->assertSame(['path' => '/tmp/src/Model', 'exclude' => null], $config['paths']["App\Model"]);

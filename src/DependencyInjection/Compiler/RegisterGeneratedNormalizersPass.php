@@ -10,13 +10,11 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\Serializer\Serializer;
 
 final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 {
     use PriorityTaggedServiceTrait;
 
-    private const CACHE_DIR_PARAM = 'buildable_serializer.cache_dir';
     private const NAMESPACE_PARAM = 'buildable_serializer.generated_namespace';
     private const PATHS_PARAM = 'buildable_serializer.paths';
     private const NORMALIZER_TAG = 'serializer.normalizer';
@@ -25,10 +23,17 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 
     public function process(ContainerBuilder $container): void
     {
-        foreach ([self::CACHE_DIR_PARAM, self::NAMESPACE_PARAM, self::PATHS_PARAM] as $param) {
+        foreach ([self::NAMESPACE_PARAM, self::PATHS_PARAM] as $param) {
             if ($container->hasParameter($param) === false) {
                 return;
             }
+        }
+
+        /** @var array<string, string> $paths */
+        $paths = $container->getParameter(self::PATHS_PARAM);
+
+        if ($paths === []) {
+            return;
         }
 
         /** @var NormalizerGenerator $generator */
