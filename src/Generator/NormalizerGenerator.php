@@ -74,13 +74,6 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class NormalizerGenerator implements NormalizerGeneratorInterface
 {
-    /**
-     * Priority assigned to generated normalizers in the serializer chain.
-     * A higher value means the normalizer is consulted earlier.
-     * Individual generated classes can override this via the NORMALIZER_PRIORITY constant.
-     */
-    private const DEFAULT_PRIORITY = 200;
-
     private BuilderFactory $factory;
     private PrettyPrinter $printer;
 
@@ -214,15 +207,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         if ($needsAware) {
             $classStmts[] = new TraitUse([new Name('NormalizerAwareTrait')]);
         }
-
-        $priorityConst = new ClassConst([new Node\Const_(
-            'NORMALIZER_PRIORITY',
-            new Int_(self::DEFAULT_PRIORITY),
-        )], Class_::MODIFIER_PUBLIC);
-        $priorityConst->setAttribute('comments', [new Doc(
-            '/** Priority in the Symfony Serializer normalizer chain (higher = earlier). */',
-        )]);
-        $classStmts[] = $priorityConst;
 
         $classStmts[] = $this->buildNormalizeMethod($metadata, $needsCircularRef);
         $classStmts[] = $this->buildSupportsNormalizationMethod($targetFqcn);

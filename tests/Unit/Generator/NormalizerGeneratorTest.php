@@ -100,14 +100,6 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertStringContainsString('@generated', file_get_contents($path));
     }
 
-    public function testGeneratedFileHasNormalizerPriorityConstant(): void
-    {
-        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
-        $path = $this->generator->generateAndWrite($metadata);
-
-        $this->assertStringContainsString('NORMALIZER_PRIORITY', file_get_contents($path));
-    }
-
     public function testGeneratedFileHasNormalizeMethod(): void
     {
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);

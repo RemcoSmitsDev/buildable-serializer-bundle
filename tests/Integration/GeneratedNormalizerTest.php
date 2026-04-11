@@ -176,22 +176,4 @@ final class GeneratedNormalizerTest extends AbstractTestCase
     {
         $this->assertInstanceOf(NormalizerInterface::class, $this->normalizer);
     }
-
-    public function testNormalizerHasPriorityConstant(): void
-    {
-        $fqcn = $this->normalizerFqcn;
-
-        $this->assertTrue(
-            defined($fqcn . '::NORMALIZER_PRIORITY'),
-            'Generated normalizer must define NORMALIZER_PRIORITY constant.',
-        );
-    }
-
-    public function testNormalizerPriorityIsPositive(): void
-    {
-        $fqcn = $this->normalizerFqcn;
-        $priority = constant($fqcn . '::NORMALIZER_PRIORITY');
-
-        $this->assertGreaterThan(0, $priority);
-    }
 }

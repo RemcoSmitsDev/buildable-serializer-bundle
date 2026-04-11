@@ -344,8 +344,6 @@ The bundle writes one normalizer per model into the configured `cache_dir`. For 
 final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
 {
     use NormalizerAwareTrait;
-    /** Priority in the Symfony Serializer normalizer chain (higher = earlier). */
-    public const NORMALIZER_PRIORITY = 200;
     /**
      * @param \App\Model\User $object
      * @param array<string, mixed>      $context
@@ -427,8 +425,6 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
 final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
 {
     use NormalizerAwareTrait;
-    /** Priority in the Symfony Serializer normalizer chain (higher = earlier). */
-    public const NORMALIZER_PRIORITY = 200;
     /**
      * @param \App\Model\Post $object
      * @param array<string, mixed>      $context
@@ -507,8 +503,6 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
  */
 final class AddressNormalizer implements NormalizerInterface, GeneratedNormalizerInterface
 {
-    /** Priority in the Symfony Serializer normalizer chain (higher = earlier). */
-    public const NORMALIZER_PRIORITY = 200;
     /**
      * @param \App\Model\Address $object
      * @param array<string, mixed>      $context
