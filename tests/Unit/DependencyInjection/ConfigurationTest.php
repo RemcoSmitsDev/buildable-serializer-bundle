@@ -27,7 +27,10 @@ final class ConfigurationTest extends TestCase
     {
         $config = $this->processConfig([]);
 
-        $this->assertSame('%kernel.project_dir%/var/buildable_serializer', $config['cache_dir']);
+        $this->assertSame(
+            '%kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer',
+            $config['cache_dir'],
+        );
         $this->assertSame("BuildableSerializer\Generated", $config['generated_namespace']);
         $this->assertSame([], $config['paths']);
         $this->assertArrayNotHasKey('classes', $config);

@@ -14,7 +14,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  * Example YAML configuration:
  *
  *     buildable_serializer:
- *         cache_dir: '%kernel.project_dir%/var/buildable_serializer'
+ *         cache_dir: '%kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer'
  *         generated_namespace: 'BuildableSerializer\Generated'
  *         paths:
  *             # Simple string: scans all PHP files recursively
@@ -53,7 +53,7 @@ final class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
             ->scalarNode('cache_dir')
-            ->defaultValue('%kernel.project_dir%/var/buildable_serializer')
+            ->defaultValue('%kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer')
             ->info('Directory where generated normalizer PHP files will be written.')
             ->cannotBeEmpty()
             ->end()

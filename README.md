@@ -71,8 +71,8 @@ Create `config/packages/buildable_serializer.yaml`:
 ```yaml
 buildable_serializer:
     # Directory where generated normalizer PHP files are written.
-    # Defaults to %kernel.project_dir%/var/buildable_serializer
-    cache_dir: '%kernel.project_dir%/var/buildable_serializer'
+    # Defaults to %kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer
+    cache_dir: '%kernel.project_dir%/var/cache/%kernel.environment%/buildable_serializer'
 
     # Root PHP namespace used for all generated normalizer classes.
     generated_namespace: 'BuildableSerializer\Generated'
