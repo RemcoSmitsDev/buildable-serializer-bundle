@@ -63,6 +63,14 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
+use Symfony\Component\Serializer\Exception\CircularReferenceException;
+use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class NormalizerGenerator implements NormalizerGeneratorInterface
 {
@@ -329,28 +337,28 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $set = [];
 
         $set[$targetFqcn] = true;
-        $set["RemcoSmitsDev\\BuildableSerializerBundle\\Normalizer\\GeneratedNormalizerInterface"] = true;
-        $set["Symfony\\Component\\Serializer\\Normalizer\\NormalizerInterface"] = true;
+        $set[GeneratedNormalizerInterface::class] = true;
+        $set[NormalizerInterface::class] = true;
 
         if ($needsAware) {
-            $set["Symfony\\Component\\Serializer\\Normalizer\\NormalizerAwareInterface"] = true;
-            $set["Symfony\\Component\\Serializer\\Normalizer\\NormalizerAwareTrait"] = true;
+            $set[NormalizerAwareInterface::class] = true;
+            $set[NormalizerAwareTrait::class] = true;
         }
 
         if ($needsAbstractNorm) {
-            $set["Symfony\\Component\\Serializer\\Normalizer\\AbstractNormalizer"] = true;
+            $set[AbstractNormalizer::class] = true;
         }
 
         if ($needsAbstractObj) {
-            $set["Symfony\\Component\\Serializer\\Normalizer\\AbstractObjectNormalizer"] = true;
+            $set[AbstractObjectNormalizer::class] = true;
         }
 
         if ($needsNameConv) {
-            $set["Symfony\\Component\\Serializer\\NameConverter\\NameConverterInterface"] = true;
+            $set[NameConverterInterface::class] = true;
         }
 
         if ($needsCircularRef) {
-            $set["Symfony\\Component\\Serializer\\Exception\\CircularReferenceException"] = true;
+            $set[CircularReferenceException::class] = true;
         }
 
         $uses = array_keys($set);
