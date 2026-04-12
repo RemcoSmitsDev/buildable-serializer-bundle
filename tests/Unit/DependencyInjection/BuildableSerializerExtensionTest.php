@@ -91,10 +91,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertSame('buildable_serializer', $extension->getAlias());
     }
 
-    // ========================================================================
-    // Normalizers parameter tests
-    // ========================================================================
-
     public function testLoadRegistersNormalizersParameters(): void
     {
         $container = $this->loadExtension([
@@ -222,10 +218,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertFalse($container->getParameter('buildable_serializer.normalizers.features.strict_types'));
     }
 
-    // ========================================================================
-    // Denormalizers parameter tests
-    // ========================================================================
-
     public function testLoadRegistersDenormalizersParameters(): void
     {
         $container = $this->loadExtension([
@@ -320,57 +312,6 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertFalse($container->getParameter('buildable_serializer.denormalizers.features.strict_types'));
     }
 
-    // ========================================================================
-    // Legacy/backwards compatibility parameter tests
-    // ========================================================================
-
-    public function testLoadRegistersLegacyPathsParameter(): void
-    {
-        $container = $this->loadExtension([
-            ['normalizers' => ['paths' => ["App\Model" => '/tmp']]],
-        ]);
-
-        // Legacy parameter should mirror normalizers.paths
-        $this->assertTrue($container->hasParameter('buildable_serializer.paths'));
-        $this->assertSame(
-            ["App\Model" => ['path' => '/tmp', 'exclude' => null]],
-            $container->getParameter('buildable_serializer.paths'),
-        );
-    }
-
-    public function testLoadRegistersLegacyFeaturesParameter(): void
-    {
-        $container = $this->loadExtension([[]]);
-
-        // Legacy parameter should mirror normalizers.features
-        $this->assertTrue($container->hasParameter('buildable_serializer.features'));
-
-        $features = $container->getParameter('buildable_serializer.features');
-        $this->assertIsArray($features);
-        $this->assertArrayHasKey('groups', $features);
-        $this->assertArrayHasKey('max_depth', $features);
-        $this->assertArrayHasKey('circular_reference', $features);
-        $this->assertArrayHasKey('skip_null_values', $features);
-    }
-
-    public function testLoadRegistersLegacyGenerationParameter(): void
-    {
-        $container = $this->loadExtension([[]]);
-
-        // Legacy parameter should mirror normalizers.strict_types
-        $this->assertTrue($container->hasParameter('buildable_serializer.generation'));
-        $this->assertTrue($container->hasParameter('buildable_serializer.generation.strict_types'));
-
-        $generation = $container->getParameter('buildable_serializer.generation');
-        $this->assertIsArray($generation);
-        $this->assertArrayHasKey('strict_types', $generation);
-        $this->assertTrue($generation['strict_types']);
-    }
-
-    // ========================================================================
-    // Service definition tests
-    // ========================================================================
-
     public function testLoadRegistersNormalizerGeneratorService(): void
     {
         $container = $this->loadExtensionForServices([[]]);
@@ -390,10 +331,6 @@ final class BuildableSerializerExtensionTest extends TestCase
             'MetadataFactory service should be registered.',
         );
     }
-
-    // ========================================================================
-    // Independent configuration tests
-    // ========================================================================
 
     public function testNormalizersAndDenormalizersAreIndependent(): void
     {

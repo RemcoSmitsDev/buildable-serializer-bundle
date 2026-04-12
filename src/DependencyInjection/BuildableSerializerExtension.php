@@ -94,19 +94,6 @@ final class BuildableSerializerExtension extends Extension
             "{$prefix}.denormalizers.features.strict_types",
             $config['denormalizers']['features']['strict_types'],
         );
-
-        // ---- Legacy/backwards compatibility parameters (deprecated) -------------
-        // These use the normalizers config for backwards compatibility
-        // TODO: Remove in future major version
-        $container->setParameter("{$prefix}.paths", $config['normalizers']['paths']);
-        $container->setParameter("{$prefix}.features", $config['normalizers']['features']);
-        $container->setParameter("{$prefix}.generation", [
-            'strict_types' => $config['normalizers']['features']['strict_types'],
-        ]);
-        $container->setParameter(
-            "{$prefix}.generation.strict_types",
-            $config['normalizers']['features']['strict_types'],
-        );
     }
 
     /**
