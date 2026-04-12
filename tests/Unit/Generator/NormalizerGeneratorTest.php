@@ -11,11 +11,10 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceA\User as UserA;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceB\User as UserB;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\ScalarTypesFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
-use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
-use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
-use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 /**
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator
@@ -73,7 +72,8 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
         $path = $this->generator->generateAndWrite($metadata);
 
-        $this->assertStringContainsString('class SimpleBlogNormalizer', file_get_contents($path));
+        // Class name now has a hash prefix (N + 8 hex chars) for flat namespace structure
+        $this->assertMatchesRegularExpression('/class N[a-f0-9]{8}_SimpleBlogNormalizer/', file_get_contents($path));
     }
 
     public function testGeneratedFileImplementsNormalizerInterface(): void
@@ -356,5 +356,89 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
         $this->assertSame($path1, $path2);
         $this->assertGreaterThanOrEqual($mtime1, $mtime2);
+    }
+
+    public function testResolveFilePathIsFlatWithNoNestedDirectories(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $path = $this->generator->resolveFilePath($metadata);
+
+        // File should be directly in the cache dir, not in nested directories
+        $relativePath = str_replace($this->tempDir . DIRECTORY_SEPARATOR, '', $path);
+        $this->assertStringNotContainsString(DIRECTORY_SEPARATOR, $relativePath);
+    }
+
+    public function testResolveFilePathHasHashedNamespacePrefix(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $path = $this->generator->resolveFilePath($metadata);
+        $filename = basename($path);
+
+        // Filename should match pattern: N<8 hex chars>_<ClassName>Normalizer.php
+        $this->assertMatchesRegularExpression('/^N[a-f0-9]{8}_SimpleBlogNormalizer\.php$/', $filename);
+    }
+
+    public function testSameClassNameInDifferentNamespacesHaveDifferentFilePaths(): void
+    {
+        $metadataA = $this->generator->getMetadataFactory()->getMetadataFor(UserA::class);
+        $metadataB = $this->generator->getMetadataFactory()->getMetadataFor(UserB::class);
+
+        $pathA = $this->generator->resolveFilePath($metadataA);
+        $pathB = $this->generator->resolveFilePath($metadataB);
+
+        // Both should end with UserNormalizer.php but have different prefixes
+        $this->assertStringEndsWith('UserNormalizer.php', $pathA);
+        $this->assertStringEndsWith('UserNormalizer.php', $pathB);
+        $this->assertNotSame($pathA, $pathB, 'Same class name in different namespaces must have different file paths');
+    }
+
+    public function testSameClassNameInDifferentNamespacesHaveDifferentFqcns(): void
+    {
+        $metadataA = $this->generator->getMetadataFactory()->getMetadataFor(UserA::class);
+        $metadataB = $this->generator->getMetadataFactory()->getMetadataFor(UserB::class);
+
+        $fqcnA = $this->generator->resolveNormalizerFqcn($metadataA);
+        $fqcnB = $this->generator->resolveNormalizerFqcn($metadataB);
+
+        // Both should end with UserNormalizer but have different prefixes
+        $this->assertStringEndsWith('UserNormalizer', $fqcnA);
+        $this->assertStringEndsWith('UserNormalizer', $fqcnB);
+        $this->assertNotSame($fqcnA, $fqcnB, 'Same class name in different namespaces must have different FQCNs');
+    }
+
+    public function testGeneratedNormalizersForSameClassNameInDifferentNamespacesAreBothValid(): void
+    {
+        $metadataA = $this->generator->getMetadataFactory()->getMetadataFor(UserA::class);
+        $metadataB = $this->generator->getMetadataFactory()->getMetadataFor(UserB::class);
+
+        $pathA = $this->generator->generateAndWrite($metadataA);
+        $pathB = $this->generator->generateAndWrite($metadataB);
+
+        // Both files should exist
+        $this->assertFileExists($pathA);
+        $this->assertFileExists($pathB);
+
+        // Both should be valid PHP (no parse errors)
+        $contentA = file_get_contents($pathA);
+        $contentB = file_get_contents($pathB);
+
+        $this->assertStringContainsString('UserNormalizer', $contentA);
+        $this->assertStringContainsString('UserNormalizer', $contentB);
+
+        // They should reference their respective original classes
+        $this->assertStringContainsString('NamespaceA\\User', $contentA);
+        $this->assertStringContainsString('NamespaceB\\User', $contentB);
+    }
+
+    public function testFlatNamespaceStructure(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $path = $this->generator->generateAndWrite($metadata);
+        $content = file_get_contents($path);
+
+        // The namespace should be flat (just the base generated namespace)
+        $this->assertMatchesRegularExpression('/namespace BuildableTest\\\\Generated;/', $content);
+        // Should NOT have nested namespaces like BuildableTest\Generated\RemcoSmitsDev\...
+        $this->assertDoesNotMatchRegularExpression('/namespace BuildableTest\\\\Generated\\\\[A-Za-z]/', $content);
     }
 }

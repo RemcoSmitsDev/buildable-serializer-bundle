@@ -268,10 +268,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      */
     private function resolveNormalizerNamespace(ClassMetadata $metadata): string
     {
-        $classNs = $metadata->getNamespace();
-        $base = rtrim($this->generatedNamespace, "\\");
-
-        return $classNs !== '' ? $base . "\\" . $classNs : $base;
+        return rtrim($this->generatedNamespace, "\\");
     }
 
     /**
@@ -281,26 +278,43 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      */
     private function resolveNormalizerClassName(ClassMetadata $metadata): string
     {
-        return $metadata->getShortName() . 'Normalizer';
+        return $this->buildNamespacePrefix($metadata) . $metadata->getShortName() . 'Normalizer';
     }
 
     /**
-     * Build the relative file path under cacheDir following PSR-4 conventions.
+     * Build a short hash prefix from the class namespace to avoid collisions
+     * when classes with the same short name exist in different namespaces.
+     *
+     * @template T of object
+     *
+     * @param ClassMetadata<T> $metadata
+     */
+    private function buildNamespacePrefix(ClassMetadata $metadata): string
+    {
+        $classNs = $metadata->getNamespace();
+
+        if ($classNs === '') {
+            return '';
+        }
+
+        // Prefix with 'N' to ensure valid PHP class name (cannot start with a number)
+        return 'N' . substr(hash('xxh3', $classNs), 0, 8) . '_';
+    }
+
+    /**
+     * Build the relative file path under cacheDir using a flat structure.
+     *
+     * Instead of nested directories matching the namespace hierarchy,
+     * all normalizer files are placed directly in the cache directory
+     * with a hashed namespace prefix to avoid collisions.
      *
      * Example:
      *   class = App\Entity\User
-     *   → App/Entity/UserNormalizer.php
+     *   → a1b2c3d4_UserNormalizer.php (where a1b2c3d4 is hash of "App\Entity")
      */
     private function buildPsr4RelativePath(ClassMetadata $metadata): string
     {
-        $classNs = $metadata->getNamespace();
-        $fileName = $metadata->getShortName() . 'Normalizer.php';
-
-        if ($classNs === '') {
-            return $fileName;
-        }
-
-        return str_replace("\\", \DIRECTORY_SEPARATOR, $classNs) . \DIRECTORY_SEPARATOR . $fileName;
+        return $this->buildNamespacePrefix($metadata) . $metadata->getShortName() . 'Normalizer.php';
     }
 
     /**

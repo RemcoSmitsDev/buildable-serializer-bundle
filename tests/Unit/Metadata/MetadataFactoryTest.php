@@ -258,7 +258,11 @@ final class MetadataFactoryTest extends TestCase
 
         $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
 
-        $this->assertNotContains('ready', $propertyNames, 'getReady() returns void and should not be detected as a getter');
+        $this->assertNotContains(
+            'ready',
+            $propertyNames,
+            'getReady() returns void and should not be detected as a getter',
+        );
     }
 
     public function testVoidReturningIsMethodIsNotDetectedAsGetter(): void
@@ -267,7 +271,11 @@ final class MetadataFactoryTest extends TestCase
 
         $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
 
-        $this->assertNotContains('initializing', $propertyNames, 'isInitializing() returns void and should not be detected as a getter');
+        $this->assertNotContains(
+            'initializing',
+            $propertyNames,
+            'isInitializing() returns void and should not be detected as a getter',
+        );
     }
 
     public function testVoidReturningHasMethodIsNotDetectedAsGetter(): void
@@ -276,7 +284,11 @@ final class MetadataFactoryTest extends TestCase
 
         $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
 
-        $this->assertNotContains('loaded', $propertyNames, 'hasLoaded() returns void and should not be detected as a getter');
+        $this->assertNotContains(
+            'loaded',
+            $propertyNames,
+            'hasLoaded() returns void and should not be detected as a getter',
+        );
     }
 
     public function testNeverReturningGetMethodIsNotDetectedAsGetter(): void
@@ -285,7 +297,11 @@ final class MetadataFactoryTest extends TestCase
 
         $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
 
-        $this->assertNotContains('error', $propertyNames, 'getError() returns never and should not be detected as a getter');
+        $this->assertNotContains(
+            'error',
+            $propertyNames,
+            'getError() returns never and should not be detected as a getter',
+        );
     }
 
     public function testNeverReturningIsMethodIsNotDetectedAsGetter(): void
@@ -294,7 +310,11 @@ final class MetadataFactoryTest extends TestCase
 
         $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
 
-        $this->assertNotContains('fatal', $propertyNames, 'isFatal() returns never and should not be detected as a getter');
+        $this->assertNotContains(
+            'fatal',
+            $propertyNames,
+            'isFatal() returns never and should not be detected as a getter',
+        );
     }
 
     public function testNeverReturningHasMethodIsNotDetectedAsGetter(): void
@@ -303,7 +323,11 @@ final class MetadataFactoryTest extends TestCase
 
         $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
 
-        $this->assertNotContains('failed', $propertyNames, 'hasFailed() returns never and should not be detected as a getter');
+        $this->assertNotContains(
+            'failed',
+            $propertyNames,
+            'hasFailed() returns never and should not be detected as a getter',
+        );
     }
 
     public function testValidGettersAreStillDetectedWithVoidNeverMethods(): void
