@@ -9,6 +9,8 @@ use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\Registe
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -378,8 +380,10 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         // Create FinderClassDiscovery
         $discovery = new FinderClassDiscovery($metadataFactory, $paths);
 
+        $generatedNamespace = "BuildableTest\\Generated";
+
         // Create NormalizerGenerator
-        $generator = new NormalizerGenerator($metadataFactory, $cacheDir, "BuildableTest\\Generated", [
+        $generator = new NormalizerGenerator($metadataFactory, $generatedNamespace, [
             'groups' => true,
             'max_depth' => true,
             'circular_reference' => true,
@@ -387,8 +391,15 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             'strict_types' => true,
         ]);
 
+        // Create NormalizerPathResolver
+        $pathResolver = new NormalizerPathResolver($cacheDir, $generatedNamespace);
+
+        // Create NormalizerWriter
+        $writer = new NormalizerWriter($generator, $pathResolver);
+
         // Register services in container (as synthetic services for the compiler pass)
-        $this->container->set(NormalizerGenerator::class, $generator);
+        $this->container->set(NormalizerPathResolver::class, $pathResolver);
+        $this->container->set(NormalizerWriter::class, $writer);
         $this->container->set(ClassDiscoveryInterface::class, $discovery);
     }
 

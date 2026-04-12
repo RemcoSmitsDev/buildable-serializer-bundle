@@ -49,7 +49,7 @@ final class InheritanceTest extends AbstractTestCase
 
     public function testConcreteChildMetadataContainsInheritedGetterProperties(): void
     {
-        $generator = $this->makeGenerator($this->tempDir);
+        $generator = $this->makeGenerator();
         $metadata = $generator->getMetadataFactory()->getMetadataFor(ConcreteChildEntity::class);
 
         $propertyNames = array_keys($metadata->getProperties());
@@ -61,10 +61,11 @@ final class InheritanceTest extends AbstractTestCase
 
     public function testConcreteChildNormalizerCanBeGenerated(): void
     {
-        $generator = $this->makeGenerator($this->tempDir);
+        $writer = $this->makeWriter($this->tempDir);
+        $generator = $this->makeGenerator();
         $metadata = $generator->getMetadataFactory()->getMetadataFor(ConcreteChildEntity::class);
 
-        $filePath = $generator->generateAndWrite($metadata);
+        $filePath = $writer->write($metadata);
 
         $this->assertFileExists($filePath);
     }
@@ -168,7 +169,7 @@ final class InheritanceTest extends AbstractTestCase
 
     public function testExtendedChildMetadataContainsInheritedGetterProperties(): void
     {
-        $generator = $this->makeGenerator($this->tempDir);
+        $generator = $this->makeGenerator();
         $metadata = $generator->getMetadataFactory()->getMetadataFor(ExtendedChildEntity::class);
 
         $propertyNames = array_keys($metadata->getProperties());
@@ -180,10 +181,11 @@ final class InheritanceTest extends AbstractTestCase
 
     public function testExtendedChildNormalizerCanBeGenerated(): void
     {
-        $generator = $this->makeGenerator($this->tempDir);
+        $writer = $this->makeWriter($this->tempDir);
+        $generator = $this->makeGenerator();
         $metadata = $generator->getMetadataFactory()->getMetadataFor(ExtendedChildEntity::class);
 
-        $filePath = $generator->generateAndWrite($metadata);
+        $filePath = $writer->write($metadata);
 
         $this->assertFileExists($filePath);
     }
@@ -288,12 +290,14 @@ final class InheritanceTest extends AbstractTestCase
      */
     private function buildNormalizer(string $targetClass): object
     {
-        $generator = $this->makeGenerator($this->tempDir);
+        $writer = $this->makeWriter($this->tempDir);
+        $pathResolver = $this->makePathResolver($this->tempDir);
+        $generator = $this->makeGenerator();
         $metadata = $generator->getMetadataFactory()->getMetadataFor($targetClass);
-        $fqcn = $generator->resolveNormalizerFqcn($metadata);
+        $fqcn = $pathResolver->resolveNormalizerFqcn($metadata);
 
         if (!class_exists($fqcn, false)) {
-            $filePath = $generator->generateAndWrite($metadata);
+            $filePath = $writer->write($metadata);
             require_once $filePath;
         }
 

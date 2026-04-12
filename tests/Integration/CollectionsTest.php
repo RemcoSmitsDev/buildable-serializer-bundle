@@ -30,14 +30,16 @@ final class CollectionsTest extends AbstractTestCase
     protected function setUp(): void
     {
         $this->tempDir = $this->createTempDir();
-        $generator = $this->makeGenerator($this->tempDir);
+        $writer = $this->makeWriter($this->tempDir);
+        $pathResolver = $this->makePathResolver($this->tempDir);
+        $generator = $this->makeGenerator();
         $factory = $generator->getMetadataFactory();
         $metadata = $factory->getMetadataFor(BlogWithCollections::class);
 
-        $this->normalizerFqcn = $generator->resolveNormalizerFqcn($metadata);
+        $this->normalizerFqcn = $pathResolver->resolveNormalizerFqcn($metadata);
 
         if (!class_exists($this->normalizerFqcn, false)) {
-            $filePath = $generator->generateAndWrite($metadata);
+            $filePath = $writer->write($metadata);
             require_once $filePath;
         }
 

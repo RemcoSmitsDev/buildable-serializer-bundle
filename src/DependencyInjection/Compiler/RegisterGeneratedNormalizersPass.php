@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -33,8 +34,11 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
             return;
         }
 
-        /** @var NormalizerGenerator $generator */
-        $generator = $container->get(NormalizerGenerator::class);
+        /** @var NormalizerWriter $writer */
+        $writer = $container->get(NormalizerWriter::class);
+
+        /** @var NormalizerPathResolver $pathResolver */
+        $pathResolver = $container->get(NormalizerPathResolver::class);
 
         /** @var ClassDiscoveryInterface $discovery */
         $discovery = $container->get(ClassDiscoveryInterface::class);
@@ -49,8 +53,8 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
         $classmap = [];
 
         foreach ($metadataCollection as $classMetadata) {
-            $fqcn = $generator->resolveNormalizerFqcn($classMetadata);
-            $filePath = $generator->generateAndWrite($classMetadata);
+            $fqcn = $pathResolver->resolveNormalizerFqcn($classMetadata);
+            $filePath = $writer->write($classMetadata);
 
             $definition = new Definition($fqcn);
             $definition->setPublic(false);

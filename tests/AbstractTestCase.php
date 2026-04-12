@@ -6,6 +6,8 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests;
 
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
@@ -13,6 +15,8 @@ use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 
 abstract class AbstractTestCase extends TestCase
 {
+    protected const GENERATED_NAMESPACE = 'BuildableTest\Generated';
+
     protected function createTempDir(): string
     {
         $dir = sys_get_temp_dir() . '/buildable_test_' . uniqid('', true);
@@ -52,13 +56,10 @@ abstract class AbstractTestCase extends TestCase
         return new MetadataFactory($extractor);
     }
 
-    protected function makeGenerator(
-        string $tempDir,
-        string $namespace = "BuildableTest\Generated",
-    ): NormalizerGenerator {
+    protected function makeGenerator(string $namespace = self::GENERATED_NAMESPACE): NormalizerGenerator
+    {
         return new NormalizerGenerator(
             metadataFactory: $this->makeMetadataFactory(),
-            cacheDir: $tempDir,
             generatedNamespace: $namespace,
             features: [
                 'groups' => true,
@@ -67,6 +68,21 @@ abstract class AbstractTestCase extends TestCase
                 'skip_null_values' => true,
                 'strict_types' => true,
             ],
+        );
+    }
+
+    protected function makePathResolver(
+        string $tempDir,
+        string $namespace = self::GENERATED_NAMESPACE,
+    ): NormalizerPathResolver {
+        return new NormalizerPathResolver(cacheDir: $tempDir, generatedNamespace: $namespace);
+    }
+
+    protected function makeWriter(string $tempDir, string $namespace = self::GENERATED_NAMESPACE): NormalizerWriter
+    {
+        return new NormalizerWriter(
+            generator: $this->makeGenerator($namespace),
+            pathResolver: $this->makePathResolver($tempDir, $namespace),
         );
     }
 }

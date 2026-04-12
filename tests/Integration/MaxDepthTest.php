@@ -87,15 +87,17 @@ final class MaxDepthTest extends AbstractTestCase
     protected function setUp(): void
     {
         $this->tempDir = $this->createTempDir();
-        $generator = $this->makeGenerator($this->tempDir);
+        $writer = $this->makeWriter($this->tempDir);
+        $pathResolver = $this->makePathResolver($this->tempDir);
+        $generator = $this->makeGenerator();
         $factory = $generator->getMetadataFactory();
         $metadata = $factory->getMetadataFor(MaxDepthBlog::class);
 
-        $this->normalizerFqcn = $generator->resolveNormalizerFqcn($metadata);
+        $this->normalizerFqcn = $pathResolver->resolveNormalizerFqcn($metadata);
 
         // Always generate the file so that the path is valid and readable.
-        // generateAndWrite() is idempotent — it overwrites the file safely.
-        $this->generatedFilePath = $generator->generateAndWrite($metadata);
+        // write() is idempotent — it overwrites the file safely.
+        $this->generatedFilePath = $writer->write($metadata);
 
         if (!class_exists($this->normalizerFqcn, false)) {
             require_once $this->generatedFilePath;

@@ -79,7 +79,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
     /**
      * @param MetadataFactoryInterface $metadataFactory Factory used to obtain ClassMetadata.
-     * @param string                   $cacheDir        Absolute path of the generation target directory.
      * @param string                   $generatedNamespace Root PHP namespace for all generated classes.
      * @param array{
      *     groups: bool,
@@ -91,7 +90,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      */
     public function __construct(
         private readonly MetadataFactoryInterface $metadataFactory,
-        private readonly string $cacheDir,
         private readonly string $generatedNamespace,
         private readonly array $features,
     ) {
@@ -114,43 +112,8 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return $this->metadataFactory;
     }
 
-    /** @inheritdoc */
-    public function generateAll(iterable $metadataCollection): array
-    {
-        $paths = [];
-
-        foreach ($metadataCollection as $metadata) {
-            $paths[] = $this->generateAndWrite($metadata);
-        }
-
-        return $paths;
-    }
-
-    /** @inheritdoc */
-    public function generateAndWrite(ClassMetadata $metadata): string
-    {
-        $source = $this->generate($metadata);
-        $filePath = $this->resolveFilePath($metadata);
-        $directory = \dirname($filePath);
-
-        if (is_dir($directory) === false) {
-            mkdir($directory, 0755, true);
-        }
-
-        file_put_contents($filePath, $source);
-
-        return $filePath;
-    }
-
     /**
-     * Generate and return the complete PHP source code string for a normalizer
-     * class that handles the class described by the given {@see ClassMetadata}.
-     *
-     * The returned string is ready to be written verbatim to a `.php` file.
-     *
-     * @template T of object
-     *
-     * @param ClassMetadata<T> $metadata
+     * @inheritdoc
      */
     public function generate(ClassMetadata $metadata): string
     {
@@ -242,22 +205,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return "<?php\n\n" . $code . "\n";
     }
 
-    /** @inheritdoc */
-    public function resolveNormalizerFqcn(ClassMetadata $metadata): string
-    {
-        return $this->resolveNormalizerNamespace($metadata) . "\\" . $this->resolveNormalizerClassName($metadata);
-    }
-
-    /** @inheritdoc */
-    public function resolveFilePath(ClassMetadata $metadata): string
-    {
-        return (
-            rtrim($this->cacheDir, \DIRECTORY_SEPARATOR)
-            . \DIRECTORY_SEPARATOR
-            . $this->buildPsr4RelativePath($metadata)
-        );
-    }
-
     /**
      * @template T of object
      *
@@ -296,22 +243,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // Prefix with 'N' to ensure valid PHP class name (cannot start with a number)
         return 'N' . substr(hash('xxh3', $classNs), 0, 8) . '_';
-    }
-
-    /**
-     * Build the relative file path under cacheDir using a flat structure.
-     *
-     * Instead of nested directories matching the namespace hierarchy,
-     * all normalizer files are placed directly in the cache directory
-     * with a hashed namespace prefix to avoid collisions.
-     *
-     * Example:
-     *   class = App\Entity\User
-     *   → a1b2c3d4_UserNormalizer.php (where a1b2c3d4 is hash of "App\Entity")
-     */
-    private function buildPsr4RelativePath(ClassMetadata $metadata): string
-    {
-        return $this->buildNamespacePrefix($metadata) . $metadata->getShortName() . 'Normalizer.php';
     }
 
     /**

@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGeneratorInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriterInterface;
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 
 final class NormalizerCacheWarmer implements CacheWarmerInterface
 {
     /**
-     * @param NormalizerGeneratorInterface $generator  Generator that produces the PHP normalizer source files.
-     * @param ClassDiscoveryInterface      $discovery  Strategy used to locate classes that need normalizers.
+     * @param NormalizerWriterInterface $writer    Writer that produces the PHP normalizer source files.
+     * @param ClassDiscoveryInterface   $discovery Strategy used to locate classes that need normalizers.
      */
     public function __construct(
-        private readonly NormalizerGeneratorInterface $generator,
+        private readonly NormalizerWriterInterface $writer,
         private readonly ClassDiscoveryInterface $discovery,
     ) {}
 
@@ -39,28 +39,11 @@ final class NormalizerCacheWarmer implements CacheWarmerInterface
             return [];
         }
 
-        // Use the buildDir (Symfony 6.3+) or fall back to cacheDir
-        $targetDir = ($buildDir ?? $cacheDir) . '/buildable_serializer';
-
-        $this->ensureDirectoryExists($targetDir);
-
-        // Tell the generator to write to the correct directory
-        return $this->generator->generateAll($classes, $targetDir);
+        return $this->writer->writeAll($classes);
     }
 
     public function isOptional(): bool
     {
         return false;
-    }
-
-    private function ensureDirectoryExists(string $dir): void
-    {
-        if (is_dir($dir)) {
-            return;
-        }
-
-        if (mkdir($dir, 0755, true) === false && is_dir($dir) === false) {
-            throw new \RuntimeException(sprintf('Failed to create directory "%s".', $dir));
-        }
     }
 }

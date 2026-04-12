@@ -29,7 +29,6 @@ services:
   RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator:
     arguments:
       $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
-      $cacheDir: "%kernel.cache_dir%/buildable_serializer"
       $generatedNamespace: 'BuildableSerializerBundle\Generated'
       $features: "%buildable_serializer.normalizers.features%"
 
@@ -37,9 +36,29 @@ services:
     alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
     public: false
 
-  RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer:
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver:
+    public: true
+    arguments:
+      $cacheDir: "%kernel.cache_dir%/buildable_serializer"
+      $generatedNamespace: 'BuildableSerializerBundle\Generated'
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolverInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver'
+    public: false
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter:
+    public: true
     arguments:
       $generator: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
+      $pathResolver: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver'
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriterInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter'
+    public: false
+
+  RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer:
+    arguments:
+      $writer: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter'
       $discovery: "@buildable_serializer.discovery.normalizers"
     tags:
       - { name: kernel.cache_warmer, priority: 10 }
