@@ -334,7 +334,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
 
         $resolvedCacheDir = $cacheDir ?? $this->tempDir;
 
-        $this->container->setParameter('buildable_serializer.paths', $normalizedPaths);
+        $this->container->setParameter('buildable_serializer.normalizers.paths', $normalizedPaths);
         $this->container->setParameter('buildable_serializer.features', [
             'groups' => true,
             'max_depth' => true,
@@ -379,20 +379,13 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         $discovery = new FinderClassDiscovery($metadataFactory, $paths);
 
         // Create NormalizerGenerator
-        $generator = new NormalizerGenerator(
-            $metadataFactory,
-            $cacheDir,
-            "BuildableTest\\Generated",
-            [
-                'groups' => true,
-                'max_depth' => true,
-                'circular_reference' => true,
-                'skip_null_values' => true,
-            ],
-            [
-                'strict_types' => true,
-            ],
-        );
+        $generator = new NormalizerGenerator($metadataFactory, $cacheDir, "BuildableTest\\Generated", [
+            'groups' => true,
+            'max_depth' => true,
+            'circular_reference' => true,
+            'skip_null_values' => true,
+            'strict_types' => true,
+        ]);
 
         // Register services in container (as synthetic services for the compiler pass)
         $this->container->set(NormalizerGenerator::class, $generator);

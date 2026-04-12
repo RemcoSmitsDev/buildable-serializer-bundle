@@ -10,15 +10,20 @@ services:
     tags:
       - { name: buildable_serializer.metadata_factory }
 
-  RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery:
+  buildable_serializer.discovery.normalizers:
+    class: RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery
     arguments:
       $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
-      $paths: "%buildable_serializer.paths%"
-    tags:
-      - { name: buildable_serializer.discovery }
+      $paths: "%buildable_serializer.normalizers.paths%"
+
+  buildable_serializer.discovery.denormalizers:
+    class: RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery
+    arguments:
+      $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
+      $paths: "%buildable_serializer.denormalizers.paths%"
 
   RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface:
-    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery'
+    alias: "buildable_serializer.discovery.normalizers"
     public: false
 
   RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator:
@@ -26,10 +31,8 @@ services:
       $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
       $cacheDir: "%kernel.cache_dir%/buildable_serializer"
       $generatedNamespace: 'BuildableSerializerBundle\Generated'
-      $features: "%buildable_serializer.features%"
-      $generation: "%buildable_serializer.generation%"
+      $features: "%buildable_serializer.normalizers.features%"
 
-  # Alias so consumers that type-hint against the interface receive the concrete service.
   RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGeneratorInterface:
     alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
     public: false
@@ -37,6 +40,6 @@ services:
   RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer:
     arguments:
       $generator: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator'
-      $discovery: '@RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery'
+      $discovery: "@buildable_serializer.discovery.normalizers"
     tags:
       - { name: kernel.cache_warmer, priority: 10 }

@@ -20,9 +20,14 @@ final class BuildableSerializerExtension extends Extension
         $configuration = new Configuration();
 
         /** @var array{
-         *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
-         *     features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool},
-         *     generation: array{strict_types: bool}
+         *     normalizers: array{
+         *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
+         *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, strict_types: bool}
+         *     },
+         *     denormalizers: array{
+         *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
+         *         features: array{groups: bool, strict_types: bool}
+         *     }
          * } $config
          */
         $config = $this->processConfiguration($configuration, $configs);
@@ -37,29 +42,71 @@ final class BuildableSerializerExtension extends Extension
      * that service definitions in services.yaml can reference them.
      *
      * @param array{
-     *     paths: array<string, array{path: string, exclude: string|string[]|null}>,
-     *     features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool},
-     *     generation: array{strict_types: bool}
+     *     normalizers: array{
+     *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
+     *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, strict_types: bool}
+     *     },
+     *     denormalizers: array{
+     *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
+     *         features: array{groups: bool, strict_types: bool}
+     *     }
      * } $config
      */
     private function registerParameters(ContainerBuilder $container, array $config): void
     {
         $prefix = self::PARAMETER_PREFIX;
 
-        // ---- Top-level scalar parameters ----------------------------------------
-        $container->setParameter("{$prefix}.paths", $config['paths']);
+        // ---- Normalizers configuration ----------------------------------------
+        $container->setParameter("{$prefix}.normalizers", $config['normalizers']);
+        $container->setParameter("{$prefix}.normalizers.paths", $config['normalizers']['paths']);
+        $container->setParameter("{$prefix}.normalizers.features", $config['normalizers']['features']);
 
-        // ---- Structured sub-tree parameters (whole arrays) ----------------------
-        $container->setParameter("{$prefix}.features", $config['features']);
-        $container->setParameter("{$prefix}.generation", $config['generation']);
+        // Convenience flat aliases for normalizer feature flags
+        $container->setParameter("{$prefix}.normalizers.features.groups", $config['normalizers']['features']['groups']);
+        $container->setParameter(
+            "{$prefix}.normalizers.features.max_depth",
+            $config['normalizers']['features']['max_depth'],
+        );
+        $container->setParameter(
+            "{$prefix}.normalizers.features.circular_reference",
+            $config['normalizers']['features']['circular_reference'],
+        );
+        $container->setParameter(
+            "{$prefix}.normalizers.features.skip_null_values",
+            $config['normalizers']['features']['skip_null_values'],
+        );
+        $container->setParameter(
+            "{$prefix}.normalizers.features.strict_types",
+            $config['normalizers']['features']['strict_types'],
+        );
 
-        // ---- Convenience flat aliases for frequently-used nested values ----------
-        $container->setParameter("{$prefix}.features.groups", $config['features']['groups']);
-        $container->setParameter("{$prefix}.features.max_depth", $config['features']['max_depth']);
-        $container->setParameter("{$prefix}.features.circular_reference", $config['features']['circular_reference']);
-        $container->setParameter("{$prefix}.features.skip_null_values", $config['features']['skip_null_values']);
+        // ---- Denormalizers configuration ----------------------------------------
+        $container->setParameter("{$prefix}.denormalizers", $config['denormalizers']);
+        $container->setParameter("{$prefix}.denormalizers.paths", $config['denormalizers']['paths']);
+        $container->setParameter("{$prefix}.denormalizers.features", $config['denormalizers']['features']);
 
-        $container->setParameter("{$prefix}.generation.strict_types", $config['generation']['strict_types']);
+        // Convenience flat aliases for denormalizer feature flags
+        $container->setParameter(
+            "{$prefix}.denormalizers.features.groups",
+            $config['denormalizers']['features']['groups'],
+        );
+        $container->setParameter(
+            "{$prefix}.denormalizers.features.strict_types",
+            $config['denormalizers']['features']['strict_types'],
+        );
+
+        // ---- Legacy/backwards compatibility parameters (deprecated) -------------
+        // These use the normalizers config for backwards compatibility
+        // TODO: Remove in future major version
+        $container->setParameter("{$prefix}.paths", $config['normalizers']['paths']);
+        $container->setParameter("{$prefix}.features", $config['normalizers']['features']);
+        $container->setParameter("{$prefix}.generation", [
+            'strict_types' => $config['normalizers']['features']['strict_types'],
+        ]);
+        $container->setParameter(
+            "{$prefix}.generation.strict_types",
+            $config['normalizers']['features']['strict_types'],
+        );
     }
 
     /**

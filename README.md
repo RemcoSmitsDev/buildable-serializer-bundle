@@ -70,34 +70,32 @@ Create `config/packages/buildable_serializer.yaml`:
 
 ```yaml
 buildable_serializer:
-    # PSR-4 map of namespace-prefix => directory configuration.
-    # Value can be a simple directory path or an object with 'path' and optional 'exclude'.
-    paths:
-        # Simple string: scans all PHP files recursively
-        'App\Model': '%kernel.project_dir%/src/Model'
+    normalizers:
+        # PSR-4 map of namespace-prefix => directory configuration.
+        # Value can be a simple directory path or an object with 'path' and optional 'exclude'.
+        paths:
+            # Simple string: scans all PHP files recursively
+            'App\Model': '%kernel.project_dir%/src/Model'
 
-        # With single exclude pattern
-        'App\Entity':
-            path: '%kernel.project_dir%/src/Entity'
-            exclude: '*Repository.php'
+            # With single exclude pattern
+            'App\Entity':
+                path: '%kernel.project_dir%/src/Entity'
+                exclude: '*Repository.php'
 
-        # With multiple exclude patterns
-        'App\Dto':
-            path: '%kernel.project_dir%/src/Dto'
-            exclude:
-                - '*Helper.php'
-                - '*Test.php'
+            # With multiple exclude patterns
+            'App\Dto':
+                path: '%kernel.project_dir%/src/Dto'
+                exclude:
+                    - '*Helper.php'
+                    - '*Test.php'
 
-    # Toggle individual serializer features in the generated normalizers.
-    features:
-        groups: true                # Emit group-filtering logic.
-        max_depth: true             # Emit max-depth checking logic.
-        circular_reference: true    # Emit circular-reference detection logic.
-        skip_null_values: true      # Emit logic to skip null-valued properties.
-
-    # Options controlling the generated PHP source files.
-    generation:
-        strict_types: true          # Prepend declare(strict_types=1); to every file.
+        # Toggle individual serializer features in the generated normalizers.
+        features:
+            groups: true                # Emit group-filtering logic.
+            max_depth: true             # Emit max-depth checking logic.
+            circular_reference: true    # Emit circular-reference detection logic.
+            skip_null_values: true      # Emit logic to skip null-valued properties.
+            strict_types: true          # Prepend declare(strict_types=1); to every file.
 ```
 
 All options are optional and fall back to the defaults shown above.

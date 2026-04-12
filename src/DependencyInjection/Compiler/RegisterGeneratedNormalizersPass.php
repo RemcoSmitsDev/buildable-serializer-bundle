@@ -15,7 +15,7 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
 {
     use PriorityTaggedServiceTrait;
 
-    private const PATHS_PARAM = 'buildable_serializer.paths';
+    private const PATHS_PARAM = 'buildable_serializer.normalizers.paths';
     private const NORMALIZER_TAG = 'serializer.normalizer';
     private const SERIALIZER_SERVICE = 'serializer';
     private const DEFAULT_PRIORITY = 200;

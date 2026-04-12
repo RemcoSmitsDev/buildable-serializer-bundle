@@ -86,17 +86,14 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     max_depth: bool,
      *     circular_reference: bool,
      *     skip_null_values: bool,
-     * } $features Active code-generation feature flags.
-     * @param array{
      *     strict_types: bool,
-     * } $generation Code style / output options.
+     * } $features Active code-generation feature flags.
      */
     public function __construct(
         private readonly MetadataFactoryInterface $metadataFactory,
         private readonly string $cacheDir,
         private readonly string $generatedNamespace,
         private readonly array $features,
-        private readonly array $generation,
     ) {
         $this->factory = new BuilderFactory();
         $this->printer = new PrettyPrinter([
@@ -170,7 +167,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $stmts = [];
 
         // declare(strict_types=1)
-        if ($this->generation['strict_types']) {
+        if ($this->features['strict_types']) {
             $stmts[] = new Declare_([new DeclareItem('strict_types', new Int_(1))]);
         }
 

@@ -14,28 +14,35 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  * Example YAML configuration:
  *
  *     buildable_serializer:
- *         paths:
- *             # Simple string: scans all PHP files recursively
- *             'App\Model': '%kernel.project_dir%/src/Model'
+ *         normalizers:
+ *             paths:
+ *                 # Simple string: scans all PHP files recursively
+ *                 'App\Model': '%kernel.project_dir%/src/Model'
  *
- *             # With single exclude pattern
- *             'App\Entity':
- *                 path: '%kernel.project_dir%/src/Entity'
- *                 exclude: '*Helper.php'
+ *                 # With single exclude pattern
+ *                 'App\Entity':
+ *                     path: '%kernel.project_dir%/src/Entity'
+ *                     exclude: '*Helper.php'
  *
- *             # With multiple exclude patterns
- *             'App\Command':
- *                 path: '%kernel.project_dir%/src/Command'
- *                 exclude:
- *                     - '*Helper.php'
- *                     - '*Test.php'
- *         features:
- *             groups: true
- *             max_depth: true
- *             circular_reference: true
- *             skip_null_values: true
- *         generation:
- *             strict_types: true
+ *                 # With multiple exclude patterns
+ *                 'App\Command':
+ *                     path: '%kernel.project_dir%/src/Command'
+ *                     exclude:
+ *                         - '*Helper.php'
+ *                         - '*Test.php'
+ *             features:
+ *                 groups: true
+ *                 max_depth: true
+ *                 circular_reference: true
+ *                 skip_null_values: true
+ *                 strict_types: true
+ *
+ *         denormalizers:
+ *             paths:
+ *                 'App\DTO': '%kernel.project_dir%/src/DTO'
+ *             features:
+ *                 groups: true
+ *                 strict_types: true
  *
  */
 final class Configuration implements ConfigurationInterface
@@ -47,9 +54,104 @@ final class Configuration implements ConfigurationInterface
         /** @var ArrayNodeDefinition $rootNode */
         $rootNode = $treeBuilder->getRootNode();
 
-        $rootNode
+        $rootNode->children()->append($this->buildNormalizersNode())->append($this->buildDenormalizersNode())->end();
+
+        return $treeBuilder;
+    }
+
+    /**
+     * Build the normalizers configuration node with all features.
+     */
+    private function buildNormalizersNode(): ArrayNodeDefinition
+    {
+        $treeBuilder = new TreeBuilder('normalizers');
+
+        /** @var ArrayNodeDefinition $node */
+        $node = $treeBuilder->getRootNode();
+
+        $node
+            ->addDefaultsIfNotSet()
             ->children()
-            ->arrayNode('paths')
+            ->append($this->buildPathsNode())
+            ->arrayNode('features')
+            ->info('Toggle individual serializer features in the generated normalizers.')
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->booleanNode('groups')
+            ->defaultTrue()
+            ->info('Emit group-filtering logic in generated normalizers. '
+            . 'When false, group context keys are ignored entirely.')
+            ->end()
+            ->booleanNode('max_depth')
+            ->defaultTrue()
+            ->info('Emit max-depth checking logic in generated normalizers. '
+            . 'Allows limiting the depth of nested-object serialization.')
+            ->end()
+            ->booleanNode('circular_reference')
+            ->defaultTrue()
+            ->info('Emit circular-reference detection logic in generated normalizers.')
+            ->end()
+            ->booleanNode('skip_null_values')
+            ->defaultTrue()
+            ->info('Emit logic to skip null-valued properties when the '
+            . '"skip_null_values" context key is set to true.')
+            ->end()
+            ->booleanNode('strict_types')
+            ->defaultTrue()
+            ->info('Prepend "declare(strict_types=1);" to every generated file.')
+            ->end()
+            ->end()
+            ->end()
+            ->end();
+
+        return $node;
+    }
+
+    /**
+     * Build the denormalizers configuration node with only the groups feature.
+     */
+    private function buildDenormalizersNode(): ArrayNodeDefinition
+    {
+        $treeBuilder = new TreeBuilder('denormalizers');
+
+        /** @var ArrayNodeDefinition $node */
+        $node = $treeBuilder->getRootNode();
+
+        $node
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->append($this->buildPathsNode())
+            ->arrayNode('features')
+            ->info('Toggle individual serializer features in the generated denormalizers.')
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->booleanNode('groups')
+            ->defaultTrue()
+            ->info('Emit group-filtering logic in generated denormalizers. '
+            . 'When false, group context keys are ignored entirely.')
+            ->end()
+            ->booleanNode('strict_types')
+            ->defaultTrue()
+            ->info('Prepend "declare(strict_types=1);" to every generated file.')
+            ->end()
+            ->end()
+            ->end()
+            ->end();
+
+        return $node;
+    }
+
+    /**
+     * Build the paths configuration node (shared between normalizers and denormalizers).
+     */
+    private function buildPathsNode(): ArrayNodeDefinition
+    {
+        $treeBuilder = new TreeBuilder('paths');
+
+        /** @var ArrayNodeDefinition $node */
+        $node = $treeBuilder->getRootNode();
+
+        $node
             ->info(
                 'PSR-4 map of namespace-prefix => path configuration. '
                 . 'Value can be a string (directory) or an array with "path" and optional "exclude" keys.',
@@ -87,45 +189,8 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->end()
             ->end()
-            ->defaultValue([])
-            ->end()
-            ->arrayNode('features')
-            ->info('Toggle individual serializer features in the generated normalizers.')
-            ->addDefaultsIfNotSet()
-            ->children()
-            ->booleanNode('groups')
-            ->defaultTrue()
-            ->info('Emit group-filtering logic in generated normalizers. '
-            . 'When false, group context keys are ignored entirely.')
-            ->end()
-            ->booleanNode('max_depth')
-            ->defaultTrue()
-            ->info('Emit max-depth checking logic in generated normalizers. '
-            . 'Allows limiting the depth of nested-object serialization.')
-            ->end()
-            ->booleanNode('circular_reference')
-            ->defaultTrue()
-            ->info('Emit circular-reference detection logic in generated normalizers.')
-            ->end()
-            ->booleanNode('skip_null_values')
-            ->defaultTrue()
-            ->info('Emit logic to skip null-valued properties when the '
-            . '"skip_null_values" context key is set to true.')
-            ->end()
-            ->end()
-            ->end()
-            ->arrayNode('generation')
-            ->info('Options controlling how the PHP source files are generated.')
-            ->addDefaultsIfNotSet()
-            ->children()
-            ->booleanNode('strict_types')
-            ->defaultTrue()
-            ->info('Prepend "declare(strict_types=1);" to every generated file.')
-            ->end()
-            ->end()
-            ->end()
-            ->end();
+            ->defaultValue([]);
 
-        return $treeBuilder;
+        return $node;
     }
 }
