@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment;
 use PhpParser\Comment\Doc;
+use PhpParser\Modifiers;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\ArrayItem;
@@ -211,7 +212,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $classNode = new Class_(
             $normalizerClass,
             [
-                'flags' => Class_::MODIFIER_FINAL,
+                'flags' => Modifiers::FINAL,
                 'implements' => $implements,
                 'stmts' => $classStmts,
             ],

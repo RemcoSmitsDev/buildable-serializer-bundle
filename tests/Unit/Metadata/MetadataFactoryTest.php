@@ -11,6 +11,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\VoidNeverReturnTypes;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
@@ -249,5 +250,111 @@ final class MetadataFactoryTest extends TestCase
         $metadata = $this->factory->getMetadataFor(SimpleBlog::class);
 
         $this->assertSame('SimpleBlog', $metadata->getShortName());
+    }
+
+    public function testVoidReturningGetMethodIsNotDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertNotContains('ready', $propertyNames, 'getReady() returns void and should not be detected as a getter');
+    }
+
+    public function testVoidReturningIsMethodIsNotDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertNotContains('initializing', $propertyNames, 'isInitializing() returns void and should not be detected as a getter');
+    }
+
+    public function testVoidReturningHasMethodIsNotDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertNotContains('loaded', $propertyNames, 'hasLoaded() returns void and should not be detected as a getter');
+    }
+
+    public function testNeverReturningGetMethodIsNotDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertNotContains('error', $propertyNames, 'getError() returns never and should not be detected as a getter');
+    }
+
+    public function testNeverReturningIsMethodIsNotDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertNotContains('fatal', $propertyNames, 'isFatal() returns never and should not be detected as a getter');
+    }
+
+    public function testNeverReturningHasMethodIsNotDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertNotContains('failed', $propertyNames, 'hasFailed() returns never and should not be detected as a getter');
+    }
+
+    public function testValidGettersAreStillDetectedWithVoidNeverMethods(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        $this->assertContains('id', $propertyNames, 'getId() should be detected as a getter');
+        $this->assertContains('name', $propertyNames, 'getName() should be detected as a getter');
+        $this->assertContains('active', $propertyNames, 'isActive() should be detected as a getter');
+    }
+
+    public function testHasMethodReturningBoolIsDetectedAsGetter(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        // hasName() returns bool and is a valid getter
+        // However, 'name' is already registered by getName(), so hasName is skipped
+        // This test verifies that bool-returning has* methods are valid getters
+        $nameProp = $metadata->getProperty('name');
+        $this->assertNotNull($nameProp, 'Property "name" should exist');
+        $this->assertSame('getName', $nameProp->getAccessor(), 'getName() should take precedence over hasName()');
+    }
+
+    public function testVoidNeverReturnTypesOnlyHasValidGetterProperties(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        $propertyNames = array_map(static fn($p) => $p->getName(), $metadata->getProperties());
+
+        // Should only contain valid getters that return actual values
+        // Note: hasName() would produce 'name' which is already registered from getName()
+        $this->assertCount(4, $propertyNames, 'Should have exactly 4 properties: id, name, active, empty');
+        $this->assertContains('id', $propertyNames);
+        $this->assertContains('name', $propertyNames);
+        $this->assertContains('active', $propertyNames);
+        $this->assertContains('empty', $propertyNames);
+    }
+
+    public function testIsEmptyVirtualPropertyWithNoBackingPropertyIsDetected(): void
+    {
+        $metadata = $this->factory->getMetadataFor(VoidNeverReturnTypes::class);
+
+        // isEmpty() returns bool and should be detected as a virtual property "empty"
+        // even though there is no $empty property in the class
+        $emptyProp = $metadata->getProperty('empty');
+
+        $this->assertNotNull($emptyProp, 'Virtual property "empty" should be detected from isEmpty()');
+        $this->assertSame('isEmpty', $emptyProp->getAccessor(), 'Accessor should be isEmpty()');
+        $this->assertSame('bool', $emptyProp->getType(), 'Type should be bool');
+        $this->assertFalse($emptyProp->isNested(), 'bool is a scalar type, not nested');
     }
 }

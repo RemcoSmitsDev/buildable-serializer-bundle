@@ -184,6 +184,15 @@ final class MetadataFactory implements MetadataFactoryInterface
                 continue;
             }
 
+            // Skip methods that return void or never - these are not valid getters
+            $returnType = $method->getReturnType();
+            if ($returnType instanceof \ReflectionNamedType) {
+                $typeName = strtolower($returnType->getName());
+                if ($typeName === 'void' || $typeName === 'never') {
+                    continue;
+                }
+            }
+
             $propertyName = $this->extractPropertyNameFromGetter($method->getName());
 
             if ($propertyName === null || isset($registered[$propertyName])) {
