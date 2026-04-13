@@ -35,6 +35,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *                 max_depth: true
  *                 circular_reference: true
  *                 skip_null_values: true
+ *                 context: true
  *                 strict_types: true
  *
  *         denormalizers:
@@ -95,6 +96,11 @@ final class Configuration implements ConfigurationInterface
             ->defaultTrue()
             ->info('Emit logic to skip null-valued properties when the '
             . '"skip_null_values" context key is set to true.')
+            ->end()
+            ->booleanNode('context')
+            ->defaultTrue()
+            ->info('Emit logic to merge property-specific context from #[Context] attributes '
+            . 'when calling nested normalizers.')
             ->end()
             ->booleanNode('strict_types')
             ->defaultTrue()

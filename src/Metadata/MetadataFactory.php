@@ -6,6 +6,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Metadata;
 
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
+use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\Ignore;
 use Symfony\Component\Serializer\Attribute\MaxDepth;
@@ -276,6 +277,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 groups: $attrData['groups'],
                 serializedName: $attrData['serializedName'],
                 maxDepth: $attrData['maxDepth'],
+                contexts: $attrData['contexts'],
             );
         }
 
@@ -299,6 +301,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             maxDepth: $attrData['maxDepth'],
             nullable: $typeData['nullable'],
             isReadonly: $reflProperty->isReadOnly(),
+            contexts: $attrData['contexts'],
         );
     }
 
@@ -329,6 +332,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 groups: $attrData['groups'],
                 serializedName: $attrData['serializedName'],
                 maxDepth: $attrData['maxDepth'],
+                contexts: $attrData['contexts'],
             );
         }
 
@@ -349,6 +353,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             maxDepth: $attrData['maxDepth'],
             nullable: $typeData['nullable'],
             isReadonly: $reflProperty->isReadOnly(),
+            contexts: $attrData['contexts'],
         );
     }
 
@@ -386,6 +391,7 @@ final class MetadataFactory implements MetadataFactoryInterface
                 groups: $attrData['groups'],
                 serializedName: $attrData['serializedName'],
                 maxDepth: $attrData['maxDepth'],
+                contexts: $attrData['contexts'],
             );
         }
 
@@ -406,13 +412,14 @@ final class MetadataFactory implements MetadataFactoryInterface
             maxDepth: $attrData['maxDepth'],
             nullable: $typeData['nullable'],
             isReadonly: false,
+            contexts: $attrData['contexts'],
         );
     }
 
     /**
      * Create an empty attribute data array with default values.
      *
-     * @return array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int}
+     * @return array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int, contexts: PropertyContext[]}
      */
     private function createEmptyAttributeData(): array
     {
@@ -421,6 +428,7 @@ final class MetadataFactory implements MetadataFactoryInterface
             'ignored' => false,
             'serializedName' => null,
             'maxDepth' => null,
+            'contexts' => [],
         ];
     }
 
@@ -428,7 +436,7 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionProperty and collect
      * the results into the given data array.
      *
-     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int, contexts: PropertyContext[]} $data
      */
     private function collectAttributesFromProperty(\ReflectionProperty $reflProperty, array &$data): void
     {
@@ -441,7 +449,7 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionParameter (promoted
      * constructor params) and merge them into the given data array.
      *
-     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int, contexts: PropertyContext[]} $data
      */
     private function collectAttributesFromParameter(\ReflectionParameter $param, array &$data): void
     {
@@ -454,7 +462,7 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionMethod (getter) and
      * collect the results into the given data array.
      *
-     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int, contexts: PropertyContext[]} $data
      */
     private function collectAttributesFromMethod(\ReflectionMethod $method, array &$data): void
     {
@@ -469,7 +477,7 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Unknown attributes are silently ignored to remain forward-compatible.
      *
      * @param \ReflectionAttribute<object> $attr
-     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int} $data
+     * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int, contexts: PropertyContext[]} $data
      */
     private function collectAttribute(\ReflectionAttribute $attr, array &$data): void
     {
@@ -496,6 +504,19 @@ final class MetadataFactory implements MetadataFactoryInterface
                 /** @var MaxDepth $instance */
                 $instance = $attr->newInstance();
                 $data['maxDepth'] = $instance->getMaxDepth();
+                break;
+
+            case Context::class:
+                /** @var Context $instance */
+                $instance = $attr->newInstance();
+                // Each Context attribute becomes a separate PropertyContext instance
+                // This properly handles repeatable attributes with different groups
+                $data['contexts'][] = new PropertyContext(
+                    context: $instance->getContext(),
+                    normalizationContext: $instance->getNormalizationContext(),
+                    denormalizationContext: $instance->getDenormalizationContext(),
+                    groups: $instance->getGroups(),
+                );
                 break;
         }
     }

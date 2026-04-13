@@ -41,6 +41,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
+use PhpParser\Node\Scalar\Float_;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
@@ -69,6 +70,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use UnexpectedValueException;
 
 final class NormalizerGenerator implements NormalizerGeneratorInterface
 {
@@ -83,6 +85,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     max_depth: bool,
      *     circular_reference: bool,
      *     skip_null_values: bool,
+     *     context: bool,
      *     strict_types: bool,
      * } $features Active code-generation feature flags.
      */
@@ -341,6 +344,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $hasGroups = $activeFeatures['groups'];
         $hasSkipNull = $activeFeatures['skip_null_values'];
         $hasMaxDepth = $activeFeatures['max_depth'];
+        $hasContext = $activeFeatures['context'];
 
         $stmts = [];
 
@@ -411,6 +415,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                     $hasGroups,
                     $hasSkipNull,
                     $hasMaxDepth,
+                    $hasContext,
                 ));
             }
 
@@ -564,6 +569,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasGroups,
         bool $hasSkipNull,
         bool $hasMaxDepth,
+        bool $hasContext,
     ): array {
         $needsGroupBlock = $hasGroups && $property->getGroups() !== [];
         $needsMaxDepth =
@@ -616,6 +622,8 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $rawValueExpr,
                 $keyExpr,
                 $hasSkipNull,
+                $hasGroups,
+                $hasContext,
             ));
 
             $maxDepthIf = new If_(
@@ -632,6 +640,8 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $rawValueExpr,
                 $keyExpr,
                 $hasSkipNull,
+                $hasGroups,
+                $hasContext,
             ));
         }
 
@@ -665,13 +675,29 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         Expr $rawValueExpr,
         Expr $keyExpr,
         bool $hasSkipNull,
+        bool $hasGroups,
+        bool $hasContext,
     ): array {
         if ($property->isNested()) {
-            return $this->buildNestedValueAssignment($property, $rawValueExpr, $keyExpr, $hasSkipNull);
+            return $this->buildNestedValueAssignment(
+                $property,
+                $rawValueExpr,
+                $keyExpr,
+                $hasSkipNull,
+                $hasGroups,
+                $hasContext,
+            );
         }
 
         if ($property->isCollection()) {
-            return $this->buildCollectionValueAssignment($property, $rawValueExpr, $keyExpr, $hasSkipNull);
+            return $this->buildCollectionValueAssignment(
+                $property,
+                $rawValueExpr,
+                $keyExpr,
+                $hasSkipNull,
+                $hasGroups,
+                $hasContext,
+            );
         }
 
         return $this->buildScalarValueAssignment($property, $rawValueExpr, $keyExpr, $hasSkipNull);
@@ -687,28 +713,37 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         Expr $rawValueExpr,
         Expr $keyExpr,
         bool $hasSkipNull,
+        bool $hasGroups,
+        bool $hasContext,
     ): array {
         $needsNullCheck = $property->isNullable() || $hasSkipNull;
         $null = new ConstFetch(new Name('null'));
 
-        // Helper: $this->normalizer->normalize($_val, $format, $context)
+        // Check if we need a separate $_context variable for complex context merging
+        $contextResult = $this->buildContextExprWithStatements($property, $hasGroups, $hasContext);
+        $contextStmts = $contextResult['statements'];
+        $contextExpr = $contextResult['expression'];
+
+        // Helper: $this->normalizer->normalize($_val, $format, $contextExpr)
         $normalizeVar = new MethodCall(new PropertyFetch(new Variable('this'), 'normalizer'), 'normalize', [
             new Arg(new Variable('_val')),
             new Arg(new Variable('format')),
-            new Arg(new Variable('context')),
+            new Arg($contextExpr),
         ]);
 
-        // Helper: $this->normalizer->normalize(<direct>, $format, $context)
+        // Helper: $this->normalizer->normalize(<direct>, $format, $contextExpr)
         $normalizeDirect = new MethodCall(new PropertyFetch(new Variable('this'), 'normalizer'), 'normalize', [
             new Arg($rawValueExpr),
             new Arg(new Variable('format')),
-            new Arg(new Variable('context')),
+            new Arg($contextExpr),
         ]);
 
         $dataSet = fn(Expr $val) => new Expression(new Assign(new ArrayDimFetch(new Variable('data'), $keyExpr), $val));
 
         if (!$needsNullCheck) {
-            return [$dataSet($normalizeDirect)];
+            $stmts = $contextStmts;
+            $stmts[] = $dataSet($normalizeDirect);
+            return $stmts;
         }
 
         $stmts = [];
@@ -716,24 +751,28 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         $notNull = new NotIdentical(new Variable('_val'), $null);
 
+        // Build inner statements with context assignment
+        $innerStmts = $contextStmts;
+        $innerStmts[] = $dataSet($normalizeVar);
+
         if ($property->isNullable() && $hasSkipNull) {
             $stmts[] = new If_($notNull, [
-                'stmts' => [$dataSet($normalizeVar)],
+                'stmts' => $innerStmts,
                 'elseifs' => [
                     new ElseIf_(new BooleanNot(new Variable('skipNullValues')), [$dataSet($null)]),
                 ],
             ]);
         } elseif ($property->isNullable()) {
             $stmts[] = new If_($notNull, [
-                'stmts' => [$dataSet($normalizeVar)],
+                'stmts' => $innerStmts,
                 'else' => new Else_([$dataSet($null)]),
             ]);
         } else {
             // not nullable, but skip_null_values active
+            $combinedStmts = $contextStmts;
+            $combinedStmts[] = $dataSet(new Ternary($notNull, $normalizeVar, $null));
             $stmts[] = new If_(new Expr\BinaryOp\BooleanOr($notNull, new BooleanNot(new Variable('skipNullValues'))), [
-                'stmts' => [
-                    $dataSet(new Ternary($notNull, $normalizeVar, $null)),
-                ],
+                'stmts' => $combinedStmts,
             ]);
         }
 
@@ -750,20 +789,29 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         Expr $rawValueExpr,
         Expr $keyExpr,
         bool $hasSkipNull,
+        bool $hasGroups,
+        bool $hasContext,
     ): array {
         $null = new ConstFetch(new Name('null'));
         $dataSet = fn(Expr $val) => new Expression(new Assign(new ArrayDimFetch(new Variable('data'), $keyExpr), $val));
 
+        // Check if we need a separate $_context variable for complex context merging
+        $contextResult = $this->buildContextExprWithStatements($property, $hasGroups, $hasContext);
+        $contextStmts = $contextResult['statements'];
+        $contextExpr = $contextResult['expression'];
+
         $normalizeCollection = fn(Expr $ref) => new MethodCall(
             new PropertyFetch(new Variable('this'), 'normalizer'),
             'normalize',
-            [new Arg($ref), new Arg(new Variable('format')), new Arg(new Variable('context'))],
+            [new Arg($ref), new Arg(new Variable('format')), new Arg($contextExpr)],
         );
 
         $needsNullCheck = $property->isNullable() || $hasSkipNull;
 
         if (!$needsNullCheck) {
-            return [$dataSet($normalizeCollection($rawValueExpr))];
+            $stmts = $contextStmts;
+            $stmts[] = $dataSet($normalizeCollection($rawValueExpr));
+            return $stmts;
         }
 
         $stmts = [];
@@ -771,16 +819,20 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         $notNull = new NotIdentical(new Variable('_collection'), $null);
 
+        // Build inner statements with context assignment
+        $innerStmts = $contextStmts;
+        $innerStmts[] = $dataSet($normalizeCollection(new Variable('_collection')));
+
         if ($hasSkipNull) {
             $stmts[] = new If_($notNull, [
-                'stmts' => [$dataSet($normalizeCollection(new Variable('_collection')))],
+                'stmts' => $innerStmts,
                 'elseifs' => [
                     new ElseIf_(new BooleanNot(new Variable('skipNullValues')), [$dataSet($null)]),
                 ],
             ]);
         } else {
             $stmts[] = new If_($notNull, [
-                'stmts' => [$dataSet($normalizeCollection(new Variable('_collection')))],
+                'stmts' => $innerStmts,
                 'else' => new Else_([$dataSet($null)]),
             ]);
         }
@@ -877,7 +929,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Compute which features are actually active for the given class.
      *
-     * @return array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool}
+     * @return array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, context: bool}
      */
     private function resolveActiveFeatures(ClassMetadata $metadata): array
     {
@@ -886,6 +938,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             'max_depth' => $this->features['max_depth'] && $metadata->hasMaxDepthConstraints(),
             'circular_reference' => $this->features['circular_reference'] && $metadata->hasNestedObjects(),
             'skip_null_values' => $this->features['skip_null_values'],
+            'context' => $this->features['context'] ?? true,
         ];
     }
 
@@ -909,5 +962,170 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $pos = strrpos($fqcn, "\\");
 
         return $pos !== false ? substr($fqcn, $pos + 1) : $fqcn;
+    }
+
+    /**
+     * Build the context expression and any required preceding statements for a normalize call.
+     *
+     * When the property has a normalization context defined via the #[Context] attribute,
+     * this generates code to merge the context. If contexts have group conditions,
+     * runtime group checks are generated with a separate $_context variable assignment.
+     *
+     * @return array{statements: Stmt[], expression: Expr}
+     */
+    private function buildContextExprWithStatements(
+        PropertyMetadata $property,
+        bool $hasGroups = false,
+        bool $hasContext = true,
+    ): array {
+        // If context feature is disabled, always return plain $context
+        if (!$hasContext) {
+            return [
+                'statements' => [],
+                'expression' => new Variable('context'),
+            ];
+        }
+
+        $contexts = $property->getContexts();
+
+        if ($contexts === []) {
+            return [
+                'statements' => [],
+                'expression' => new Variable('context'),
+            ];
+        }
+
+        // Separate unconditional and conditional contexts
+        $unconditionalContexts = [];
+        $conditionalContexts = [];
+
+        foreach ($contexts as $context) {
+            if (!$context->hasNormalizationContext()) {
+                continue;
+            }
+
+            $contextGroups = $context->getGroups();
+
+            if ($contextGroups === [] || !$hasGroups) {
+                $unconditionalContexts[] = $context;
+            } else {
+                $conditionalContexts[] = $context;
+            }
+        }
+
+        // If no contexts to merge, return plain $context
+        if ($unconditionalContexts === [] && $conditionalContexts === []) {
+            return [
+                'statements' => [],
+                'expression' => new Variable('context'),
+            ];
+        }
+
+        // If only unconditional contexts, we can inline the array_merge
+        if ($conditionalContexts === []) {
+            $mergeArgs = [new Arg(new Variable('context'))];
+            foreach ($unconditionalContexts as $context) {
+                $mergeArgs[] = new Arg($this->buildArrayExpr($context->getNormalizationContext()));
+            }
+
+            return [
+                'statements' => [],
+                'expression' => new FuncCall(new Name('array_merge'), $mergeArgs),
+            ];
+        }
+
+        // For conditional contexts, we need to build a $_context variable
+        // Start with: $_context = array_merge($context, ...unconditional contexts)
+        $statements = [];
+
+        $mergeArgs = [new Arg(new Variable('context'))];
+        foreach ($unconditionalContexts as $context) {
+            $mergeArgs[] = new Arg($this->buildArrayExpr($context->getNormalizationContext()));
+        }
+
+        $statements[] = new Expression(
+            new Assign(new Variable('_context'), new FuncCall(new Name('array_merge'), $mergeArgs)),
+        );
+
+        // Add conditional context merges
+        foreach ($conditionalContexts as $context) {
+            $contextArray = $this->buildArrayExpr($context->getNormalizationContext());
+            $contextGroups = $context->getGroups();
+
+            // Build condition: $groups === [] || isset($groupsLookup['group1']) || ...
+            $condition = new Identical(new Variable('groups'), new Array_([], ['kind' => Array_::KIND_SHORT]));
+
+            foreach ($contextGroups as $group) {
+                $condition = new Expr\BinaryOp\BooleanOr($condition, new Isset_([new ArrayDimFetch(
+                    new Variable('groupsLookup'),
+                    new String_($group),
+                )]));
+            }
+
+            // Generate: if ($groups === [] || isset(...)) { $_context = array_merge($_context, [...]) }
+            $statements[] = new If_($condition, [
+                'stmts' => [
+                    new Expression(new Assign(new Variable('_context'), new FuncCall(new Name('array_merge'), [
+                        new Arg(new Variable('_context')),
+                        new Arg($contextArray),
+                    ]))),
+                ],
+            ]);
+        }
+
+        return [
+            'statements' => $statements,
+            'expression' => new Variable('_context'),
+        ];
+    }
+
+    /**
+     * Convert a PHP array to an AST Array_ expression.
+     *
+     * @param array<string|int, mixed> $array
+     */
+    private function buildArrayExpr(array $array): Array_
+    {
+        $items = [];
+
+        foreach ($array as $key => $value) {
+            $keyExpr = is_int($key) ? new Int_($key) : new String_($key);
+            $valueExpr = $this->buildValueExpr($value);
+            $items[] = new ArrayItem($valueExpr, $keyExpr);
+        }
+
+        return new Array_($items, ['kind' => Array_::KIND_SHORT]);
+    }
+
+    /**
+     * Convert a PHP value to an AST expression.
+     */
+    private function buildValueExpr(mixed $value): Expr
+    {
+        if (is_null($value)) {
+            return new ConstFetch(new Name('null'));
+        }
+
+        if (is_bool($value)) {
+            return new ConstFetch(new Name($value ? 'true' : 'false'));
+        }
+
+        if (is_int($value)) {
+            return new Int_($value);
+        }
+
+        if (is_float($value)) {
+            return new Float_($value);
+        }
+
+        if (is_string($value)) {
+            return new String_($value);
+        }
+
+        if (is_array($value)) {
+            return $this->buildArrayExpr($value);
+        }
+
+        throw new UnexpectedValueException();
     }
 }

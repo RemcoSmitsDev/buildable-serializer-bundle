@@ -11,6 +11,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithContext;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceA\User as UserA;
@@ -449,5 +450,76 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         // Verify the written file contains the same content as generate()
         $generatedCode = $this->generator->generate($metadata);
         $this->assertSame($generatedCode, $content);
+    }
+
+    public function testGeneratedCodeContainsArrayMergeForContextAttribute(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithContext::class);
+        $code = $this->generator->generate($metadata);
+
+        // The createdAt property has an unconditional normalization context
+        // It should generate array_merge($context, [...])
+        $this->assertStringContainsString('array_merge($context', $code);
+    }
+
+    public function testGeneratedCodeContainsContextValuesForContextAttribute(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithContext::class);
+        $code = $this->generator->generate($metadata);
+
+        // The createdAt property has datetime_format => 'Y-m-d' in its normalization context
+        $this->assertStringContainsString("'datetime_format'", $code);
+        $this->assertStringContainsString("'Y-m-d'", $code);
+    }
+
+    public function testGeneratedCodeContainsGroupCheckForConditionalContext(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithContext::class);
+        $code = $this->generator->generate($metadata);
+
+        // The scheduledAt property has group-specific contexts
+        // It should generate conditional context merging with group checks
+        // For example: isset($groupsLookup['blog:read'])
+        $this->assertStringContainsString("isset(\$groupsLookup['blog:read'])", $code);
+        $this->assertStringContainsString("isset(\$groupsLookup['blog:list'])", $code);
+        $this->assertStringContainsString("isset(\$groupsLookup['blog:api'])", $code);
+    }
+
+    public function testGeneratedCodeContainsBothConditionalAndUnconditionalContext(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithContext::class);
+        $code = $this->generator->generate($metadata);
+
+        // The archivedAt property has both unconditional ('always_applied' => true)
+        // and conditional ('only_for_read' => true for 'blog:read' group) contexts
+        $this->assertStringContainsString("'always_applied'", $code);
+        $this->assertStringContainsString("'only_for_read'", $code);
+    }
+
+    public function testGeneratedCodeOmitsContextMergingWhenContextFeatureDisabled(): void
+    {
+        // Create a generator with context feature disabled
+        $generator = new NormalizerGenerator(
+            metadataFactory: $this->generator->getMetadataFactory(),
+            generatedNamespace: self::GENERATED_NAMESPACE,
+            features: [
+                'groups' => true,
+                'max_depth' => true,
+                'circular_reference' => true,
+                'skip_null_values' => true,
+                'context' => false,
+                'strict_types' => true,
+            ],
+        );
+
+        $metadata = $generator->getMetadataFactory()->getMetadataFor(BlogWithContext::class);
+        $code = $generator->generate($metadata);
+
+        // When context feature is disabled, there should be no array_merge for context
+        // and no datetime_format context key in the generated code
+        $this->assertStringNotContainsString("'datetime_format'", $code);
+        $this->assertStringNotContainsString("'always_applied'", $code);
+        $this->assertStringNotContainsString("'only_for_read'", $code);
+        $this->assertStringNotContainsString('$_context', $code);
     }
 }

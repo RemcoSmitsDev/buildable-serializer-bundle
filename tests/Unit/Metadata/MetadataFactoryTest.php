@@ -9,6 +9,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithContext;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\VoidNeverReturnTypes;
@@ -380,5 +381,159 @@ final class MetadataFactoryTest extends TestCase
         $this->assertSame('isEmpty', $emptyProp->getAccessor(), 'Accessor should be isEmpty()');
         $this->assertSame('bool', $emptyProp->getType(), 'Type should be bool');
         $this->assertFalse($emptyProp->isNested(), 'bool is a scalar type, not nested');
+    }
+
+    public function testContextAttributeNormalizationContextParsed(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $createdAtProp = $metadata->getProperty('createdAt');
+        $this->assertNotNull($createdAtProp, 'Property "createdAt" should exist.');
+        $this->assertTrue($createdAtProp->hasContexts(), 'Property "createdAt" should have contexts.');
+
+        $normalizationContext = $createdAtProp->getNormalizationContext();
+        $this->assertArrayHasKey('datetime_format', $normalizationContext);
+        $this->assertSame('Y-m-d', $normalizationContext['datetime_format']);
+    }
+
+    public function testContextAttributeDenormalizationContextParsed(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $updatedAtProp = $metadata->getProperty('updatedAt');
+        $this->assertNotNull($updatedAtProp, 'Property "updatedAt" should exist.');
+
+        $denormalizationContext = $updatedAtProp->getDenormalizationContext();
+        $this->assertArrayHasKey('datetime_format', $denormalizationContext);
+        $this->assertSame('d/m/Y H:i:s', $denormalizationContext['datetime_format']);
+
+        // Normalization context should be empty for this property
+        $this->assertEmpty($updatedAtProp->getNormalizationContext());
+    }
+
+    public function testContextAttributeCommonContextAppliedToBoth(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $publishedAtProp = $metadata->getProperty('publishedAt');
+        $this->assertNotNull($publishedAtProp, 'Property "publishedAt" should exist.');
+
+        // Common context should be applied to both normalization and denormalization
+        $normalizationContext = $publishedAtProp->getNormalizationContext();
+        $denormalizationContext = $publishedAtProp->getDenormalizationContext();
+
+        $this->assertArrayHasKey('datetime_format', $normalizationContext);
+        $this->assertSame('c', $normalizationContext['datetime_format']);
+
+        $this->assertArrayHasKey('datetime_format', $denormalizationContext);
+        $this->assertSame('c', $denormalizationContext['datetime_format']);
+    }
+
+    public function testContextAttributeOnNestedObject(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $authorProp = $metadata->getProperty('author');
+        $this->assertNotNull($authorProp, 'Property "author" should exist.');
+        $this->assertTrue($authorProp->isNested(), '"author" should be marked as nested.');
+
+        $normalizationContext = $authorProp->getNormalizationContext();
+        $this->assertArrayHasKey('custom_key', $normalizationContext);
+        $this->assertSame('custom_value', $normalizationContext['custom_key']);
+    }
+
+    public function testContextAttributeOnCollection(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $tagsProp = $metadata->getProperty('tags');
+        $this->assertNotNull($tagsProp, 'Property "tags" should exist.');
+        $this->assertTrue($tagsProp->isCollection(), '"tags" should be marked as collection.');
+
+        $normalizationContext = $tagsProp->getNormalizationContext();
+        $this->assertArrayHasKey('collection_context', $normalizationContext);
+        $this->assertTrue($normalizationContext['collection_context']);
+    }
+
+    public function testPropertyWithoutContextHasEmptyContextArrays(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $idProp = $metadata->getProperty('id');
+        $this->assertNotNull($idProp, 'Property "id" should exist.');
+
+        $this->assertFalse($idProp->hasContexts());
+        $this->assertSame([], $idProp->getNormalizationContext());
+        $this->assertSame([], $idProp->getDenormalizationContext());
+    }
+
+    public function testContextAttributeWithGroupsStoresPropertyContextObjects(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $scheduledAtProp = $metadata->getProperty('scheduledAt');
+        $this->assertNotNull($scheduledAtProp, 'Property "scheduledAt" should exist.');
+
+        $contexts = $scheduledAtProp->getContexts();
+        $this->assertCount(3, $contexts, 'Should have 3 Context attributes.');
+
+        // Each context should have its own groups
+        $this->assertSame(['blog:read'], $contexts[0]->getGroups());
+        $this->assertSame(['blog:list'], $contexts[1]->getGroups());
+        $this->assertSame(['blog:api'], $contexts[2]->getGroups());
+    }
+
+    public function testContextAttributeGroupFiltering(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $scheduledAtProp = $metadata->getProperty('scheduledAt');
+        $this->assertNotNull($scheduledAtProp);
+
+        // When 'blog:read' is active, should get 'Y-m-d H:i:s' format
+        $readContext = $scheduledAtProp->getNormalizationContext(['blog:read']);
+        $this->assertSame('Y-m-d H:i:s', $readContext['datetime_format']);
+
+        // When 'blog:list' is active, should get 'Y-m-d' format
+        $listContext = $scheduledAtProp->getNormalizationContext(['blog:list']);
+        $this->assertSame('Y-m-d', $listContext['datetime_format']);
+
+        // When 'blog:api' is active, should get 'c' format
+        $apiContext = $scheduledAtProp->getNormalizationContext(['blog:api']);
+        $this->assertSame('c', $apiContext['datetime_format']);
+    }
+
+    public function testContextAttributeMixedConditionalAndUnconditional(): void
+    {
+        $metadata = $this->factory->getMetadataFor(BlogWithContext::class);
+
+        $archivedAtProp = $metadata->getProperty('archivedAt');
+        $this->assertNotNull($archivedAtProp);
+
+        $contexts = $archivedAtProp->getContexts();
+        $this->assertCount(2, $contexts, 'Should have 2 Context attributes.');
+
+        // First context is unconditional (no groups)
+        $this->assertTrue($contexts[0]->isUnconditional());
+        $this->assertSame([], $contexts[0]->getGroups());
+
+        // Second context is conditional (has groups)
+        $this->assertFalse($contexts[1]->isUnconditional());
+        $this->assertSame(['blog:read'], $contexts[1]->getGroups());
+
+        // When no groups specified, all contexts apply
+        $noGroupContext = $archivedAtProp->getNormalizationContext([]);
+        $this->assertTrue($noGroupContext['always_applied']);
+        $this->assertTrue($noGroupContext['only_for_read']);
+
+        // When 'blog:read' is active, both contexts apply
+        $readContext = $archivedAtProp->getNormalizationContext(['blog:read']);
+        $this->assertTrue($readContext['always_applied']);
+        $this->assertTrue($readContext['only_for_read']);
+
+        // When 'blog:list' is active, only unconditional context applies
+        $listContext = $archivedAtProp->getNormalizationContext(['blog:list']);
+        $this->assertTrue($listContext['always_applied']);
+        $this->assertArrayNotHasKey('only_for_read', $listContext);
     }
 }

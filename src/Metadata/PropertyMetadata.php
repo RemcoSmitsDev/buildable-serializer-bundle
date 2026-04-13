@@ -49,6 +49,9 @@ final class PropertyMetadata implements \Stringable
      *                       "Type|null").
      * @param bool $isReadonly Whether the underlying class property was declared with the "readonly"
      *                         modifier (PHP 8.1+).
+     * @param PropertyContext[] $contexts Context configurations for this property.
+     *                                    Populated from the {@see \Symfony\Component\Serializer\Attribute\Context} attribute.
+     *                                    Multiple contexts can be present when the attribute is repeated with different groups.
      */
     public function __construct(
         private string $name = '',
@@ -64,6 +67,7 @@ final class PropertyMetadata implements \Stringable
         private ?int $maxDepth = null,
         private bool $nullable = false,
         private bool $isReadonly = false,
+        private array $contexts = [],
     ) {}
 
     public function getName(): string
@@ -132,6 +136,64 @@ final class PropertyMetadata implements \Stringable
     public function isReadonly(): bool
     {
         return $this->isReadonly;
+    }
+
+    /**
+     * Returns all context configurations for this property.
+     *
+     * @return PropertyContext[]
+     */
+    public function getContexts(): array
+    {
+        return $this->contexts;
+    }
+
+    /**
+     * Returns true if this property has any context configurations.
+     */
+    public function hasContexts(): bool
+    {
+        return $this->contexts !== [];
+    }
+
+    /**
+     * Returns the merged normalization context for this property, considering active groups.
+     * Later contexts override earlier ones when keys conflict.
+     *
+     * @param string[] $activeGroups The currently active serialization groups.
+     * @return array<string, mixed>
+     */
+    public function getNormalizationContext(array $activeGroups = []): array
+    {
+        $mergedContext = [];
+
+        foreach ($this->contexts as $context) {
+            if ($context->isApplicableForGroups($activeGroups) && $context->hasNormalizationContext()) {
+                $mergedContext = array_merge($mergedContext, $context->getNormalizationContext());
+            }
+        }
+
+        return $mergedContext;
+    }
+
+    /**
+     * Returns the merged denormalization context for this property, considering active groups.
+     * Later contexts override earlier ones when keys conflict.
+     *
+     * @param string[] $activeGroups The currently active serialization groups.
+     * @return array<string, mixed>
+     */
+    public function getDenormalizationContext(array $activeGroups = []): array
+    {
+        $mergedContext = [];
+
+        foreach ($this->contexts as $context) {
+            if ($context->isApplicableForGroups($activeGroups) && $context->hasDenormalizationContext()) {
+                $mergedContext = array_merge($mergedContext, $context->getDenormalizationContext());
+            }
+        }
+
+        return $mergedContext;
     }
 
     /**

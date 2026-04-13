@@ -22,7 +22,7 @@ final class BuildableSerializerExtension extends Extension
         /** @var array{
          *     normalizers: array{
          *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
-         *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, strict_types: bool}
+         *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, context: bool, strict_types: bool}
          *     },
          *     denormalizers: array{
          *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
@@ -44,7 +44,7 @@ final class BuildableSerializerExtension extends Extension
      * @param array{
      *     normalizers: array{
      *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
-     *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, strict_types: bool}
+     *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, context: bool, strict_types: bool}
      *     },
      *     denormalizers: array{
      *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
@@ -74,6 +74,10 @@ final class BuildableSerializerExtension extends Extension
         $container->setParameter(
             "{$prefix}.normalizers.features.skip_null_values",
             $config['normalizers']['features']['skip_null_values'],
+        );
+        $container->setParameter(
+            "{$prefix}.normalizers.features.context",
+            $config['normalizers']['features']['context'],
         );
         $container->setParameter(
             "{$prefix}.normalizers.features.strict_types",

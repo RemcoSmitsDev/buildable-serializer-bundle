@@ -95,6 +95,7 @@ buildable_serializer:
             max_depth: true             # Emit max-depth checking logic.
             circular_reference: true    # Emit circular-reference detection logic.
             skip_null_values: true      # Emit logic to skip null-valued properties.
+            context: true               # Emit logic to merge #[Context] attribute values.
             strict_types: true          # Prepend declare(strict_types=1); to every file.
 ```
 
@@ -211,6 +212,23 @@ class Post
     #[MaxDepth(1)]
     private User $author;
 
+    /**
+     * The Context attribute allows passing custom context to nested normalizers.
+     * Here we specify a custom date format for this property.
+     */
+    #[Groups(["post:read", "post:list"])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d'])]
+    private DateTimeImmutable $createdAt;
+
+    /**
+     * Context can also be group-specific. This applies a different date format
+     * only when serializing with the "post:api" group.
+     */
+    #[Groups(["post:read", "post:list", "post:api"])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d H:i:s'], groups: ["post:read", "post:list"])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'c'], groups: ["post:api"])]
+    private DateTimeImmutable $updatedAt;
+
     public function __construct(
         int $id,
         string $title,
@@ -221,6 +239,8 @@ class Post
         $this->title = $title;
         $this->content = $content;
         $this->author = $author;
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function getId(): int
@@ -255,6 +275,16 @@ class Post
         $this->content = $content;
 
         return $this;
+    }
+
+    public function getCreatedAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 }
 
@@ -554,8 +584,60 @@ A few things worth noting in the generated output:
 | `max_depth` | `true` | Enforces the `max_depth` context constraint |
 | `circular_reference` | `true` | Detects and handles circular object references |
 | `skip_null_values` | `true` | Omits `null` properties when the context flag is set |
+| `context` | `true` | Merges property-specific context from `#[Context]` attributes |
 
 Disabling a feature you don't need produces leaner, faster generated code.
+
+---
+
+## Supported Attributes
+
+The bundle supports the following Symfony Serializer attributes:
+
+| Attribute | Description |
+|---|---|
+| `#[Groups]` | Define serialization groups for properties |
+| `#[SerializedName]` | Customize the serialized property name |
+| `#[Ignore]` | Exclude a property from serialization |
+| `#[MaxDepth]` | Limit serialization depth for nested objects |
+| `#[Context]` | Pass custom context to nested normalizers |
+
+### Context Attribute
+
+The `#[Context]` attribute allows you to pass custom serialization context to nested normalizers. This is particularly useful for customizing how nested objects (like `DateTimeImmutable`) are serialized.
+
+```php
+use Symfony\Component\Serializer\Attribute\Context;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
+
+class Post
+{
+    // Simple context - always applied
+    #[Groups(["post:read"])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d'])]
+    private DateTimeImmutable $createdAt;
+
+    // Normalization-specific context
+    #[Groups(["post:read"])]
+    #[Context(normalizationContext: [DateTimeNormalizer::FORMAT_KEY => 'Y-m-d'])]
+    private DateTimeImmutable $publishedAt;
+
+    // Group-specific context - different formats for different groups
+    #[Groups(["post:read", "post:api"])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d H:i:s'], groups: ["post:read"])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'c'], groups: ["post:api"])]
+    private DateTimeImmutable $updatedAt;
+}
+```
+
+The `#[Context]` attribute supports:
+- **`context`**: Common context applied to both normalization and denormalization
+- **`normalizationContext`**: Context applied only during normalization (serialization)
+- **`denormalizationContext`**: Context applied only during denormalization (deserialization)
+- **`groups`**: Optional groups to conditionally apply the context (the attribute is repeatable)
+
+When multiple `#[Context]` attributes are present with different groups, the appropriate context is merged based on the active serialization groups.
 
 ---
 
