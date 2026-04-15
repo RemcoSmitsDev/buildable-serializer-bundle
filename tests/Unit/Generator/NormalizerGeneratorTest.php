@@ -13,6 +13,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithContext;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithMixedGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\CircularReference;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceA\User as UserA;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceB\User as UserB;
@@ -521,5 +522,50 @@ final class NormalizerGeneratorTest extends AbstractTestCase
         $this->assertStringNotContainsString("'always_applied'", $code);
         $this->assertStringNotContainsString("'only_for_read'", $code);
         $this->assertStringNotContainsString('$_context', $code);
+    }
+
+    public function testGeneratedCodeWrapsPropertiesWithoutGroupsInEmptyGroupsCheck(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithMixedGroups::class);
+        $code = $this->generator->generate($metadata);
+
+        // Properties WITHOUT groups should be wrapped in: if ($groups === [])
+        // This ensures they only serialize when no groups are specified in context
+        $this->assertStringContainsString('if ($groups === [])', $code);
+    }
+
+    public function testGeneratedCodeHasGroupCheckForPropertiesWithGroups(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithMixedGroups::class);
+        $code = $this->generator->generate($metadata);
+
+        // Properties WITH groups should have isset checks for their groups
+        $this->assertStringContainsString("isset(\$groupsLookup['blog:read'])", $code);
+        $this->assertStringContainsString("isset(\$groupsLookup['blog:list'])", $code);
+    }
+
+    public function testGeneratedCodeHasBothGroupCheckTypesForMixedGroupsClass(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithMixedGroups::class);
+        $code = $this->generator->generate($metadata);
+
+        // Count occurrences of the empty groups check: if ($groups === [])
+        // This should appear for properties without groups (internalNote and debugInfo)
+        $emptyGroupsCheckCount = substr_count($code, 'if ($groups === [])');
+
+        // Count occurrences of group isset checks (properties with groups have these)
+        $groupIssetCheckCount = substr_count($code, 'isset($groupsLookup[');
+
+        // We should have both types of checks in the generated code
+        $this->assertGreaterThanOrEqual(
+            2,
+            $emptyGroupsCheckCount,
+            'Should have empty groups checks for properties without groups',
+        );
+        $this->assertGreaterThanOrEqual(
+            2,
+            $groupIssetCheckCount,
+            'Should have group isset checks for properties with groups',
+        );
     }
 }

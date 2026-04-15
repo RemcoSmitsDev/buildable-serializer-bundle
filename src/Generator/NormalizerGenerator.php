@@ -571,7 +571,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasMaxDepth,
         bool $hasContext,
     ): array {
-        $needsGroupBlock = $hasGroups && $property->getGroups() !== [];
+        $needsGroupBlock = $hasGroups;
         $needsMaxDepth =
             $hasMaxDepth && $property->getMaxDepth() !== null && ($property->isNested() || $property->isCollection());
 
@@ -649,14 +649,23 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
 
         // --- groups wrapper --------------------------------------------------
         if ($needsGroupBlock) {
-            // if ($groups === [] || isset($groupsLookup['group1']) || isset($groupsLookup['group2']) || ...) { ... }
-            $groupCondition = new Identical(new Variable('groups'), new Array_([], ['kind' => Array_::KIND_SHORT]));
+            $propertyGroups = $property->getGroups();
 
-            foreach ($property->getGroups() as $group) {
-                $groupCondition = new Expr\BinaryOp\BooleanOr($groupCondition, new Isset_([new ArrayDimFetch(
-                    new Variable('groupsLookup'),
-                    new String_($group),
-                )]));
+            if ($propertyGroups === []) {
+                // Property has no groups: only serialize when no groups are specified in context
+                // if ($groups === []) { ... }
+                $groupCondition = new Identical(new Variable('groups'), new Array_([], ['kind' => Array_::KIND_SHORT]));
+            } else {
+                // Property has groups: serialize if no groups specified OR if one of the property's groups matches
+                // if ($groups === [] || isset($groupsLookup['group1']) || isset($groupsLookup['group2']) || ...) { ... }
+                $groupCondition = new Identical(new Variable('groups'), new Array_([], ['kind' => Array_::KIND_SHORT]));
+
+                foreach ($propertyGroups as $group) {
+                    $groupCondition = new Expr\BinaryOp\BooleanOr($groupCondition, new Isset_([new ArrayDimFetch(
+                        new Variable('groupsLookup'),
+                        new String_($group),
+                    )]));
+                }
             }
 
             return [new If_($groupCondition, ['stmts' => $coreStmts])];
