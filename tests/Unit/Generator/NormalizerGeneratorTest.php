@@ -11,6 +11,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithContext;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithMixedGroups;
@@ -567,5 +568,25 @@ final class NormalizerGeneratorTest extends AbstractTestCase
             $groupIssetCheckCount,
             'Should have group isset checks for properties with groups',
         );
+    }
+
+    public function testNonNullableNestedObjectOmitsNullGuardWhenSkipNullValuesActive(): void
+    {
+        // BlogWithAuthor has a non-nullable `Author $author` and nullable `?Author $coAuthor`.
+        // When skip_null_values is enabled, the non-nullable property should NOT have
+        // a null guard ($_val !== null || !$skipNullValues) because it can never be null.
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithAuthor::class);
+        $code = $this->generator->generate($metadata);
+
+        // The non-nullable author property should be normalized directly without null checks
+        $this->assertStringContainsString('->getAuthor()', $code);
+        $this->assertStringContainsString('->getCoAuthor()', $code);
+
+        // For the non-nullable author, there should be NO $_val assignment with null guard
+        // It should directly call normalize on getAuthor()
+        $this->assertStringNotContainsString('_val = $object->getAuthor()', $code);
+
+        // The nullable coAuthor SHOULD have a $_val assignment for the null check
+        $this->assertStringContainsString('_val = $object->getCoAuthor()', $code);
     }
 }

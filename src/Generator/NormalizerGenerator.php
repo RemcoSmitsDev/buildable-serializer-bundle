@@ -725,7 +725,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasGroups,
         bool $hasContext,
     ): array {
-        $needsNullCheck = $property->isNullable() || $hasSkipNull;
+        $needsNullCheck = $property->isNullable();
         $null = new ConstFetch(new Name('null'));
 
         // Check if we need a separate $_context variable for complex context merging
@@ -775,13 +775,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             $stmts[] = new If_($notNull, [
                 'stmts' => $innerStmts,
                 'else' => new Else_([$dataSet($null)]),
-            ]);
-        } else {
-            // not nullable, but skip_null_values active
-            $combinedStmts = $contextStmts;
-            $combinedStmts[] = $dataSet(new Ternary($notNull, $normalizeVar, $null));
-            $stmts[] = new If_(new Expr\BinaryOp\BooleanOr($notNull, new BooleanNot(new Variable('skipNullValues'))), [
-                'stmts' => $combinedStmts,
             ]);
         }
 
