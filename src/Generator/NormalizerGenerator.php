@@ -918,8 +918,6 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      */
     private function buildGetSupportedTypesMethod(string $targetFqcn): Stmt\ClassMethod
     {
-        $shortName = $this->shortName($targetFqcn);
-
         $method = $this->factory
             ->method('getSupportedTypes')
             ->makePublic()
@@ -927,7 +925,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             ->setReturnType('array')
             ->addStmt(new Return_(
                 new Array_([
-                    new ArrayItem(new ConstFetch(new Name('true')), new ClassConstFetch(new Name($shortName), 'class')),
+                    new ArrayItem(new ConstFetch(new Name('true')), new String_($targetFqcn)),
                 ], ['kind' => Array_::KIND_SHORT]),
             ))
             ->setDocComment(new Doc("/**\n * @return array<class-string|'*'|'object'|string, bool|null>\n */"));
