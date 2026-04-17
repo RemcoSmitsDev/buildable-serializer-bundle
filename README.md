@@ -19,7 +19,7 @@ Normalizing a single `Post` (with a nested `User` and `Address`) **200 000 times
 | Symfony `ObjectNormalizer` (before) | 2 023 ms |
 | Generated normalizer (after) | 158 ms |
 
-That is a **~24× speedup** — purely from eliminating runtime reflection and metadata overhead.
+That is a **~13× speedup** — purely from eliminating runtime reflection and metadata overhead.
 
 The benchmark was produced with:
 
