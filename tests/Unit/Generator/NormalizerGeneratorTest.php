@@ -12,6 +12,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
+use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithCollections;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithContext;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithMixedGroups;
@@ -589,6 +590,36 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
         // The nullable coAuthor SHOULD have a $_val assignment for the null check
         $this->assertStringContainsString('_val = $object->getCoAuthor()', $code);
+    }
+
+    public function testNonNullableCollectionOmitsNullGuardWhenSkipNullValuesActive(): void
+    {
+        // Regression: BlogWithCollections has non-nullable `array $tags` and
+        // `array $authors` properties. When skip_null_values is enabled, the
+        // generator used to emit an `if ($_collection !== null) { ... } elseif
+        // (!$skipNullValues) { ... }` block even though these properties can
+        // never be null at runtime. The null-guard (and the intermediate
+        // $_collection temp variable) must now be omitted entirely — the
+        // collection should be passed directly to the normalizer.
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithCollections::class);
+        $code = $this->generator->generate($metadata);
+
+        // Sanity check: the getters are referenced.
+        $this->assertStringContainsString('->getTags()', $code);
+        $this->assertStringContainsString('->getAuthors()', $code);
+
+        // No intermediate $_collection temp variable should appear for either
+        // non-nullable collection property.
+        $this->assertStringNotContainsString('_collection = $object->getTags()', $code);
+        $this->assertStringNotContainsString('_collection = $object->getAuthors()', $code);
+
+        // The getter must be used directly inside the normalize() call and
+        // assigned straight to $data[...], without a null-guard wrapping it.
+        $this->assertStringContainsString("\$data['tags'] = \$this->normalizer->normalize(\$object->getTags()", $code);
+        $this->assertStringContainsString(
+            "\$data['authors'] = \$this->normalizer->normalize(\$object->getAuthors()",
+            $code,
+        );
     }
 
     public function testGeneratedCodeContainsPreserveEmptyObjectsGuardWhenEnabled(): void

@@ -858,7 +858,12 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             [new Arg($ref), new Arg(new Variable('format')), new Arg($contextExpr)],
         );
 
-        $needsNullCheck = $property->isNullable() || $hasSkipNull;
+        // When the property cannot be null (not nullable and type is known/not mixed),
+        // skip the null-guard entirely and assign the value directly, even when
+        // skip_null_values is active. Unknown types (null) and mixed must keep the guard
+        // since they can legitimately hold null at runtime.
+        $typeIsKnown = is_string($property->getType()) && $property->getType() !== 'mixed';
+        $needsNullCheck = $property->isNullable() || $hasSkipNull && !$typeIsKnown;
 
         if (!$needsNullCheck) {
             $stmts = $contextStmts;
