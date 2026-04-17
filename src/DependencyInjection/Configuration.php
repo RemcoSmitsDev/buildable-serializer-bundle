@@ -35,6 +35,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *                 max_depth: true
  *                 circular_reference: true
  *                 skip_null_values: true
+ *                 preserve_empty_objects: true
  *                 context: true
  *                 strict_types: true
  *
@@ -96,6 +97,14 @@ final class Configuration implements ConfigurationInterface
             ->defaultTrue()
             ->info('Emit logic to skip null-valued properties when the '
             . '"skip_null_values" context key is set to true.')
+            ->end()
+            ->booleanNode('preserve_empty_objects')
+            ->defaultTrue()
+            ->info(
+                'Emit logic to preserve empty objects as \\ArrayObject (JSON: {}) '
+                . 'instead of empty arrays (JSON: []) when the '
+                . '"preserve_empty_objects" context key is set to true.',
+            )
             ->end()
             ->booleanNode('context')
             ->defaultTrue()

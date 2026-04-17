@@ -85,6 +85,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     max_depth: bool,
      *     circular_reference: bool,
      *     skip_null_values: bool,
+     *     preserve_empty_objects: bool,
      *     context: bool,
      *     strict_types: bool,
      * } $features Active code-generation feature flags.
@@ -327,6 +328,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return (
             $this->features['max_depth'] && $metadata->hasMaxDepthConstraints()
             || $this->features['skip_null_values']
+            || $this->features['preserve_empty_objects']
         );
     }
 
@@ -345,6 +347,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $hasSkipNull = $activeFeatures['skip_null_values'];
         $hasMaxDepth = $activeFeatures['max_depth'];
         $hasContext = $activeFeatures['context'];
+        $hasPreserveEmptyObjects = $activeFeatures['preserve_empty_objects'];
 
         $stmts = [];
 
@@ -406,6 +409,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         );
 
         if ($visibleProperties === []) {
+            if ($hasPreserveEmptyObjects) {
+                $stmts = array_merge($stmts, $this->buildPreserveEmptyObjectsGuard());
+            }
+
             $stmts[] = new Return_(new Variable('data'));
         } else {
             foreach ($visibleProperties as $property) {
@@ -417,6 +424,10 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                     $hasMaxDepth,
                     $hasContext,
                 ));
+            }
+
+            if ($hasPreserveEmptyObjects) {
+                $stmts = array_merge($stmts, $this->buildPreserveEmptyObjectsGuard());
             }
 
             $stmts[] = new Return_(new Variable('data'));
@@ -556,6 +567,45 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         );
 
         return $stmts;
+    }
+
+    /**
+     * Build the preserve-empty-objects guard statements.
+     *
+     * Emits:
+     *
+     *     if ($data === [] && ($context[AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS] ?? false)) {
+     *         return new \ArrayObject();
+     *     }
+     *
+     * This mirrors the behavior of Symfony's AbstractObjectNormalizer::normalize()
+     * which returns an ArrayObject when the resulting data would otherwise serialize
+     * to an empty JSON array instead of an empty JSON object.
+     *
+     * @return Stmt[]
+     */
+    private function buildPreserveEmptyObjectsGuard(): array
+    {
+        $condition = new Expr\BinaryOp\BooleanAnd(
+            new Identical(new Variable('data'), new Array_([], ['kind' => Array_::KIND_SHORT])),
+            new CastBool(
+                new Coalesce(
+                    new ArrayDimFetch(
+                        new Variable('context'),
+                        new ClassConstFetch(new Name('AbstractObjectNormalizer'), 'PRESERVE_EMPTY_OBJECTS'),
+                    ),
+                    new ConstFetch(new Name('false')),
+                ),
+            ),
+        );
+
+        return [
+            new If_($condition, [
+                'stmts' => [
+                    new Return_(new New_(new FullyQualified('ArrayObject'))),
+                ],
+            ]),
+        ];
     }
 
     /**
@@ -929,7 +979,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Compute which features are actually active for the given class.
      *
-     * @return array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, context: bool}
+     * @return array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, preserve_empty_objects: bool, context: bool}
      */
     private function resolveActiveFeatures(ClassMetadata $metadata): array
     {
@@ -938,6 +988,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             'max_depth' => $this->features['max_depth'] && $metadata->hasMaxDepthConstraints(),
             'circular_reference' => $this->features['circular_reference'] && $metadata->hasNestedObjects(),
             'skip_null_values' => $this->features['skip_null_values'],
+            'preserve_empty_objects' => $this->features['preserve_empty_objects'],
             'context' => $this->features['context'] ?? true,
         ];
     }

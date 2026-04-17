@@ -145,6 +145,7 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertArrayHasKey('max_depth', $features);
         $this->assertArrayHasKey('circular_reference', $features);
         $this->assertArrayHasKey('skip_null_values', $features);
+        $this->assertArrayHasKey('preserve_empty_objects', $features);
     }
 
     public function testLoadRegistersNormalizersFeatureParametersWithDefaultValues(): void
@@ -156,6 +157,7 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertTrue($features['max_depth']);
         $this->assertTrue($features['circular_reference']);
         $this->assertTrue($features['skip_null_values']);
+        $this->assertTrue($features['preserve_empty_objects']);
     }
 
     public function testLoadRegistersNormalizersFeatureFlatAliases(): void
@@ -166,6 +168,26 @@ final class BuildableSerializerExtensionTest extends TestCase
         $this->assertTrue($container->hasParameter('buildable_serializer.normalizers.features.max_depth'));
         $this->assertTrue($container->hasParameter('buildable_serializer.normalizers.features.circular_reference'));
         $this->assertTrue($container->hasParameter('buildable_serializer.normalizers.features.skip_null_values'));
+        $this->assertTrue($container->hasParameter('buildable_serializer.normalizers.features.preserve_empty_objects'));
+    }
+
+    public function testLoadRegistersNormalizersPreserveEmptyObjectsWithOverriddenValue(): void
+    {
+        $container = $this->loadExtension([
+            [
+                'normalizers' => [
+                    'features' => [
+                        'preserve_empty_objects' => false,
+                    ],
+                ],
+            ],
+        ]);
+
+        $features = $container->getParameter('buildable_serializer.normalizers.features');
+        $this->assertFalse($features['preserve_empty_objects']);
+        $this->assertFalse($container->getParameter(
+            'buildable_serializer.normalizers.features.preserve_empty_objects',
+        ));
     }
 
     public function testLoadRegistersNormalizersFeatureWithOverriddenValues(): void

@@ -95,6 +95,7 @@ buildable_serializer:
             max_depth: true             # Emit max-depth checking logic.
             circular_reference: true    # Emit circular-reference detection logic.
             skip_null_values: true      # Emit logic to skip null-valued properties.
+            preserve_empty_objects: true # Emit logic to preserve empty objects as {} (JSON) instead of [].
             context: true               # Emit logic to merge #[Context] attribute values.
             strict_types: true          # Prepend declare(strict_types=1); to every file.
 ```
@@ -584,6 +585,7 @@ A few things worth noting in the generated output:
 | `max_depth` | `true` | Enforces the `max_depth` context constraint |
 | `circular_reference` | `true` | Detects and handles circular object references |
 | `skip_null_values` | `true` | Omits `null` properties when the context flag is set |
+| `preserve_empty_objects` | `true` | Returns `\ArrayObject` (JSON `{}`) instead of `[]` for empty results when the `preserve_empty_objects` context flag is set |
 | `context` | `true` | Merges property-specific context from `#[Context]` attributes |
 
 Disabling a feature you don't need produces leaner, faster generated code.
@@ -601,6 +603,16 @@ The bundle supports the following Symfony Serializer attributes:
 | `#[Ignore]` | Exclude a property from serialization |
 | `#[MaxDepth]` | Limit serialization depth for nested objects |
 | `#[Context]` | Pass custom context to nested normalizers |
+
+In addition to the attributes listed above, the generated normalizers honour the
+following context keys at runtime (matching Symfony's built-in normalizers):
+
+| Context key | Source | Description |
+|---|---|---|
+| `AbstractNormalizer::GROUPS` | `groups` feature | Restrict the output to properties belonging to the given groups. |
+| `AbstractNormalizer::CIRCULAR_REFERENCE_LIMIT` / `CIRCULAR_REFERENCE_HANDLER` | `circular_reference` feature | Control the circular-reference guard's limit and fallback handler. |
+| `AbstractObjectNormalizer::SKIP_NULL_VALUES` | `skip_null_values` feature | When `true`, properties whose value is `null` are omitted from the output. |
+| `AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS` | `preserve_empty_objects` feature | When `true` and the normalized result would otherwise be an empty array (`[]`), an `\ArrayObject` is returned instead so the value is encoded as an empty JSON object (`{}`). |
 
 ### Context Attribute
 

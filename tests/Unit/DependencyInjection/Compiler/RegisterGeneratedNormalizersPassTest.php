@@ -388,6 +388,8 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             'max_depth' => true,
             'circular_reference' => true,
             'skip_null_values' => true,
+            'preserve_empty_objects' => true,
+            'context' => true,
             'strict_types' => true,
         ]);
 

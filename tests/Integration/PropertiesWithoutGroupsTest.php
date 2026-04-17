@@ -57,10 +57,6 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    // -------------------------------------------------------------------------
-    // Tests for no groups specified (empty context or empty groups array)
-    // -------------------------------------------------------------------------
-
     public function testNoGroupsContextIncludesPropertiesWithGroups(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', []);
@@ -105,10 +101,6 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
         $this->assertArrayHasKey('internalNote', $result);
         $this->assertArrayHasKey('debug_info', $result);
     }
-
-    // -------------------------------------------------------------------------
-    // Tests for specific group - properties WITHOUT groups must be EXCLUDED
-    // -------------------------------------------------------------------------
 
     public function testSpecificGroupExcludesPropertiesWithoutGroups(): void
     {
@@ -162,10 +154,6 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
         $this->assertArrayNotHasKey('secret', $result);
     }
 
-    // -------------------------------------------------------------------------
-    // Tests for unknown/non-matching group
-    // -------------------------------------------------------------------------
-
     public function testUnknownGroupExcludesAllNonIgnoredProperties(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', [
@@ -194,10 +182,6 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
         $this->assertSame([], $result);
     }
 
-    // -------------------------------------------------------------------------
-    // Tests for multiple groups
-    // -------------------------------------------------------------------------
-
     public function testMultipleGroupsStillExcludesPropertiesWithoutGroups(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', [
@@ -220,10 +204,6 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
         $this->assertArrayHasKey('content', $result);
     }
 
-    // -------------------------------------------------------------------------
-    // Tests for correct values
-    // -------------------------------------------------------------------------
-
     public function testNoGroupsContextReturnsCorrectValues(): void
     {
         $result = $this->normalizer->normalize($this->blog, 'json', []);
@@ -244,10 +224,6 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
         $this->assertSame(1, $result['id']);
         $this->assertSame('Test Title', $result['title']);
     }
-
-    // -------------------------------------------------------------------------
-    // Regression test - the exact scenario from the bug report
-    // -------------------------------------------------------------------------
 
     /**
      * This test reproduces the exact issue reported: when serializing with groups,

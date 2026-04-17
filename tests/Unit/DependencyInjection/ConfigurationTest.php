@@ -41,6 +41,16 @@ final class ConfigurationTest extends TestCase
         $this->assertTrue($config['normalizers']['features']['max_depth']);
         $this->assertTrue($config['normalizers']['features']['circular_reference']);
         $this->assertTrue($config['normalizers']['features']['skip_null_values']);
+        $this->assertTrue($config['normalizers']['features']['preserve_empty_objects']);
+    }
+
+    public function testCanDisableNormalizersPreserveEmptyObjects(): void
+    {
+        $config = $this->processConfig([
+            'normalizers' => ['features' => ['preserve_empty_objects' => false]],
+        ]);
+
+        $this->assertFalse($config['normalizers']['features']['preserve_empty_objects']);
     }
 
     public function testDefaultDenormalizersFeaturesValues(): void

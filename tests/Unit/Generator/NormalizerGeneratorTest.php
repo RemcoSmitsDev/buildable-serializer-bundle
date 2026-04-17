@@ -509,6 +509,7 @@ final class NormalizerGeneratorTest extends AbstractTestCase
                 'max_depth' => true,
                 'circular_reference' => true,
                 'skip_null_values' => true,
+                'preserve_empty_objects' => true,
                 'context' => false,
                 'strict_types' => true,
             ],
@@ -588,5 +589,105 @@ final class NormalizerGeneratorTest extends AbstractTestCase
 
         // The nullable coAuthor SHOULD have a $_val assignment for the null check
         $this->assertStringContainsString('_val = $object->getCoAuthor()', $code);
+    }
+
+    public function testGeneratedCodeContainsPreserveEmptyObjectsGuardWhenEnabled(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $code = $this->generator->generate($metadata);
+
+        // The generator must emit a check comparing $data against [] and the
+        // PRESERVE_EMPTY_OBJECTS context key.
+        $this->assertStringContainsString('$data === []', $code);
+        $this->assertStringContainsString('AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS', $code);
+    }
+
+    public function testGeneratedCodeReturnsArrayObjectWhenPreserveEmptyObjectsGuardMatches(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $code = $this->generator->generate($metadata);
+
+        // The guard body must instantiate and return an ArrayObject
+        $this->assertStringContainsString('return new \ArrayObject()', $code);
+    }
+
+    public function testGeneratedCodeImportsAbstractObjectNormalizerWhenPreserveEmptyObjectsEnabled(): void
+    {
+        // When preserve_empty_objects is active, AbstractObjectNormalizer must
+        // be imported even for classes that don't otherwise need it.
+        $generator = new NormalizerGenerator(
+            metadataFactory: $this->generator->getMetadataFactory(),
+            generatedNamespace: self::GENERATED_NAMESPACE,
+            features: [
+                'groups' => false,
+                'max_depth' => false,
+                'circular_reference' => false,
+                'skip_null_values' => false,
+                'preserve_empty_objects' => true,
+                'context' => false,
+                'strict_types' => true,
+            ],
+        );
+
+        $metadata = $generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $code = $generator->generate($metadata);
+
+        $this->assertStringContainsString(
+            'use Symfony\\Component\\Serializer\\Normalizer\\AbstractObjectNormalizer;',
+            $code,
+        );
+    }
+
+    public function testGeneratedCodeOmitsPreserveEmptyObjectsGuardWhenDisabled(): void
+    {
+        // Create a generator with preserve_empty_objects disabled but skip_null_values
+        // also disabled so that there's no other reference to $data === [].
+        $generator = new NormalizerGenerator(
+            metadataFactory: $this->generator->getMetadataFactory(),
+            generatedNamespace: self::GENERATED_NAMESPACE,
+            features: [
+                'groups' => true,
+                'max_depth' => true,
+                'circular_reference' => true,
+                'skip_null_values' => true,
+                'preserve_empty_objects' => false,
+                'context' => true,
+                'strict_types' => true,
+            ],
+        );
+
+        $metadata = $generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $code = $generator->generate($metadata);
+
+        $this->assertStringNotContainsString('PRESERVE_EMPTY_OBJECTS', $code);
+        $this->assertStringNotContainsString('return new \ArrayObject()', $code);
+    }
+
+    public function testGeneratedPreserveEmptyObjectsGuardAppearsBeforeReturnData(): void
+    {
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(SimpleBlog::class);
+        $code = $this->generator->generate($metadata);
+
+        $guardPos = strpos($code, 'PRESERVE_EMPTY_OBJECTS');
+        $returnDataPos = strrpos($code, 'return $data;');
+
+        $this->assertNotFalse($guardPos, 'Preserve-empty-objects guard must be present');
+        $this->assertNotFalse($returnDataPos, 'Final return $data must be present');
+        $this->assertLessThan(
+            $returnDataPos,
+            $guardPos,
+            'Preserve-empty-objects guard must appear before the final return $data statement',
+        );
+    }
+
+    public function testGeneratedPreserveEmptyObjectsGuardIsEmittedForClassWithOnlyIgnoredProperties(): void
+    {
+        // Even when all properties are ignored (resulting in an empty body),
+        // the guard must still be emitted so runtime empty-object preservation works.
+        $metadata = $this->generator->getMetadataFactory()->getMetadataFor(BlogWithMixedGroups::class);
+        $code = $this->generator->generate($metadata);
+
+        $this->assertStringContainsString('PRESERVE_EMPTY_OBJECTS', $code);
+        $this->assertStringContainsString('return new \ArrayObject()', $code);
     }
 }
