@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests;
 
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriter;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;

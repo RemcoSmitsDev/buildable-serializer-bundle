@@ -50,7 +50,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NonPromotedAddr
  *      instance and therefore influences generator decisions that depend on
  *      those attributes.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorParameterMetadata
  */

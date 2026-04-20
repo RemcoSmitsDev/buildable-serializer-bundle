@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 

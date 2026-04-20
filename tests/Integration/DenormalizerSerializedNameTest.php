@@ -49,7 +49,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
  *   6. Alias resolution works the same in `construct()` and `populate()`,
  *      including when `OBJECT_TO_POPULATE` is in play.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\KeyResolverTrait
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\TypeExtractorTrait

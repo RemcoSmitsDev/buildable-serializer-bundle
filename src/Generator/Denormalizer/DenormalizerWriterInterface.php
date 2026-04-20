@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 
 /**
- * Service responsible for writing generated normalizer source files to disk.
+ * Service responsible for writing generated denormalizer source files to disk.
  *
  * This interface separates the file I/O concerns from the pure code generation
- * logic handled by {@see NormalizerGeneratorInterface}.
+ * logic handled by {@see DenormalizerGeneratorInterface}.
  *
- * Path and FQCN resolution is handled by {@see NormalizerPathResolverInterface}.
+ * Path and FQCN resolution is handled by {@see DenormalizerPathResolverInterface}.
  */
-interface NormalizerWriterInterface
+interface DenormalizerWriterInterface
 {
     /**
-     * Write a PHP normalizer source file for the class described by `$metadata`
+     * Write a PHP denormalizer source file for the class described by `$metadata`
      * to the configured output directory.
      *
      * The output directory is determined by the writer's own internal configuration
@@ -36,7 +36,7 @@ interface NormalizerWriterInterface
     public function write(ClassMetadata $metadata): string;
 
     /**
-     * Write PHP normalizer source files for all provided class metadata objects
+     * Write PHP denormalizer source files for all provided class metadata objects
      * to the configured output directory.
      *
      * This is a batch operation equivalent to calling {@see write()} for

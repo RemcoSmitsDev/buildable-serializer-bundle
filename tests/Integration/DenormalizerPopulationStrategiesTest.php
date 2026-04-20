@@ -30,7 +30,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
  * pick exactly one strategy per property, which makes assertions here clean
  * and deterministic.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\GeneratedDenormalizerTrait
  */

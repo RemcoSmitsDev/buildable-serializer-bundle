@@ -162,7 +162,7 @@ final class InheritanceTest extends AbstractTestCase
         $normalizer = $this->buildNormalizer(ConcreteChildEntity::class);
 
         $this->assertInstanceOf(
-            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\GeneratedNormalizerInterface::class,
             $normalizer,
         );
     }
@@ -275,7 +275,7 @@ final class InheritanceTest extends AbstractTestCase
         $normalizer = $this->buildNormalizer(ExtendedChildEntity::class);
 
         $this->assertInstanceOf(
-            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\GeneratedNormalizerInterface::class,
             $normalizer,
         );
     }

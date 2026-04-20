@@ -339,7 +339,9 @@ final class BuildableSerializerExtensionTest extends TestCase
         $container = $this->loadExtensionForServices([[]]);
 
         $this->assertTrue(
-            $container->hasDefinition("RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator"),
+            $container->hasDefinition(
+                "RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator",
+            ),
             'NormalizerGenerator service should be registered.',
         );
     }

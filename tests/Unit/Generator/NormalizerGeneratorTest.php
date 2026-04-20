@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Generator;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriter;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
@@ -23,9 +23,9 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\ScalarTypesFixt
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 
 /**
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriter
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerPathResolver
  */
 final class NormalizerGeneratorTest extends AbstractTestCase
 {

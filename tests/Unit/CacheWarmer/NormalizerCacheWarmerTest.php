@@ -8,7 +8,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer;
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriterInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriterInterface;
 
 /**
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\NormalizerCacheWarmer

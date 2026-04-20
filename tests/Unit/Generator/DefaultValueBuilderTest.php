@@ -15,11 +15,11 @@ use PhpParser\Node\Scalar\String_;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DefaultValueBuilder;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DefaultValueBuilder;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\StatusFixture;
 
 /**
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DefaultValueBuilder
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DefaultValueBuilder
  */
 final class DefaultValueBuilderTest extends TestCase
 {

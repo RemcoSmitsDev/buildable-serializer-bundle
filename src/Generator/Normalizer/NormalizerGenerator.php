@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer;
 
 use PhpParser\BuilderFactory;
 use PhpParser\Comment;
@@ -63,7 +63,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
-use RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\GeneratedNormalizerInterface;
 use Symfony\Component\Serializer\Exception\CircularReferenceException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;

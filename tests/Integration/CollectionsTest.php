@@ -93,7 +93,7 @@ final class CollectionsTest extends AbstractTestCase
     public function testNormalizerImplementsGeneratedNormalizerInterface(): void
     {
         $this->assertInstanceOf(
-            \RemcoSmitsDev\BuildableSerializerBundle\Normalizer\GeneratedNormalizerInterface::class,
+            \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\GeneratedNormalizerInterface::class,
             $this->normalizer,
         );
     }

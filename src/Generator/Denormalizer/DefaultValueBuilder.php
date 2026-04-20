@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer;
 
 use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;

@@ -20,7 +20,7 @@ use Symfony\Component\Serializer\Serializer;
  * These tests focus specifically on the "optional parameter with a default
  * value" case, which the generator handles by emitting the actual default
  * (extracted via reflection and serialised through
- * {@see \RemcoSmitsDev\BuildableSerializerBundle\Generator\DefaultValueBuilder})
+ * {@see \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DefaultValueBuilder})
  * as the `default:` argument of the relevant `extract*` helper.
  *
  * The constructor-default behaviour is deliberately orthogonal to the
@@ -44,8 +44,8 @@ use Symfony\Component\Serializer\Serializer;
  *   - OBJECT_TO_POPULATE bypasses the constructor entirely, so defaults
  *     do NOT leak onto a pre-existing object.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DefaultValueBuilder
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DefaultValueBuilder
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor
  */
 final class DenormalizerConstructorDefaultsTest extends AbstractTestCase

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer;
 
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -44,7 +44,7 @@ use PhpParser\Node\Stmt\Use_;
 use PhpParser\Node\UseItem;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
-use RemcoSmitsDev\BuildableSerializerBundle\Denormalizer\GeneratedDenormalizerInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\GeneratedDenormalizerInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorParameterMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactoryInterface;
@@ -64,7 +64,7 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
  * {@see DenormalizerAwareInterface} and use {@see GeneratedDenormalizerTrait}
  * for runtime value extraction/coercion.
  *
- * @see \RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator
+ * @see \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator
  *      for the sibling normalizer generator that this class mirrors.
  */
 final class DenormalizerGenerator implements DenormalizerGeneratorInterface

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 
@@ -18,7 +18,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
  *   - implements {@see \Symfony\Component\Serializer\Normalizer\DenormalizerInterface}
  *   - implements {@see \Symfony\Component\Serializer\Normalizer\DenormalizerAwareInterface}
  *     (to delegate nested-object denormalization back to the serializer chain)
- *   - implements {@see \RemcoSmitsDev\BuildableSerializerBundle\Denormalizer\GeneratedDenormalizerInterface}
+ *   - implements {@see \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\GeneratedDenormalizerInterface}
  *     (so the compiler pass can recognise it)
  *   - uses {@see \RemcoSmitsDev\BuildableSerializerBundle\Trait\GeneratedDenormalizerTrait}
  *     for runtime extraction helpers

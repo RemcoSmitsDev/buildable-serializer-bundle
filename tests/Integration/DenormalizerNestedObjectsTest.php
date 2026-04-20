@@ -33,7 +33,7 @@ use Symfony\Component\Serializer\Serializer;
  *   - A mock that captures the delegation contract without pulling in the
  *     real serializer — useful for asserting argument shape.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\ObjectExtractorTrait
  */
 final class DenormalizerNestedObjectsTest extends AbstractTestCase

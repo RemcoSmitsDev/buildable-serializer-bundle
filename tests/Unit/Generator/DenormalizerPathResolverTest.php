@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Generator;
 
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerPathResolver;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceA\User as UserA;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceB\User as UserB;
@@ -13,7 +13,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\PersonFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 
 /**
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerPathResolver
  */
 final class DenormalizerPathResolverTest extends TestCase
 {

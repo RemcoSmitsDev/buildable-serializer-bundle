@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Denormalizer\GeneratedDenormalizerInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\GeneratedDenormalizerInterface;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -25,9 +25,9 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
  *   - honours `OBJECT_TO_POPULATE`;
  *   - advertises the correct supported types.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerPathResolver
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerWriter
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\GeneratedDenormalizerTrait
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\TypeExtractorTrait
  */

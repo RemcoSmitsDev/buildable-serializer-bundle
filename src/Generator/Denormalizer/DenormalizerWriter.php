@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace RemcoSmitsDev\BuildableSerializerBundle\Generator;
+namespace RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
 
 /**
- * Service responsible for writing generated normalizer PHP source files to disk.
+ * Service responsible for writing generated denormalizer PHP source files to disk.
  *
  * This class handles all file I/O operations, separating the concerns of code
- * generation (handled by {@see NormalizerGeneratorInterface}) from file system
- * operations. Path resolution is delegated to {@see NormalizerPathResolverInterface}.
+ * generation (handled by {@see DenormalizerGeneratorInterface}) from file system
+ * operations. Path resolution is delegated to {@see DenormalizerPathResolverInterface}.
  */
-final class NormalizerWriter implements NormalizerWriterInterface
+final class DenormalizerWriter implements DenormalizerWriterInterface
 {
     /**
-     * @param NormalizerGeneratorInterface     $generator    Generator that produces PHP source code.
-     * @param NormalizerPathResolverInterface  $pathResolver Resolver for normalizer paths and FQCNs.
+     * @param DenormalizerGeneratorInterface     $generator    Generator that produces PHP source code.
+     * @param DenormalizerPathResolverInterface  $pathResolver Resolver for denormalizer paths and FQCNs.
      */
     public function __construct(
-        private readonly NormalizerGeneratorInterface $generator,
-        private readonly NormalizerPathResolverInterface $pathResolver,
+        private readonly DenormalizerGeneratorInterface $generator,
+        private readonly DenormalizerPathResolverInterface $pathResolver,
     ) {}
 
     /**

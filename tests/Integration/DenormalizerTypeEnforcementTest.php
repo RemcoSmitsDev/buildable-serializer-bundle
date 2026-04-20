@@ -35,7 +35,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
  * the code the generator emits wires the flag correctly to every
  * `extract*` helper call.
  *
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Trait\TypeExtractorTrait
  */
 final class DenormalizerTypeEnforcementTest extends AbstractTestCase

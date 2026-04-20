@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriterInterface;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerWriterInterface;
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 
 /**

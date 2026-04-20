@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler;
 
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;

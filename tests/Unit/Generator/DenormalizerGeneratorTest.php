@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Generator;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver;
-use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerWriter;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\AddressFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NamespaceA\User as UserA;
@@ -20,9 +20,9 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\TagFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\WitherFixture;
 
 /**
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver
- * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerPathResolver
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerWriter
  */
 final class DenormalizerGeneratorTest extends AbstractTestCase
 {
