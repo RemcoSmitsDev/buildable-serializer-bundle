@@ -6,27 +6,32 @@ A Symfony bundle that generates optimised, build-time normalizer classes for the
 
 Instead of relying on the generic reflection-based `ObjectNormalizer` at runtime, this bundle analyses your classes at compile time and writes plain PHP normalizer classes tailored to each model. The result is a faster serializer with zero runtime reflection overhead.
 
-> **Note:** The bundle currently supports **normalizers only**. Support for denormalizers is planned and will be added in a future release.
-
 ---
 
 ## Benchmarks
 
-Normalizing a single `Post` (with a nested `User` and `Address`) **200 000 times** in a local environment:
+Normalizing and denormalizing a single `Post` (with a nested `User` and `Address`) **200 000 times** in a local environment:
 
-| | Time |
-|---|---|
-| Symfony `ObjectNormalizer` (before) | 2 023 ms |
-| Generated normalizer (after) | 158 ms |
-
-That is a **~13× speedup** — purely from eliminating runtime reflection and metadata overhead.
+| Operation | Symfony `ObjectNormalizer` (before) | Generated (after) | Performance gain |
+|---|---|---|---|
+| Normalize | 2 023 ms | 158 ms | **~13× faster** (~92.2% reduction) |
+| Denormalize | 6 076 ms | 324 ms | **~18× faster** (~94.5% reduction) |
 
 The benchmark was produced with:
 
 ```php
+<?php
+
 $start = microtime(true);
 for ($i = 0; $i < 200_000; $i++) {
-    $this->serializer->normalize($post);
+    $data = $this->serializer->normalize($post);
+}
+$elapsed = microtime(true) - $start;
+dump("Time: " . round($elapsed * 1000) . " ms");
+
+$start = microtime(true);
+for ($i = 0; $i < 200_000; $i++) {
+    $this->serializer->denormalize($data, Post::class);
 }
 $elapsed = microtime(true) - $start;
 dd("Time: " . round($elapsed * 1000) . " ms");
@@ -111,6 +116,7 @@ All options are optional and fall back to the defaults shown above.
 Put your PHP classes in the directories listed under `paths`, using namespaces that match the configured prefixes (PSR-4). The bundle discovers them automatically; no extra attribute is required on the class.
 
 ```php
+<?php
 class User
 {
     #[Groups(["user:read", "user:list"])]
@@ -355,6 +361,7 @@ The bundle writes one normalizer per model into the configured `/var/cache/%kern
 **`UserNormalizer.php`**
 
 ```php
+<?php
 /**
  * @generated
  *
@@ -436,6 +443,7 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
 **`PostNormalizer.php`**
 
 ```php
+<?php
 /**
  * @generated
  *
@@ -515,6 +523,7 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
 **`AddressNormalizer.php`**
 
 ```php
+<?php
 /**
  * @generated
  *
@@ -619,6 +628,7 @@ following context keys at runtime (matching Symfony's built-in normalizers):
 The `#[Context]` attribute allows you to pass custom serialization context to nested normalizers. This is particularly useful for customizing how nested objects (like `DateTimeImmutable`) are serialized.
 
 ```php
+<?php
 use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
@@ -650,12 +660,6 @@ The `#[Context]` attribute supports:
 - **`groups`**: Optional groups to conditionally apply the context (the attribute is repeatable)
 
 When multiple `#[Context]` attributes are present with different groups, the appropriate context is merged based on the active serialization groups.
-
----
-
-## Current limitations
-
-- **Normalizers only.** The bundle generates normalizers (serialization) but does not yet generate denormalizers (deserialization). Denormalizer support is planned for a future release. Until then, deserialization falls back to Symfony's standard `ObjectNormalizer` / `ArrayDenormalizer`.
 
 ---
 
