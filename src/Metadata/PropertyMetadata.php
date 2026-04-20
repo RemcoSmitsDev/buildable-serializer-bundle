@@ -68,7 +68,60 @@ final class PropertyMetadata implements \Stringable
         private bool $nullable = false,
         private bool $isReadonly = false,
         private array $contexts = [],
+        private MutatorType $mutatorType = MutatorType::NONE,
+        private ?string $mutator = null,
     ) {}
+
+    /**
+     * Return the strategy by which this property can be written to during
+     * denormalization. See {@see MutatorType} for the possible values.
+     */
+    public function getMutatorType(): MutatorType
+    {
+        return $this->mutatorType;
+    }
+
+    /**
+     * Set the mutator strategy. Intended to be called by {@see MetadataFactory}
+     * after initial construction, once setters/withers have been discovered.
+     */
+    public function setMutatorType(MutatorType $mutatorType): void
+    {
+        $this->mutatorType = $mutatorType;
+    }
+
+    /**
+     * Return the method or property name used to write this property's value,
+     * or null when the mutator strategy is {@see MutatorType::CONSTRUCTOR}
+     * or {@see MutatorType::NONE}.
+     *
+     * Examples:
+     *   - PROPERTY → `"name"` (i.e. `$object->name = $value`)
+     *   - SETTER   → `"setName"` (i.e. `$object->setName($value)`)
+     *   - WITHER   → `"withName"` (i.e. `$object = $object->withName($value)`)
+     */
+    public function getMutator(): ?string
+    {
+        return $this->mutator;
+    }
+
+    /**
+     * Set the mutator method/property name. Intended to be called by
+     * {@see MetadataFactory} after initial construction.
+     */
+    public function setMutator(?string $mutator): void
+    {
+        $this->mutator = $mutator;
+    }
+
+    /**
+     * Return true when this property can be written to in some way during
+     * the denormalization population phase.
+     */
+    public function hasMutator(): bool
+    {
+        return $this->mutatorType !== MutatorType::NONE && $this->mutatorType !== MutatorType::CONSTRUCTOR;
+    }
 
     public function getName(): string
     {

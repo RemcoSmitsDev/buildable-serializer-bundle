@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle;
 
+use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedDenormalizersPass;
 use RemcoSmitsDev\BuildableSerializerBundle\DependencyInjection\Compiler\RegisterGeneratedNormalizersPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
@@ -15,5 +16,6 @@ class BuildableSerializerBundle extends Bundle
         parent::build($container);
 
         $container->addCompilerPass(new RegisterGeneratedNormalizersPass());
+        $container->addCompilerPass(new RegisterGeneratedDenormalizersPass());
     }
 }

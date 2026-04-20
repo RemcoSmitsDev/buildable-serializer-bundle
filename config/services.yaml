@@ -4,9 +4,14 @@ services:
     autoconfigure: false
     public: false
 
+  RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor:
+    arguments:
+      $propertyInfoExtractor: "@property_info"
+
   RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory:
     arguments:
       $propertyInfoExtractor: "@property_info"
+      $constructorMetadataExtractor: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor'
     tags:
       - { name: buildable_serializer.metadata_factory }
 
@@ -25,6 +30,8 @@ services:
   RemcoSmitsDev\BuildableSerializerBundle\Discovery\ClassDiscoveryInterface:
     alias: "buildable_serializer.discovery.normalizers"
     public: false
+
+  # Normalizer
 
   RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator:
     arguments:
@@ -60,5 +67,44 @@ services:
     arguments:
       $writer: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter'
       $discovery: "@buildable_serializer.discovery.normalizers"
+    tags:
+      - { name: kernel.cache_warmer, priority: 10 }
+
+  # Denormalizer
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator:
+    arguments:
+      $metadataFactory: '@RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory'
+      $generatedNamespace: 'BuildableSerializerBundle\Generated'
+      $features: "%buildable_serializer.denormalizers.features%"
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGeneratorInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator'
+    public: false
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver:
+    public: true
+    arguments:
+      $cacheDir: "%kernel.cache_dir%/buildable_serializer"
+      $generatedNamespace: 'BuildableSerializerBundle\Generated'
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolverInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver'
+    public: false
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter:
+    public: true
+    arguments:
+      $generator: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator'
+      $pathResolver: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver'
+
+  RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriterInterface:
+    alias: 'RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter'
+    public: false
+
+  RemcoSmitsDev\BuildableSerializerBundle\CacheWarmer\DenormalizerCacheWarmer:
+    arguments:
+      $writer: '@RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter'
+      $discovery: "@buildable_serializer.discovery.denormalizers"
     tags:
       - { name: kernel.cache_warmer, priority: 10 }

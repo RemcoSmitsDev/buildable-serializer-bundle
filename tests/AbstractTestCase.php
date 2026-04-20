@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests;
 
 use PHPUnit\Framework\TestCase;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerGenerator;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerPathResolver;
+use RemcoSmitsDev\BuildableSerializerBundle\Generator\DenormalizerWriter;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerGenerator;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerPathResolver;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\NormalizerWriter;
@@ -12,6 +15,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 abstract class AbstractTestCase extends TestCase
 {
@@ -86,5 +90,65 @@ abstract class AbstractTestCase extends TestCase
             generator: $this->makeGenerator($namespace),
             pathResolver: $this->makePathResolver($tempDir, $namespace),
         );
+    }
+
+    protected function makeDenormalizerGenerator(string $namespace = self::GENERATED_NAMESPACE): DenormalizerGenerator
+    {
+        return new DenormalizerGenerator(
+            metadataFactory: $this->makeMetadataFactory(),
+            generatedNamespace: $namespace,
+            features: [
+                'groups' => true,
+                'strict_types' => true,
+            ],
+        );
+    }
+
+    protected function makeDenormalizerPathResolver(
+        string $tempDir,
+        string $namespace = self::GENERATED_NAMESPACE,
+    ): DenormalizerPathResolver {
+        return new DenormalizerPathResolver(cacheDir: $tempDir, generatedNamespace: $namespace);
+    }
+
+    protected function makeDenormalizerWriter(
+        string $tempDir,
+        string $namespace = self::GENERATED_NAMESPACE,
+    ): DenormalizerWriter {
+        return new DenormalizerWriter(
+            generator: $this->makeDenormalizerGenerator($namespace),
+            pathResolver: $this->makeDenormalizerPathResolver($tempDir, $namespace),
+        );
+    }
+
+    /**
+     * Generate, write, and load the denormalizer class for the given FQCN,
+     * returning an instantiated denormalizer ready to be wired up with a
+     * mock or real DenormalizerInterface via `setDenormalizer()`.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $targetFqcn FQCN of the domain class to build a denormalizer for.
+     * @param string          $tempDir    Directory where the generated file should be written.
+     *
+     * @return object The instantiated generated denormalizer.
+     */
+    protected function loadDenormalizerFor(string $targetFqcn, string $tempDir): DenormalizerInterface
+    {
+        $generator = $this->makeDenormalizerGenerator();
+        $factory = $generator->getMetadataFactory();
+        $metadata = $factory->getMetadataFor($targetFqcn);
+
+        $pathResolver = $this->makeDenormalizerPathResolver($tempDir);
+        $writer = $this->makeDenormalizerWriter($tempDir);
+
+        $fqcn = $pathResolver->resolveDenormalizerFqcn($metadata);
+
+        if (!class_exists($fqcn, false)) {
+            $filePath = $writer->write($metadata);
+            require_once $filePath;
+        }
+
+        return new $fqcn();
     }
 }

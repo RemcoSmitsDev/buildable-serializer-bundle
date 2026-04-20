@@ -43,25 +43,25 @@ final class MetadataFactory implements MetadataFactoryInterface
      * @var list<string>
      */
     private const SCALAR_TYPES = [
-        'int',
-        'integer',
-        'float',
-        'double',
-        'string',
-        'bool',
-        'boolean',
-        'null',
-        'array',
-        'iterable',
-        'callable',
-        'resource',
-        'mixed',
-        'void',
-        'never',
-        'object',
-        'self',
-        'static',
-        'parent',
+        'int' => true,
+        'integer' => true,
+        'float' => true,
+        'double' => true,
+        'string' => true,
+        'bool' => true,
+        'boolean' => true,
+        'null' => true,
+        'array' => true,
+        'iterable' => true,
+        'callable' => true,
+        'resource' => true,
+        'mixed' => true,
+        'void' => true,
+        'never' => true,
+        'object' => true,
+        'self' => true,
+        'static' => true,
+        'parent' => true,
     ];
 
     /**
@@ -71,9 +71,16 @@ final class MetadataFactory implements MetadataFactoryInterface
      */
     private array $cache = [];
 
+    private readonly ConstructorMetadataExtractor $constructorMetadataExtractor;
+
     public function __construct(
         private readonly PropertyInfoExtractorInterface $propertyInfoExtractor,
-    ) {}
+        ?ConstructorMetadataExtractor $constructorMetadataExtractor = null,
+    ) {
+        $this->constructorMetadataExtractor = $constructorMetadataExtractor ?? new ConstructorMetadataExtractor(
+            $propertyInfoExtractor,
+        );
+    }
 
     /**
      * Build and return fully-populated metadata for the given class name.
@@ -129,6 +136,17 @@ final class MetadataFactory implements MetadataFactoryInterface
     {
         /** @var ClassMetadata<T> $metadata */
         $metadata = new ClassMetadata(reflectionClass: $reflectionClass, className: $reflectionClass->getName());
+
+        // Constructor metadata (used by the denormalizer generator).
+        $metadata->setHasConstructor($this->constructorMetadataExtractor->hasConstructor($reflectionClass));
+        $constructorParameters = $this->constructorMetadataExtractor->extract($reflectionClass);
+        $metadata->setConstructorParameters($constructorParameters);
+
+        /** @var array<string, true> $constructorParamNames Lookup of property names populated via the constructor. */
+        $constructorParamNames = [];
+        foreach ($constructorParameters as $param) {
+            $constructorParamNames[$param->getName()] = true;
+        }
 
         /** @var array<string, true> $registered Tracks which property names have already been added */
         $registered = [];
@@ -211,7 +229,212 @@ final class MetadataFactory implements MetadataFactoryInterface
             $registered[$propertyName] = true;
         }
 
+        // ----- 4. Populate mutator info on each property --------------------------
+        foreach ($metadata->getProperties() as $property) {
+            $this->populateMutator($reflectionClass, $property, $constructorParamNames);
+        }
+
         return $metadata;
+    }
+
+    /**
+     * Determine and set the mutator strategy for a property.
+     *
+     * Priority order:
+     *   1. CONSTRUCTOR – property is populated through a constructor parameter
+     *      and has no discoverable public setter/wither (common for readonly
+     *      promoted parameters).
+     *   2. SETTER       – public `setX($value)` returning void or $this/self/static.
+     *   3. WITHER       – public `withX($value)` returning a new instance (immutable).
+     *   4. PROPERTY     – public property, writable directly.
+     *   5. NONE         – no write strategy could be discovered.
+     *
+     * @template T of object
+     *
+     * @param \ReflectionClass<T>        $reflectionClass
+     * @param array<string, true>        $constructorParamNames
+     */
+    private function populateMutator(
+        \ReflectionClass $reflectionClass,
+        PropertyMetadata $property,
+        array $constructorParamNames,
+    ): void {
+        $propertyName = $property->getName();
+
+        // 1. Try to discover an explicit setter / wither first. They take priority
+        //    over a constructor-only fallback because callers often want to re-set
+        //    a promoted readonly property by reconstructing the object upstream
+        //    or by using the wither pattern.
+        [$mutatorType, $mutatorName] = $this->discoverMutatorMethod($reflectionClass, $propertyName);
+
+        if ($mutatorType !== null && $mutatorName !== null) {
+            $property->setMutatorType($mutatorType);
+            $property->setMutator($mutatorName);
+
+            return;
+        }
+
+        // 2. Direct public property write.
+        if ($reflectionClass->hasProperty($propertyName)) {
+            $reflProperty = $reflectionClass->getProperty($propertyName);
+
+            if ($reflProperty->isPublic() && !$reflProperty->isStatic() && !$reflProperty->isReadOnly()) {
+                $property->setMutatorType(MutatorType::PROPERTY);
+                $property->setMutator($propertyName);
+
+                return;
+            }
+        }
+
+        // 3. Constructor-only fallback.
+        if (isset($constructorParamNames[$propertyName])) {
+            $property->setMutatorType(MutatorType::CONSTRUCTOR);
+            $property->setMutator(null);
+
+            return;
+        }
+
+        // 4. No strategy available.
+        $property->setMutatorType(MutatorType::NONE);
+        $property->setMutator(null);
+    }
+
+    /**
+     * Try to find a public setter or wither method for the given property name.
+     *
+     * Setters are recognised by the `set` prefix and a return type of `void`,
+     * `static`, `self`, or the owning class (or no declared return type).
+     *
+     * Withers are recognised by the `with` prefix and a return type of
+     * `static`, `self`, or the owning class.
+     *
+     * @template T of object
+     *
+     * @param \ReflectionClass<T> $reflectionClass
+     *
+     * @return array{0: ?MutatorType, 1: ?string}
+     */
+    private function discoverMutatorMethod(\ReflectionClass $reflectionClass, string $propertyName): array
+    {
+        $capitalized = ucfirst($propertyName);
+
+        $setterName = 'set' . $capitalized;
+        if ($reflectionClass->hasMethod($setterName)) {
+            $method = $reflectionClass->getMethod($setterName);
+
+            if ($this->isValidMutatorMethod($method, MutatorType::SETTER, $reflectionClass)) {
+                return [MutatorType::SETTER, $setterName];
+            }
+        }
+
+        $witherName = 'with' . $capitalized;
+        if ($reflectionClass->hasMethod($witherName)) {
+            $method = $reflectionClass->getMethod($witherName);
+
+            if ($this->isValidMutatorMethod($method, MutatorType::WITHER, $reflectionClass)) {
+                return [MutatorType::WITHER, $witherName];
+            }
+        }
+
+        return [null, null];
+    }
+
+    /**
+     * Return true when $method is a valid mutator of the given kind.
+     *
+     * @template T of object
+     *
+     * @param \ReflectionClass<T> $reflectionClass
+     */
+    private function isValidMutatorMethod(
+        \ReflectionMethod $method,
+        MutatorType $kind,
+        \ReflectionClass $reflectionClass,
+    ): bool {
+        if (!$method->isPublic() || $method->isStatic() || $method->isAbstract()) {
+            return false;
+        }
+
+        // Must accept at least one parameter.
+        if ($method->getNumberOfParameters() < 1) {
+            return false;
+        }
+
+        // The first parameter must not be variadic.
+        $firstParam = $method->getParameters()[0];
+        if ($firstParam->isVariadic()) {
+            return false;
+        }
+
+        // Any additional parameters must be optional.
+        if ($method->getNumberOfRequiredParameters() > 1) {
+            return false;
+        }
+
+        $returnType = $method->getReturnType();
+
+        if ($kind === MutatorType::SETTER) {
+            // Setter: accept void / no return type / self / static / owning class.
+            if ($returnType === null) {
+                return true;
+            }
+
+            if ($returnType instanceof \ReflectionNamedType) {
+                $name = strtolower($returnType->getName());
+
+                if ($name === 'void') {
+                    return true;
+                }
+
+                if ($name === 'self' || $name === 'static') {
+                    return true;
+                }
+
+                return $this->returnTypeMatchesClass($returnType, $reflectionClass);
+            }
+
+            return false;
+        }
+
+        // Wither: must return self / static / owning class.
+        if ($returnType === null) {
+            return false;
+        }
+
+        if ($returnType instanceof \ReflectionNamedType) {
+            $name = strtolower($returnType->getName());
+
+            if ($name === 'self' || $name === 'static') {
+                return true;
+            }
+
+            return $this->returnTypeMatchesClass($returnType, $reflectionClass);
+        }
+
+        return false;
+    }
+
+    /**
+     * Return true when $type refers to the class itself or one of its ancestors.
+     *
+     * @template T of object
+     *
+     * @param \ReflectionClass<T> $reflectionClass
+     */
+    private function returnTypeMatchesClass(\ReflectionNamedType $type, \ReflectionClass $reflectionClass): bool
+    {
+        if ($type->isBuiltin()) {
+            return false;
+        }
+
+        $typeName = ltrim($type->getName(), '\\');
+        $className = $reflectionClass->getName();
+
+        if ($typeName === $className) {
+            return true;
+        }
+
+        return is_subclass_of($className, $typeName);
     }
 
     /**
@@ -449,12 +672,28 @@ final class MetadataFactory implements MetadataFactoryInterface
      * Read Symfony Serializer attributes from a ReflectionParameter (promoted
      * constructor params) and merge them into the given data array.
      *
+     * Note: PHP's reflection layer surfaces every attribute placed on a
+     * promoted parameter's syntactic position regardless of whether the
+     * attribute's declared targets allow `TARGET_PARAMETER`. Some Symfony
+     * Serializer attributes (e.g. `Groups`, `SerializedName`) intentionally
+     * restrict themselves to `TARGET_CLASS | TARGET_METHOD | TARGET_PROPERTY`
+     * and would throw from `newInstance()` if we instantiated them directly
+     * from the parameter. For promoted parameters PHP binds those attributes
+     * to the backing property, where {@see collectAttributesFromProperty()}
+     * already picks them up — so we silently skip target-mismatch errors
+     * here instead of aborting the whole extraction.
+     *
      * @param array{groups: string[], ignored: bool, serializedName: ?string, maxDepth: ?int, contexts: PropertyContext[]} $data
      */
     private function collectAttributesFromParameter(\ReflectionParameter $param, array &$data): void
     {
         foreach ($param->getAttributes() as $attr) {
-            $this->collectAttribute($attr, $data);
+            try {
+                $this->collectAttribute($attr, $data);
+            } catch (\Error) {
+                // Attribute target mismatch — safe to ignore, see docblock.
+                continue;
+            }
         }
     }
 
@@ -767,6 +1006,6 @@ final class MetadataFactory implements MetadataFactoryInterface
      */
     private function isScalarTypeName(string $typeName): bool
     {
-        return \in_array(strtolower($typeName), self::SCALAR_TYPES, true);
+        return isset(self::SCALAR_TYPES[\strtolower($typeName)]);
     }
 }

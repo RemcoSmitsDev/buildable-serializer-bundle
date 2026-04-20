@@ -6,6 +6,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Metadata;
 
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MutatorType;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
 
 /**
@@ -30,6 +31,9 @@ final class PropertyMetadataTest extends TestCase
         $this->assertNull($pm->getMaxDepth());
         $this->assertFalse($pm->isNullable());
         $this->assertFalse($pm->isReadonly());
+        $this->assertSame(MutatorType::NONE, $pm->getMutatorType());
+        $this->assertNull($pm->getMutator());
+        $this->assertFalse($pm->hasMutator());
     }
 
     public function testGetSerializedKeyReturnsNameWhenNoSerializedName(): void
@@ -121,24 +125,101 @@ final class PropertyMetadataTest extends TestCase
         $this->assertFalse($pm->isEligibleForGroups(['a']));
     }
 
-    public function testToStringReturnsNonEmptyString(): void
+    public function testMutatorTypeCanBeInjectedThroughConstructor(): void
     {
-        $pm = new PropertyMetadata();
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::SETTER, mutator: 'setName');
 
-        $this->assertGreaterThan(0, strlen((string) $pm));
+        $this->assertSame(MutatorType::SETTER, $pm->getMutatorType());
+        $this->assertSame('setName', $pm->getMutator());
     }
 
-    public function testToStringContainsPropertyName(): void
+    public function testSetAndGetMutatorType(): void
     {
-        $pm = new PropertyMetadata(name: 'myField');
+        $pm = new PropertyMetadata(name: 'name');
 
-        $this->assertStringContainsString('myField', (string) $pm);
+        $pm->setMutatorType(MutatorType::WITHER);
+
+        $this->assertSame(MutatorType::WITHER, $pm->getMutatorType());
     }
 
-    public function testToStringContainsAccessorType(): void
+    public function testSetAndGetMutator(): void
     {
-        $pm = new PropertyMetadata(accessorType: AccessorType::PROPERTY);
+        $pm = new PropertyMetadata(name: 'name');
 
-        $this->assertStringContainsString('PROPERTY', (string) $pm);
+        $pm->setMutator('setName');
+        $this->assertSame('setName', $pm->getMutator());
+
+        $pm->setMutator(null);
+        $this->assertNull($pm->getMutator());
+    }
+
+    public function testHasMutatorReturnsFalseForNone(): void
+    {
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::NONE);
+
+        $this->assertFalse($pm->hasMutator());
+    }
+
+    public function testHasMutatorReturnsFalseForConstructor(): void
+    {
+        // CONSTRUCTOR means the property is only writable through the class
+        // constructor. The population phase of the denormalizer must skip it,
+        // which is exactly what hasMutator() == false signals.
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::CONSTRUCTOR);
+
+        $this->assertFalse($pm->hasMutator());
+    }
+
+    public function testHasMutatorReturnsTrueForProperty(): void
+    {
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::PROPERTY, mutator: 'name');
+
+        $this->assertTrue($pm->hasMutator());
+    }
+
+    public function testHasMutatorReturnsTrueForSetter(): void
+    {
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::SETTER, mutator: 'setName');
+
+        $this->assertTrue($pm->hasMutator());
+    }
+
+    public function testHasMutatorReturnsTrueForWither(): void
+    {
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::WITHER, mutator: 'withName');
+
+        $this->assertTrue($pm->hasMutator());
+    }
+
+    public function testMutatorTypeIsIndependentOfAccessorType(): void
+    {
+        // AccessorType (read side) and MutatorType (write side) are
+        // independent: a property can be read through a getter method but
+        // written through a public property, for example.
+        $pm = new PropertyMetadata(
+            name: 'name',
+            accessor: 'getName',
+            accessorType: AccessorType::METHOD,
+            mutatorType: MutatorType::PROPERTY,
+            mutator: 'name',
+        );
+
+        $this->assertSame(AccessorType::METHOD, $pm->getAccessorType());
+        $this->assertSame('getName', $pm->getAccessor());
+        $this->assertSame(MutatorType::PROPERTY, $pm->getMutatorType());
+        $this->assertSame('name', $pm->getMutator());
+    }
+
+    public function testMutatorTypeSetterDoesNotImplyNonNullMutator(): void
+    {
+        // It is legal to temporarily assign a mutator type without yet
+        // having a mutator name (e.g. during incremental metadata building).
+        // hasMutator() relies on the type, not the name, so the name may
+        // still be null while the type is SETTER/WITHER/PROPERTY.
+        $pm = new PropertyMetadata(name: 'name', mutatorType: MutatorType::SETTER);
+
+        $this->assertSame(MutatorType::SETTER, $pm->getMutatorType());
+        $this->assertNull($pm->getMutator());
+        $this->assertTrue($pm->hasMutator());
     }
 }

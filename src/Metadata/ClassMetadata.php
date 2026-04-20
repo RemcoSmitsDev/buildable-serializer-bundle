@@ -13,18 +13,116 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Metadata;
  *
  * @template-covariant T of object
  */
-final class ClassMetadata implements \Stringable
+final class ClassMetadata
 {
     /**
      * @param \ReflectionClass<T> $reflectionClass
      * @param class-string<T> $className
      * @param PropertyMetadata[] $properties
+     * @param list<ConstructorParameterMetadata> $constructorParameters
      */
     public function __construct(
         private \ReflectionClass $reflectionClass,
         private string $className,
         private array $properties = [],
+        private array $constructorParameters = [],
+        private bool $hasConstructor = false,
     ) {}
+
+    /**
+     * Returns all constructor parameter metadata, in declaration order.
+     *
+     * An empty array may mean either that the class has no constructor at all
+     * (see {@see hasConstructor()}) or that it has a constructor with zero
+     * parameters (e.g. `public function __construct() {}`).
+     *
+     * @return list<ConstructorParameterMetadata>
+     */
+    public function getConstructorParameters(): array
+    {
+        return $this->constructorParameters;
+    }
+
+    /**
+     * Set the constructor parameter metadata. Intended to be called by
+     * {@see MetadataFactory} once the extractor has finished inspecting the
+     * class constructor.
+     *
+     * @param list<ConstructorParameterMetadata> $parameters
+     */
+    public function setConstructorParameters(array $parameters): void
+    {
+        $this->constructorParameters = $parameters;
+    }
+
+    /**
+     * Returns true when the class declares (or inherits) a constructor.
+     *
+     * Use this in combination with {@see getConstructorParameters()} to
+     * distinguish between "no constructor at all" (can instantiate via
+     * `new ClassName()`) and "constructor with zero parameters".
+     */
+    public function hasConstructor(): bool
+    {
+        return $this->hasConstructor;
+    }
+
+    /**
+     * Mark whether this class has a constructor. Intended to be called by
+     * {@see MetadataFactory} once the extractor has finished inspecting the
+     * class constructor.
+     */
+    public function setHasConstructor(bool $hasConstructor): void
+    {
+        $this->hasConstructor = $hasConstructor;
+    }
+
+    /**
+     * Returns true when the class has a constructor with at least one parameter.
+     */
+    public function hasConstructorParameters(): bool
+    {
+        return $this->constructorParameters !== [];
+    }
+
+    /**
+     * Returns true when the class has at least one required constructor
+     * parameter (no default value and not nullable).
+     */
+    public function hasRequiredConstructorParameters(): bool
+    {
+        foreach ($this->constructorParameters as $param) {
+            if ($param->isRequired()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the FQCNs referenced by constructor parameters that are nested
+     * objects or typed collections. Useful for "use" statement generation in
+     * the denormalizer generator.
+     *
+     * @return list<string>
+     */
+    public function getConstructorReferencedClasses(): array
+    {
+        $types = [];
+
+        foreach ($this->constructorParameters as $param) {
+            if ($param->isNested() && $param->getType() !== null) {
+                $types[$param->getType()] = $param->getType();
+            }
+
+            if ($param->isCollection() && $param->getCollectionValueType() !== null) {
+                $types[$param->getCollectionValueType()] = $param->getCollectionValueType();
+            }
+        }
+
+        return array_values($types);
+    }
 
     /**
      * Returns the fully qualified class name (including namespace).
@@ -163,14 +261,5 @@ final class ClassMetadata implements \Stringable
         }
 
         return array_values($types);
-    }
-
-    /**
-     * Returns a human-readable summary of this metadata, useful for debugging
-     * and verbose command output.
-     */
-    public function __toString(): string
-    {
-        return sprintf('ClassMetadata(%s, %d properties)', $this->className, \count($this->properties));
     }
 }
