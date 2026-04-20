@@ -486,7 +486,7 @@ trait TypeExtractorTrait
 
         if (is_string($value) && is_numeric($value)) {
             $intVal = (int) $value;
-            if ((string) $intVal === trim($value)) {
+            if ((string) $intVal === $value) {
                 return $intVal;
             }
 

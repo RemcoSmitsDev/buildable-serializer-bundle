@@ -39,6 +39,7 @@ final class RegisterGeneratedDenormalizersPass implements CompilerPassInterface
     private const PATHS_PARAM = 'buildable_serializer.denormalizers.paths';
     private const DISCOVERY_SERVICE = 'buildable_serializer.discovery.denormalizers';
     private const DENORMALIZER_TAG = 'serializer.denormalizer';
+    private const NORMALIZER_TAG = 'serializer.normalizer';
     private const SERIALIZER_SERVICE = 'serializer';
     private const DEFAULT_PRIORITY = 200;
 
@@ -78,14 +79,13 @@ final class RegisterGeneratedDenormalizersPass implements CompilerPassInterface
             $definition->setPublic(false);
             $definition->setAutowired(false);
             $definition->setAutoconfigured(false);
-            $definition->addTag(self::DENORMALIZER_TAG, ['priority' => self::DEFAULT_PRIORITY]);
-            $definition->addTag('serializer.normalizer', ['priority' => self::DEFAULT_PRIORITY]);
+            $definition->addTag(self::NORMALIZER_TAG, ['priority' => self::DEFAULT_PRIORITY]);
             $definition->setFile($filePath);
             $container->setDefinition(self::DENORMALIZER_TAG . '.' . $fqcn, $definition);
         }
 
         $serializerDef = $container->getDefinition(self::SERIALIZER_SERVICE);
 
-        $serializerDef->replaceArgument(0, $this->findAndSortTaggedServices('serializer.normalizer', $container));
+        $serializerDef->replaceArgument(0, $this->findAndSortTaggedServices(self::NORMALIZER_TAG, $container));
     }
 }
