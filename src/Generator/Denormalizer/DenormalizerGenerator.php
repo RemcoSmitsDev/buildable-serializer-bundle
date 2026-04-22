@@ -360,6 +360,18 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                     continue;
                 }
 
+                if ($param->isIgnored()) {
+                    // Ignored parameters must never be read from the input
+                    // payload. Pass the constructor default directly so the
+                    // class retains its intended internal value regardless of
+                    // what the caller supplies in $data.
+                    $args[] = new Arg(
+                        value: $this->buildDefaultValueExpr($param),
+                        name: new Identifier($param->getName()),
+                    );
+                    continue;
+                }
+
                 $args[] = new Arg(
                     value: $this->buildExtractCallForConstructorParam($param),
                     name: new Identifier($param->getName()),
@@ -499,6 +511,14 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
 
         foreach ($metadata->getConstructorParameters() as $param) {
             if ($param->isVariadic()) {
+                continue;
+            }
+
+            if ($param->isIgnored()) {
+                // Ignored parameters are never extracted from $data, so their
+                // key aliases must not be added to the skip-map. Omitting them
+                // allows the populate() phase to write to a same-named
+                // non-ignored property if one exists.
                 continue;
             }
 

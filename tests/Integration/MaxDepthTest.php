@@ -78,8 +78,8 @@ final class MaxDepthTest extends AbstractTestCase
     /** @var string FQCN of the generated MaxDepthBlogNormalizer */
     private string $normalizerFqcn;
 
-    /** @var object The instantiated generated normalizer */
-    private object $normalizer;
+    /** @var NormalizerInterface The instantiated generated normalizer */
+    private NormalizerInterface $normalizer;
 
     /** @var string Absolute path of the generated PHP file */
     private string $generatedFilePath;

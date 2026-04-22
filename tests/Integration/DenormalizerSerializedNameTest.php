@@ -11,6 +11,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SerializedNameFixture;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 /**
  * Integration tests for the `#[SerializedName]` key-aliasing behaviour of the
@@ -59,7 +60,7 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
     private string $tempDir;
 
     /** The instantiated generated denormalizer for SerializedNameFixture. */
-    private object $denormalizer;
+    private DenormalizerInterface $denormalizer;
 
     protected function setUp(): void
     {

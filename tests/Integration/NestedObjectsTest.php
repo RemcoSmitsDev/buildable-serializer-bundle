@@ -23,8 +23,8 @@ final class NestedObjectsTest extends AbstractTestCase
     /** @var string FQCN of the generated BlogWithAuthorNormalizer */
     private string $normalizerFqcn;
 
-    /** @var object The instantiated generated normalizer */
-    private object $normalizer;
+    /** @var NormalizerInterface The instantiated generated normalizer */
+    private NormalizerInterface $normalizer;
 
     /** Normalised representation returned by the mock for any Author instance */
     private const AUTHOR_DATA = ['id' => 99, 'name' => 'John', 'email' => 'j@test.com'];

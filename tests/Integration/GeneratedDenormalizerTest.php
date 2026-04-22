@@ -36,7 +36,7 @@ final class GeneratedDenormalizerTest extends AbstractTestCase
     private string $tempDir;
 
     /** The instantiated generated denormalizer for SimpleBlog. */
-    private object $denormalizer;
+    private DenormalizerInterface $denormalizer;
 
     protected function setUp(): void
     {
@@ -109,9 +109,11 @@ final class GeneratedDenormalizerTest extends AbstractTestCase
 
     public function testSupportsDenormalizationIsUnaffectedByContext(): void
     {
-        $this->assertTrue($this->denormalizer->supportsDenormalization([], SimpleBlog::class, null, ['groups' => [
-            'read',
-        ]]));
+        $this->assertTrue($this->denormalizer->supportsDenormalization([], SimpleBlog::class, null, [
+            'groups' => [
+                'read',
+            ],
+        ]));
     }
 
     public function testGetSupportedTypesReturnsTargetClassMappedToTrue(): void

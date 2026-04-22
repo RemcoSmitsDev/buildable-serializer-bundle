@@ -41,7 +41,7 @@ final class DenormalizerNestedObjectsTest extends AbstractTestCase
     private string $tempDir;
 
     /** The instantiated generated denormalizer for PersonFixture. */
-    private object $denormalizer;
+    private DenormalizerInterface $denormalizer;
 
     protected function setUp(): void
     {

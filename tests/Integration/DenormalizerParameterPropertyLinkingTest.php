@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NonPromotedAddressFixture;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 /**
  * Integration tests for the parameter-to-property attribute-linking feature
@@ -59,7 +60,7 @@ final class DenormalizerParameterPropertyLinkingTest extends AbstractTestCase
     private string $tempDir;
 
     /** The instantiated generated denormalizer for NonPromotedAddressFixture. */
-    private object $denormalizer;
+    private DenormalizerInterface $denormalizer;
 
     protected function setUp(): void
     {

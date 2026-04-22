@@ -24,8 +24,8 @@ final class CollectionsTest extends AbstractTestCase
     /** @var string FQCN of the generated BlogWithCollectionsNormalizer */
     private string $normalizerFqcn;
 
-    /** @var object The instantiated generated normalizer */
-    private object $normalizer;
+    /** @var NormalizerInterface The instantiated generated normalizer */
+    private NormalizerInterface $normalizer;
 
     protected function setUp(): void
     {

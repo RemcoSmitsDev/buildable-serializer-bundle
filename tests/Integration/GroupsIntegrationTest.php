@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithGroups;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
  * Integration tests for group-based filtering in generated normalizers.
@@ -21,8 +22,8 @@ final class GroupsIntegrationTest extends AbstractTestCase
     /** @var string FQCN of the generated BlogWithGroupsNormalizer */
     private string $normalizerFqcn;
 
-    /** @var object The instantiated generated normalizer */
-    private object $normalizer;
+    /** @var NormalizerInterface The instantiated generated normalizer */
+    private NormalizerInterface $normalizer;
 
     private BlogWithGroups $blog;
 

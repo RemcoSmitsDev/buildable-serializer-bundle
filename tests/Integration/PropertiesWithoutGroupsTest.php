@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithMixedGroups;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
  * Integration tests for properties without groups being properly excluded
@@ -27,8 +28,8 @@ final class PropertiesWithoutGroupsTest extends AbstractTestCase
     /** @var string FQCN of the generated normalizer */
     private string $normalizerFqcn;
 
-    /** @var object The instantiated generated normalizer */
-    private object $normalizer;
+    /** @var NormalizerInterface The instantiated generated normalizer */
+    private NormalizerInterface $normalizer;
 
     private BlogWithMixedGroups $blog;
 
