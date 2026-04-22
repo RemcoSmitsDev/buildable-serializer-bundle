@@ -72,6 +72,7 @@ abstract class AbstractTestCase extends TestCase
                 'skip_null_values' => true,
                 'preserve_empty_objects' => true,
                 'context' => true,
+                'attributes' => true,
                 'strict_types' => true,
             ],
         );
@@ -99,6 +100,7 @@ abstract class AbstractTestCase extends TestCase
             generatedNamespace: $namespace,
             features: [
                 'groups' => true,
+                'attributes' => true,
                 'strict_types' => true,
             ],
         );

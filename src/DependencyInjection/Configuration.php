@@ -37,6 +37,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *                 skip_null_values: true
  *                 preserve_empty_objects: true
  *                 context: true
+ *                 attributes: true
  *                 strict_types: true
  *
  *         denormalizers:
@@ -44,6 +45,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *                 'App\DTO': '%kernel.project_dir%/src/DTO'
  *             features:
  *                 groups: true
+ *                 attributes: true
  *                 strict_types: true
  *
  */
@@ -111,6 +113,14 @@ final class Configuration implements ConfigurationInterface
             ->info('Emit logic to merge property-specific context from #[Context] attributes '
             . 'when calling nested normalizers.')
             ->end()
+            ->booleanNode('attributes')
+            ->defaultTrue()
+            ->info(
+                'Emit attribute-allowlist filtering logic in generated normalizers. '
+                . 'When enabled, the AbstractNormalizer::ATTRIBUTES context key limits which '
+                . 'properties are included in the normalized output.',
+            )
+            ->end()
             ->booleanNode('strict_types')
             ->defaultTrue()
             ->info('Prepend "declare(strict_types=1);" to every generated file.')
@@ -144,6 +154,14 @@ final class Configuration implements ConfigurationInterface
             ->defaultTrue()
             ->info('Emit group-filtering logic in generated denormalizers. '
             . 'When false, group context keys are ignored entirely.')
+            ->end()
+            ->booleanNode('attributes')
+            ->defaultTrue()
+            ->info(
+                'Emit attribute-allowlist filtering logic in generated denormalizers. '
+                . 'When enabled, the AbstractNormalizer::ATTRIBUTES context key limits which '
+                . 'properties are read from the input payload.',
+            )
             ->end()
             ->booleanNode('strict_types')
             ->defaultTrue()

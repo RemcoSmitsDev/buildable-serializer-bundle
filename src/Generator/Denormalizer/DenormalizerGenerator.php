@@ -15,12 +15,14 @@ use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
+use PhpParser\Node\Expr\BinaryOp\BooleanOr;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
+use PhpParser\Node\Expr\BinaryOp\Identical;
 use PhpParser\Node\Expr\BooleanNot;
+use PhpParser\Node\Expr\Cast\Array_ as CastArray;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\Instanceof_;
 use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
@@ -28,7 +30,6 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
@@ -79,6 +80,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
      * @param array{
      *     groups: bool,
      *     strict_types: bool,
+     *     attributes: bool,
      * } $features Active code-generation feature flags.
      */
     public function __construct(
@@ -342,6 +344,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
     {
         $targetFqcn = $metadata->getClassName();
         $shortName = $this->shortName($targetFqcn);
+        $hasAttributes = $this->features['attributes'];
 
         $stmts = [];
 
@@ -352,6 +355,22 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
             // Build one Arg per constructor parameter, using named args so the
             // generated call is stable against parameter-order changes.
             $args = [];
+
+            if ($hasAttributes) {
+                // $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+                $stmts[] = new Expression(
+                    new Assign(
+                        new Variable('attributes'),
+                        new Coalesce(
+                            new ArrayDimFetch(
+                                new Variable('context'),
+                                new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                            ),
+                            new ConstFetch(new Name('null')),
+                        ),
+                    ),
+                );
+            }
 
             foreach ($metadata->getConstructorParameters() as $param) {
                 if ($param->isVariadic()) {
@@ -368,6 +387,43 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                     $args[] = new Arg(
                         value: $this->buildDefaultValueExpr($param),
                         name: new Identifier($param->getName()),
+                    );
+                    continue;
+                }
+
+                if ($hasAttributes) {
+                    // When the ATTRIBUTES allowlist is active and this parameter's
+                    // PHP name is not listed, fall back to the constructor default
+                    // instead of reading from $data.
+                    //
+                    // Generated:
+                    //   name: $attributes === null
+                    //       || in_array('name', (array) $attributes, true)
+                    //       || array_key_exists('name', (array) $attributes)
+                    //         ? $this->extractXxx(...)
+                    //         : <default>
+                    $phpName = $param->getName();
+
+                    $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
+                    $inArray = new FuncCall(new Name('in_array'), [
+                        new Arg(new String_($phpName)),
+                        new Arg(new CastArray(new Variable('attributes'))),
+                        new Arg(new ConstFetch(new Name('true'))),
+                    ]);
+                    $keyExists = new FuncCall(new Name('array_key_exists'), [
+                        new Arg(new String_($phpName)),
+                        new Arg(new CastArray(new Variable('attributes'))),
+                    ]);
+
+                    $condition = new BooleanOr($attributesNull, new BooleanOr($inArray, $keyExists));
+
+                    $args[] = new Arg(
+                        value: new Expr\Ternary(
+                            $condition,
+                            $this->buildExtractCallForConstructorParam($param),
+                            $this->buildDefaultValueExpr($param),
+                        ),
+                        name: new Identifier($phpName),
                     );
                     continue;
                 }
@@ -413,6 +469,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
     {
         $targetFqcn = $metadata->getClassName();
         $shortName = $this->shortName($targetFqcn);
+        $hasAttributes = $this->features['attributes'];
 
         $stmts = [];
 
@@ -453,6 +510,22 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
             $stmts[] = new Expression(new Assign(new Variable('skip'), $skipAssign));
         }
 
+        if ($hasAttributes) {
+            // $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+            $stmts[] = new Expression(
+                new Assign(
+                    new Variable('attributes'),
+                    new Coalesce(
+                        new ArrayDimFetch(
+                            new Variable('context'),
+                            new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                        ),
+                        new ConstFetch(new Name('null')),
+                    ),
+                ),
+            );
+        }
+
         foreach ($metadata->getProperties() as $property) {
             if ($property->isIgnored()) {
                 continue;
@@ -462,7 +535,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                 continue;
             }
 
-            $stmts = array_merge($stmts, $this->buildPropertyPopulation($property, $hasSkipMap));
+            $stmts = array_merge($stmts, $this->buildPropertyPopulation($property, $hasSkipMap, $hasAttributes));
         }
 
         $stmts[] = new Return_(new Variable('object'));
@@ -579,7 +652,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
      *
      * @return Stmt[]
      */
-    private function buildPropertyPopulation(PropertyMetadata $property, bool $hasSkipMap): array
+    private function buildPropertyPopulation(PropertyMetadata $property, bool $hasSkipMap, bool $hasAttributes): array
     {
         $keyAliases = $this->propertyKeyAliases($property);
 
@@ -631,7 +704,35 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
             return [];
         }
 
-        return [new If_($condition, ['stmts' => [$assignment]])];
+        $populationIf = new If_($condition, ['stmts' => [$assignment]]);
+
+        if (!$hasAttributes) {
+            return [$populationIf];
+        }
+
+        // Wrap the population `if` in an outer attributes allowlist check:
+        //
+        //   if ($attributes === null
+        //       || in_array('phpName', (array) $attributes, true)
+        //       || array_key_exists('phpName', (array) $attributes)) {
+        //       if (array_key_exists('key', $data) && ...) { ... }
+        //   }
+        $phpName = $property->getName();
+
+        $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
+        $inArray = new FuncCall(new Name('in_array'), [
+            new Arg(new String_($phpName)),
+            new Arg(new CastArray(new Variable('attributes'))),
+            new Arg(new ConstFetch(new Name('true'))),
+        ]);
+        $keyExists = new FuncCall(new Name('array_key_exists'), [
+            new Arg(new String_($phpName)),
+            new Arg(new CastArray(new Variable('attributes'))),
+        ]);
+
+        $attributesCondition = new BooleanOr($attributesNull, new BooleanOr($inArray, $keyExists));
+
+        return [new If_($attributesCondition, ['stmts' => [$populationIf]])];
     }
 
     /**

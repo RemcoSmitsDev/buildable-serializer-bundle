@@ -512,6 +512,7 @@ final class NormalizerGeneratorTest extends AbstractTestCase
                 'skip_null_values' => true,
                 'preserve_empty_objects' => true,
                 'context' => false,
+                'attributes' => true,
                 'strict_types' => true,
             ],
         );
@@ -656,6 +657,7 @@ final class NormalizerGeneratorTest extends AbstractTestCase
                 'skip_null_values' => false,
                 'preserve_empty_objects' => true,
                 'context' => false,
+                'attributes' => true,
                 'strict_types' => true,
             ],
         );
@@ -683,6 +685,7 @@ final class NormalizerGeneratorTest extends AbstractTestCase
                 'skip_null_values' => true,
                 'preserve_empty_objects' => false,
                 'context' => true,
+                'attributes' => true,
                 'strict_types' => true,
             ],
         );

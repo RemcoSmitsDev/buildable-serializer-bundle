@@ -65,6 +65,7 @@ final class DenormalizerGeneratorTest extends AbstractTestCase
             generatedNamespace: self::GENERATED_NAMESPACE,
             features: [
                 'groups' => true,
+                'attributes' => true,
                 'strict_types' => false,
             ],
         );
@@ -208,34 +209,36 @@ final class DenormalizerGeneratorTest extends AbstractTestCase
         // SimpleBlog has constructor params id/title/content/excerpt — the
         // generator must emit named arguments for every one of them so the
         // call is robust against reorderings in the domain class.
+        // With the attributes feature enabled the named arg value is a ternary,
+        // so we assert on the param name appearing before the extract call.
         $code = $this->generate(SimpleBlog::class);
 
-        $this->assertStringContainsString('id: $this->extract', $code);
-        $this->assertStringContainsString('title: $this->extract', $code);
-        $this->assertStringContainsString('content: $this->extract', $code);
-        $this->assertStringContainsString('excerpt: $this->extract', $code);
+        $this->assertMatchesRegularExpression('/\bid:\s.*\$this->extract/', $code);
+        $this->assertMatchesRegularExpression('/\btitle:\s.*\$this->extract/', $code);
+        $this->assertMatchesRegularExpression('/\bcontent:\s.*\$this->extract/', $code);
+        $this->assertMatchesRegularExpression('/\bexcerpt:\s.*\$this->extract/', $code);
     }
 
     public function testConstructMethodPicksIntExtractorForIntParam(): void
     {
         $code = $this->generate(SimpleBlog::class);
 
-        $this->assertStringContainsString("id: \$this->extractInt(\$data, 'id'", $code);
+        $this->assertStringContainsString("\$this->extractInt(\$data, 'id'", $code);
     }
 
     public function testConstructMethodPicksStringExtractorForStringParam(): void
     {
         $code = $this->generate(SimpleBlog::class);
 
-        $this->assertStringContainsString("title: \$this->extractString(\$data, 'title'", $code);
-        $this->assertStringContainsString("content: \$this->extractString(\$data, 'content'", $code);
+        $this->assertStringContainsString("\$this->extractString(\$data, 'title'", $code);
+        $this->assertStringContainsString("\$this->extractString(\$data, 'content'", $code);
     }
 
     public function testConstructMethodPicksNullableStringExtractorForNullableParam(): void
     {
         $code = $this->generate(SimpleBlog::class);
 
-        $this->assertStringContainsString("excerpt: \$this->extractNullableString(\$data, 'excerpt'", $code);
+        $this->assertStringContainsString("\$this->extractNullableString(\$data, 'excerpt'", $code);
     }
 
     public function testConstructMethodMarksRequiredParametersAsRequired(): void

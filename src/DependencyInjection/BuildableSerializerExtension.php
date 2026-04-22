@@ -22,11 +22,11 @@ final class BuildableSerializerExtension extends Extension
         /** @var array{
          *     normalizers: array{
          *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
-         *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, preserve_empty_objects: bool, context: bool, strict_types: bool}
+         *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, preserve_empty_objects: bool, context: bool, attributes: bool, strict_types: bool}
          *     },
          *     denormalizers: array{
          *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
-         *         features: array{groups: bool, strict_types: bool}
+         *         features: array{groups: bool, attributes: bool, strict_types: bool}
          *     }
          * } $config
          */
@@ -44,11 +44,11 @@ final class BuildableSerializerExtension extends Extension
      * @param array{
      *     normalizers: array{
      *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
-     *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, preserve_empty_objects: bool, context: bool, strict_types: bool}
+     *         features: array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, preserve_empty_objects: bool, context: bool, attributes: bool, strict_types: bool}
      *     },
      *     denormalizers: array{
      *         paths: array<string, array{path: string, exclude: string|string[]|null}>,
-     *         features: array{groups: bool, strict_types: bool}
+     *         features: array{groups: bool, attributes: bool, strict_types: bool}
      *     }
      * } $config
      */
@@ -84,6 +84,10 @@ final class BuildableSerializerExtension extends Extension
             $config['normalizers']['features']['context'],
         );
         $container->setParameter(
+            "{$prefix}.normalizers.features.attributes",
+            $config['normalizers']['features']['attributes'],
+        );
+        $container->setParameter(
             "{$prefix}.normalizers.features.strict_types",
             $config['normalizers']['features']['strict_types'],
         );
@@ -97,6 +101,10 @@ final class BuildableSerializerExtension extends Extension
         $container->setParameter(
             "{$prefix}.denormalizers.features.groups",
             $config['denormalizers']['features']['groups'],
+        );
+        $container->setParameter(
+            "{$prefix}.denormalizers.features.attributes",
+            $config['denormalizers']['features']['attributes'],
         );
         $container->setParameter(
             "{$prefix}.denormalizers.features.strict_types",

@@ -102,6 +102,16 @@ buildable_serializer:
             skip_null_values: true      # Emit logic to skip null-valued properties.
             preserve_empty_objects: true # Emit logic to preserve empty objects as {} (JSON) instead of [].
             context: true               # Emit logic to merge #[Context] attribute values.
+            attributes: true            # Emit attribute-allowlist filtering logic (AbstractNormalizer::ATTRIBUTES).
+            strict_types: true          # Prepend declare(strict_types=1); to every file.
+
+    denormalizers:
+        paths:
+            'App\Dto': '%kernel.project_dir%/src/Dto'
+
+        features:
+            groups: true                # Emit group-filtering logic.
+            attributes: true            # Emit attribute-allowlist filtering logic (AbstractNormalizer::ATTRIBUTES).
             strict_types: true          # Prepend declare(strict_types=1); to every file.
 ```
 
@@ -596,6 +606,7 @@ A few things worth noting in the generated output:
 | `skip_null_values` | `true` | Omits `null` properties when the context flag is set |
 | `preserve_empty_objects` | `true` | Returns `\ArrayObject` (JSON `{}`) instead of `[]` for empty results when the `preserve_empty_objects` context flag is set |
 | `context` | `true` | Merges property-specific context from `#[Context]` attributes |
+| `attributes` | `true` | Honours the `AbstractNormalizer::ATTRIBUTES` context key (normalizer & denormalizer) |
 
 Disabling a feature you don't need produces leaner, faster generated code.
 
@@ -619,9 +630,12 @@ following context keys at runtime (matching Symfony's built-in normalizers):
 | Context key | Source | Description |
 |---|---|---|
 | `AbstractNormalizer::GROUPS` | `groups` feature | Restrict the output to properties belonging to the given groups. |
+| `AbstractNormalizer::ATTRIBUTES` | `attributes` feature | Allowlist of **PHP property names** to include during (de)normalization. An empty array produces an empty result. When a nested object is listed as an array-map value (e.g. `['id', 'author' => ['name']]`), the sub-array is forwarded as the child's `ATTRIBUTES` context, limiting which of the nested object's properties are processed. When omitted or `null`, all properties are included. |
 | `AbstractNormalizer::CIRCULAR_REFERENCE_LIMIT` / `CIRCULAR_REFERENCE_HANDLER` | `circular_reference` feature | Control the circular-reference guard's limit and fallback handler. |
 | `AbstractObjectNormalizer::SKIP_NULL_VALUES` | `skip_null_values` feature | When `true`, properties whose value is `null` are omitted from the output. |
 | `AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS` | `preserve_empty_objects` feature | When `true` and the normalized result would otherwise be an empty array (`[]`), an `\ArrayObject` is returned instead so the value is encoded as an empty JSON object (`{}`). |
+
+> **Denormalizer note:** `AbstractNormalizer::ATTRIBUTES` is checked against PHP property names in the generated `populate()` phase. Properties whose PHP name is absent from the allowlist are skipped regardless of what keys are present in the input payload. For constructor parameters, a parameter not in the allowlist falls back to its declared default value instead of reading from the input data. The `GROUPS` context key is not applied in the generated `populate()` phase — it is forwarded to any nested delegated denormalizer calls but has no effect on top-level scalar property population.
 
 ### Context Attribute
 

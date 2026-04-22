@@ -87,6 +87,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     preserve_empty_objects: bool,
      *     context: bool,
      *     strict_types: bool,
+     *     attributes: bool,
      * } $features Active code-generation feature flags.
      */
     public function __construct(
@@ -312,6 +313,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         return (
             $this->features['groups'] && $metadata->hasGroupConstraints()
             || $this->features['circular_reference'] && $metadata->hasNestedObjects()
+            || $this->features['attributes']
         );
     }
 
@@ -347,12 +349,29 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $hasMaxDepth = $activeFeatures['max_depth'];
         $hasContext = $activeFeatures['context'];
         $hasPreserveEmptyObjects = $activeFeatures['preserve_empty_objects'];
+        $hasAttributes = $activeFeatures['attributes'];
 
         $stmts = [];
 
         // Circular-reference guard
         if ($needsCircularRef) {
             $stmts = array_merge($stmts, $this->buildCircularReferenceGuard($metadata->getClassName()));
+        }
+
+        // $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+        if ($hasAttributes) {
+            $stmts[] = new Expression(
+                new Assign(
+                    new Variable('attributes'),
+                    new Coalesce(
+                        new ArrayDimFetch(
+                            new Variable('context'),
+                            new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                        ),
+                        new ConstFetch(new Name('null')),
+                    ),
+                ),
+            );
         }
 
         // $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
@@ -422,6 +441,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                     $hasSkipNull,
                     $hasMaxDepth,
                     $hasContext,
+                    $hasAttributes,
                 ));
             }
 
@@ -619,6 +639,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasSkipNull,
         bool $hasMaxDepth,
         bool $hasContext,
+        bool $hasAttributes,
     ): array {
         $needsGroupBlock = $hasGroups;
         $needsMaxDepth =
@@ -673,6 +694,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $hasSkipNull,
                 $hasGroups,
                 $hasContext,
+                $hasAttributes,
             ));
 
             $maxDepthIf = new If_(
@@ -691,12 +713,13 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $hasSkipNull,
                 $hasGroups,
                 $hasContext,
+                $hasAttributes,
             ));
         }
 
         $coreStmts = array_merge($coreStmts, $valueStmts);
 
-        // --- groups wrapper --------------------------------------------------
+        // --- groups wrapper (inner) ------------------------------------------
         if ($needsGroupBlock) {
             $propertyGroups = $property->getGroups();
 
@@ -717,7 +740,33 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 }
             }
 
-            return [new If_($groupCondition, ['stmts' => $coreStmts])];
+            $coreStmts = [new If_($groupCondition, ['stmts' => $coreStmts])];
+        }
+
+        // --- attributes wrapper (outer) --------------------------------------
+        if ($hasAttributes) {
+            $phpName = $property->getName();
+
+            // if ($attributes === null || in_array('phpName', (array) $attributes, true) || array_key_exists('phpName', (array) $attributes)) { ... }
+            $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
+
+            $attributesInArray = new FuncCall(new Name('in_array'), [
+                new Arg(new String_($phpName)),
+                new Arg(new CastArray(new Variable('attributes'))),
+                new Arg(new ConstFetch(new Name('true'))),
+            ]);
+
+            $attributesKeyExists = new FuncCall(new Name('array_key_exists'), [
+                new Arg(new String_($phpName)),
+                new Arg(new CastArray(new Variable('attributes'))),
+            ]);
+
+            $attributesCondition = new Expr\BinaryOp\BooleanOr(
+                $attributesNull,
+                new Expr\BinaryOp\BooleanOr($attributesInArray, $attributesKeyExists),
+            );
+
+            return [new If_($attributesCondition, ['stmts' => $coreStmts])];
         }
 
         return $coreStmts;
@@ -735,6 +784,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasSkipNull,
         bool $hasGroups,
         bool $hasContext,
+        bool $hasAttributes,
     ): array {
         if ($property->isNested()) {
             return $this->buildNestedValueAssignment(
@@ -744,6 +794,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $hasSkipNull,
                 $hasGroups,
                 $hasContext,
+                $hasAttributes,
             );
         }
 
@@ -755,6 +806,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $hasSkipNull,
                 $hasGroups,
                 $hasContext,
+                $hasAttributes,
             );
         }
 
@@ -773,6 +825,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasSkipNull,
         bool $hasGroups,
         bool $hasContext,
+        bool $hasAttributes,
     ): array {
         $needsNullCheck = $property->isNullable();
         $null = new ConstFetch(new Name('null'));
@@ -781,6 +834,45 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $contextResult = $this->buildContextExprWithStatements($property, $hasGroups, $hasContext);
         $contextStmts = $contextResult['statements'];
         $contextExpr = $contextResult['expression'];
+
+        if ($hasAttributes) {
+            $phpName = $property->getName();
+            // $_childContext = !isset($attributes) ? $contextExpr : (
+            //     is_array($attributes['propName'] ?? null)
+            //         ? array_replace($contextExpr, ['attributes' => $attributes['propName']])
+            //         : array_diff_key($contextExpr, ['attributes' => null])
+            // );
+            $attrSubKey = new Coalesce(
+                new ArrayDimFetch(new Variable('attributes'), new String_($phpName)),
+                new ConstFetch(new Name('null')),
+            );
+            $nestedAttrArray = new Array_([
+                new ArrayItem(
+                    new ArrayDimFetch(new Variable('attributes'), new String_($phpName)),
+                    new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                ),
+            ], ['kind' => Array_::KIND_SHORT]);
+            $strippedAttrArray = new Array_([
+                new ArrayItem(
+                    new ConstFetch(new Name('null')),
+                    new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                ),
+            ], ['kind' => Array_::KIND_SHORT]);
+
+            $childContextExpr = new Expr\Ternary(
+                new BooleanNot(new Isset_([new Variable('attributes')])),
+                $contextExpr,
+                new Expr\Ternary(new FuncCall(new Name('is_array'), [new Arg(
+                    $attrSubKey,
+                )]), new FuncCall(new Name('array_replace'), [
+                    new Arg($contextExpr),
+                    new Arg($nestedAttrArray),
+                ]), new FuncCall(new Name('array_diff_key'), [new Arg($contextExpr), new Arg($strippedAttrArray)])),
+            );
+
+            $contextStmts[] = new Expression(new Assign(new Variable('_childContext'), $childContextExpr));
+            $contextExpr = new Variable('_childContext');
+        }
 
         // Helper: $this->normalizer->normalize($_val, $format, $contextExpr)
         $normalizeVar = new MethodCall(new PropertyFetch(new Variable('this'), 'normalizer'), 'normalize', [
@@ -842,6 +934,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasSkipNull,
         bool $hasGroups,
         bool $hasContext,
+        bool $hasAttributes,
     ): array {
         $null = new ConstFetch(new Name('null'));
         $dataSet = fn(Expr $val) => new Expression(new Assign(new ArrayDimFetch(new Variable('data'), $keyExpr), $val));
@@ -850,6 +943,45 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $contextResult = $this->buildContextExprWithStatements($property, $hasGroups, $hasContext);
         $contextStmts = $contextResult['statements'];
         $contextExpr = $contextResult['expression'];
+
+        if ($hasAttributes) {
+            $phpName = $property->getName();
+            // $_childContext = !isset($attributes) ? $contextExpr : (
+            //     is_array($attributes['propName'] ?? null)
+            //         ? array_replace($contextExpr, ['attributes' => $attributes['propName']])
+            //         : array_diff_key($contextExpr, ['attributes' => null])
+            // );
+            $attrSubKey = new Coalesce(
+                new ArrayDimFetch(new Variable('attributes'), new String_($phpName)),
+                new ConstFetch(new Name('null')),
+            );
+            $nestedAttrArray = new Array_([
+                new ArrayItem(
+                    new ArrayDimFetch(new Variable('attributes'), new String_($phpName)),
+                    new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                ),
+            ], ['kind' => Array_::KIND_SHORT]);
+            $strippedAttrArray = new Array_([
+                new ArrayItem(
+                    new ConstFetch(new Name('null')),
+                    new ClassConstFetch(new Name('AbstractNormalizer'), 'ATTRIBUTES'),
+                ),
+            ], ['kind' => Array_::KIND_SHORT]);
+
+            $childContextExpr = new Expr\Ternary(
+                new BooleanNot(new Isset_([new Variable('attributes')])),
+                $contextExpr,
+                new Expr\Ternary(new FuncCall(new Name('is_array'), [new Arg(
+                    $attrSubKey,
+                )]), new FuncCall(new Name('array_replace'), [
+                    new Arg($contextExpr),
+                    new Arg($nestedAttrArray),
+                ]), new FuncCall(new Name('array_diff_key'), [new Arg($contextExpr), new Arg($strippedAttrArray)])),
+            );
+
+            $contextStmts[] = new Expression(new Assign(new Variable('_childContext'), $childContextExpr));
+            $contextExpr = new Variable('_childContext');
+        }
 
         $normalizeCollection = fn(Expr $ref) => new MethodCall(
             new PropertyFetch(new Variable('this'), 'normalizer'),
@@ -983,7 +1115,15 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Compute which features are actually active for the given class.
      *
-     * @return array{groups: bool, max_depth: bool, circular_reference: bool, skip_null_values: bool, preserve_empty_objects: bool, context: bool}
+     * @return array{
+     *     groups: bool,
+     *     max_depth: bool,
+     *     circular_reference: bool,
+     *     skip_null_values: bool,
+     *     preserve_empty_objects: bool,
+     *     context: bool,
+     *     attributes: bool,
+     * }
      */
     private function resolveActiveFeatures(ClassMetadata $metadata): array
     {
@@ -993,7 +1133,8 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             'circular_reference' => $this->features['circular_reference'] && $metadata->hasNestedObjects(),
             'skip_null_values' => $this->features['skip_null_values'],
             'preserve_empty_objects' => $this->features['preserve_empty_objects'],
-            'context' => $this->features['context'] ?? true,
+            'context' => $this->features['context'],
+            'attributes' => $this->features['attributes'],
         ];
     }
 
