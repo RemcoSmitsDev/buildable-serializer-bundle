@@ -503,15 +503,6 @@ final class AttributesContextTest extends AbstractTestCase
         $this->assertNull($excluded->homePage);
     }
 
-    // =========================================================================
-    // Denormalizer — wither strategy + ATTRIBUTES
-    //
-    // WitherFixture: no constructor params, all fields populated via withers.
-    //   - $title   default ''
-    //   - $body    default ''
-    //   - $slug    default null (nullable)
-    // =========================================================================
-
     public function testDenormalizerAttributesSkipsWitherPopulatedFieldNotInAllowlist(): void
     {
         $denormalizerForFixture = $this->loadDenormalizerFor(WitherFixture::class, $this->tempDir);
