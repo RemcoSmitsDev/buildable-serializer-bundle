@@ -14,7 +14,7 @@ Normalizing and denormalizing a single `Post` (with a nested `User` and `Address
 
 | Operation | Symfony `ObjectNormalizer` (before) | Generated (after) | Performance gain |
 |---|---|---|---|
-| Normalize | 2 023 ms | 158 ms | **~13× faster** (~92.2% reduction) |
+| Normalize | 4 208 ms | 250 ms | **~17× faster** (~94.1% reduction) |
 | Denormalize | 6 076 ms | 324 ms | **~18× faster** (~94.5% reduction) |
 
 The benchmark was produced with:
