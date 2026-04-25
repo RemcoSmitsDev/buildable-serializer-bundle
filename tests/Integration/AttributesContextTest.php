@@ -438,17 +438,6 @@ final class AttributesContextTest extends AbstractTestCase
         $this->assertSame($withoutKey->getAge(), $withNull->getAge());
     }
 
-    // =========================================================================
-    // Denormalizer — #[SerializedName] interaction with ATTRIBUTES
-    //
-    // ATTRIBUTES filters by PHP property name, NOT by the serialized key.
-    // SerializedNameFixture:
-    //   - $id          PHP name "id"          serialized as "id"
-    //   - $emailAddress PHP name "emailAddress" serialized as "email_address"
-    //   - $displayName PHP name "displayName"  serialized as "display_name"
-    //   - $homePage    PHP name "homePage"     serialized as "home_page" (populate phase)
-    // =========================================================================
-
     public function testDenormalizerAttributesUsesPhpNameNotSerializedName(): void
     {
         // The allowlist uses PHP name "emailAddress", but data arrives under
@@ -660,18 +649,6 @@ final class AttributesContextTest extends AbstractTestCase
         $this->assertSame('', $result->content); // not in ATTRIBUTES
         $this->assertSame('Test Author', $result->authorName); // not in ATTRIBUTES (retains class default)
     }
-
-    // =========================================================================
-    // Denormalizer — nested ATTRIBUTES forwarding to child denormalizer
-    //
-    // These tests verify that when ATTRIBUTES contains a nested sub-array for
-    // a nested object property, the correct child ATTRIBUTES are forwarded to
-    // the child denormalizer's context.
-    //
-    // A capturing mock is used as the child denormalizer so we can assert the
-    // exact context it receives without fighting Author's required constructor
-    // params when sub-attributes exclude some of them.
-    // =========================================================================
 
     public function testDenormalizerNestedAllowlistForwardsSubAttributesToChildContext(): void
     {
