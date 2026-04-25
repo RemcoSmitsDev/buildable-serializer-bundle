@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Trait;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 /**
  * Trait providing object and collection extraction helpers for generated
@@ -112,7 +113,12 @@ trait ObjectExtractorTrait
         }
 
         /** @var object $result */
-        $result = $this->denormalizer->denormalize($value, $className, $format, $context);
+        $result = $this->denormalizer->denormalize(
+            $value,
+            $className,
+            $format,
+            $this->resolveChildContext($key, $context),
+        );
 
         return $result;
     }
@@ -146,7 +152,12 @@ trait ObjectExtractorTrait
         }
 
         /** @var object $result */
-        $result = $this->denormalizer->denormalize($value, $className, $format, $context);
+        $result = $this->denormalizer->denormalize(
+            $value,
+            $className,
+            $format,
+            $this->resolveChildContext($key, $context),
+        );
 
         return $result;
     }
@@ -210,7 +221,7 @@ trait ObjectExtractorTrait
                 $item,
                 $className,
                 $format,
-                $context + ['_buildable_denormalizer_collection_index' => $index],
+                $this->resolveChildContext($key, $context) + ['_buildable_denormalizer_collection_index' => $index],
             );
 
             $result[] = $denormalized;
@@ -275,7 +286,7 @@ trait ObjectExtractorTrait
                 $item,
                 $className,
                 $format,
-                $context + ['_buildable_denormalizer_collection_index' => $index],
+                $this->resolveChildContext($key, $context) + ['_buildable_denormalizer_collection_index' => $index],
             );
 
             $result[] = $denormalized;
@@ -342,12 +353,44 @@ trait ObjectExtractorTrait
                 $item,
                 $className,
                 $format,
-                $context + ['_buildable_denormalizer_map_key' => $stringKey],
+                $this->resolveChildContext($key, $context) + ['_buildable_denormalizer_map_key' => $stringKey],
             );
 
             $result[$stringKey] = $denormalized;
         }
 
         return $result;
+    }
+
+    /**
+     * Build the child context for a nested denormalization call.
+     *
+     * When ATTRIBUTES is present in the parent context:
+     *   - If `$key` has a sub-array (e.g. `'author' => ['id', 'name']`):
+     *     replace ATTRIBUTES with that sub-array so the child denormalizer
+     *     only processes the listed properties.
+     *   - If `$key` is listed as a plain string (no sub-array): strip
+     *     ATTRIBUTES from the child context so the nested object is
+     *     denormalized without any property filtering.
+     * When ATTRIBUTES is absent the context is returned unchanged.
+     *
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function resolveChildContext(string $key, array $context): array
+    {
+        $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+
+        if ($attributes === null) {
+            return $context;
+        }
+
+        $childAttributes = $attributes[$key] ?? null;
+
+        if (is_array($childAttributes)) {
+            return array_replace($context, [AbstractNormalizer::ATTRIBUTES => $childAttributes]);
+        }
+
+        return array_diff_key($context, [AbstractNormalizer::ATTRIBUTES => null]);
     }
 }

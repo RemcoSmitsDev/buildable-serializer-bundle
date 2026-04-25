@@ -15,6 +15,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\WitherFixture;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\Serializer\Serializer;
 
 /**
  * Integration tests for the AbstractNormalizer::ATTRIBUTES context key in both
@@ -97,6 +98,13 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  *  19. Groups + ATTRIBUTES combined: a property must satisfy both filters to
  *      be written; one that passes ATTRIBUTES but not GROUPS is still skipped,
  *      and one that passes GROUPS but not ATTRIBUTES is also skipped.
+ *  20. Nested allowlist `['id', 'title', 'author' => ['id']]` — the child
+ *      denormalizer for `author` must receive `ATTRIBUTES => ['id']` in its
+ *      context, not the full parent allowlist.
+ *  21. Nested key listed without a sub-array `['id', 'title', 'author']` —
+ *      the child denormalizer for `author` must receive a context with
+ *      ATTRIBUTES stripped entirely (no sub-filtering; all child properties
+ *      are allowed).
  *
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerGenerator
@@ -651,5 +659,121 @@ final class AttributesContextTest extends AbstractTestCase
         $this->assertSame('Test', $result->title);
         $this->assertSame('', $result->content); // not in ATTRIBUTES
         $this->assertSame('Test Author', $result->authorName); // not in ATTRIBUTES (retains class default)
+    }
+
+    // =========================================================================
+    // Denormalizer — nested ATTRIBUTES forwarding to child denormalizer
+    //
+    // These tests verify that when ATTRIBUTES contains a nested sub-array for
+    // a nested object property, the correct child ATTRIBUTES are forwarded to
+    // the child denormalizer's context.
+    //
+    // A capturing mock is used as the child denormalizer so we can assert the
+    // exact context it receives without fighting Author's required constructor
+    // params when sub-attributes exclude some of them.
+    // =========================================================================
+
+    public function testDenormalizerNestedAllowlistForwardsSubAttributesToChildContext(): void
+    {
+        $blogDenormalizer = $this->loadDenormalizerFor(BlogWithAuthor::class, $this->tempDir);
+
+        // Capture the context that the child denormalizer receives for Author.
+        $capturedContext = null;
+        $authorDenormalizer = new class($capturedContext) implements DenormalizerInterface {
+            public function __construct(
+                private mixed &$capturedContext,
+            ) {}
+
+            public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
+            {
+                $this->capturedContext = $context;
+
+                return new Author(id: $data['id'] ?? 0, name: 'Alice', email: 'alice@example.com');
+            }
+
+            public function supportsDenormalization(
+                mixed $data,
+                string $type,
+                ?string $format = null,
+                array $context = [],
+            ): bool {
+                return $type === Author::class;
+            }
+
+            public function getSupportedTypes(?string $format): array
+            {
+                return [Author::class => true];
+            }
+        };
+
+        $serializer = new Serializer([$blogDenormalizer, $authorDenormalizer]);
+        $blogDenormalizer->setDenormalizer($serializer);
+
+        $blogDenormalizer->denormalize(
+            ['id' => 1, 'title' => 'Post', 'author' => ['id' => 10, 'name' => 'Alice', 'email' => 'alice@example.com']],
+            BlogWithAuthor::class,
+            null,
+            [AbstractNormalizer::ATTRIBUTES => ['id', 'title', 'author' => ['id']]],
+        );
+
+        $this->assertNotNull($capturedContext, 'Child denormalizer was never called.');
+        $this->assertSame(
+            ['id'],
+            $capturedContext[AbstractNormalizer::ATTRIBUTES],
+            'Child context must contain only the sub-attributes defined for "author".',
+        );
+    }
+
+    public function testDenormalizerNestedKeyWithoutSubArrayStripsAttributesFromChildContext(): void
+    {
+        $blogDenormalizer = $this->loadDenormalizerFor(BlogWithAuthor::class, $this->tempDir);
+
+        // When 'author' is listed as a plain string (no sub-array), the child
+        // denormalizer must receive a context WITHOUT ATTRIBUTES so that all
+        // Author properties are allowed.
+        $capturedContext = null;
+        $authorDenormalizer = new class($capturedContext) implements DenormalizerInterface {
+            public function __construct(
+                private mixed &$capturedContext,
+            ) {}
+
+            public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
+            {
+                $this->capturedContext = $context;
+
+                return new Author(id: $data['id'] ?? 0, name: $data['name'] ?? '', email: $data['email'] ?? '');
+            }
+
+            public function supportsDenormalization(
+                mixed $data,
+                string $type,
+                ?string $format = null,
+                array $context = [],
+            ): bool {
+                return $type === Author::class;
+            }
+
+            public function getSupportedTypes(?string $format): array
+            {
+                return [Author::class => true];
+            }
+        };
+
+        $serializer = new Serializer([$blogDenormalizer, $authorDenormalizer]);
+        $blogDenormalizer->setDenormalizer($serializer);
+
+        $blogDenormalizer->denormalize(
+            ['id' => 1, 'title' => 'Post', 'author' => ['id' => 10, 'name' => 'Alice', 'email' => 'alice@example.com']],
+            BlogWithAuthor::class,
+            null,
+            [AbstractNormalizer::ATTRIBUTES => ['id', 'title', 'author']],
+        );
+
+        $this->assertNotNull($capturedContext, 'Child denormalizer was never called.');
+        $this->assertArrayNotHasKey(
+            AbstractNormalizer::ATTRIBUTES,
+            $capturedContext,
+            'Child context must not contain ATTRIBUTES when the parent lists the key without a sub-array.',
+        );
     }
 }
