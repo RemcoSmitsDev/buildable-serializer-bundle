@@ -18,6 +18,7 @@ use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
 use PhpParser\Node\Expr\BinaryOp\BooleanOr;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\BinaryOp\Identical;
+use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\Cast\Array_ as CastArray;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -37,6 +38,7 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
@@ -370,6 +372,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                         ),
                     ),
                 );
+                array_push($stmts, ...$this->buildAttributesLookupStmts());
             }
 
             foreach ($metadata->getConstructorParameters() as $param) {
@@ -397,25 +400,16 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                     // instead of reading from $data.
                     //
                     // Generated:
-                    //   name: $attributes === null
-                    //       || in_array('name', (array) $attributes, true)
-                    //       || array_key_exists('name', (array) $attributes)
+                    //   name: $attributes === null || isset($attributes['name'])
                     //         ? $this->extractXxx(...)
                     //         : <default>
                     $phpName = $param->getName();
 
                     $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
-                    $inArray = new FuncCall(new Name('in_array'), [
-                        new Arg(new String_($phpName)),
-                        new Arg(new CastArray(new Variable('attributes'))),
-                        new Arg(new ConstFetch(new Name('true'))),
-                    ]);
-                    $keyExists = new FuncCall(new Name('array_key_exists'), [
-                        new Arg(new String_($phpName)),
-                        new Arg(new CastArray(new Variable('attributes'))),
-                    ]);
-
-                    $condition = new BooleanOr($attributesNull, new BooleanOr($inArray, $keyExists));
+                    $condition = new BooleanOr($attributesNull, new Isset_([new ArrayDimFetch(
+                        new Variable('attributes'),
+                        new String_($phpName),
+                    )]));
 
                     $args[] = new Arg(
                         value: new Expr\Ternary(
@@ -524,6 +518,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                     ),
                 ),
             );
+            array_push($stmts, ...$this->buildAttributesLookupStmts());
         }
 
         foreach ($metadata->getProperties() as $property) {
@@ -712,25 +707,16 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
 
         // Wrap the population `if` in an outer attributes allowlist check:
         //
-        //   if ($attributes === null
-        //       || in_array('phpName', (array) $attributes, true)
-        //       || array_key_exists('phpName', (array) $attributes)) {
+        //   if ($attributes === null || isset($attributes['phpName'])) {
         //       if (array_key_exists('key', $data) && ...) { ... }
         //   }
         $phpName = $property->getName();
 
         $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
-        $inArray = new FuncCall(new Name('in_array'), [
-            new Arg(new String_($phpName)),
-            new Arg(new CastArray(new Variable('attributes'))),
-            new Arg(new ConstFetch(new Name('true'))),
-        ]);
-        $keyExists = new FuncCall(new Name('array_key_exists'), [
-            new Arg(new String_($phpName)),
-            new Arg(new CastArray(new Variable('attributes'))),
-        ]);
-
-        $attributesCondition = new BooleanOr($attributesNull, new BooleanOr($inArray, $keyExists));
+        $attributesCondition = new BooleanOr($attributesNull, new Isset_([new ArrayDimFetch(
+            new Variable('attributes'),
+            new String_($phpName),
+        )]));
 
         return [new If_($attributesCondition, ['stmts' => [$populationIf]])];
     }
@@ -1056,6 +1042,51 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
             ->setDocComment(new Doc("/**\n * @return array<class-string|'*'|'object'|string, bool|null>\n */"));
 
         return $method->getNode();
+    }
+
+    /**
+     * Builds the AST statements that convert the $attributes allowlist into an
+     * O(1) hash-map in a single foreach pass, overwriting $attributes in place.
+     *
+     * Generated:
+     *   if ($attributes !== null) {
+     *       $lookup = [];
+     *       foreach ((array) $attributes as $k => $v) {
+     *           $lookup[is_string($k) ? $k : $v] = true;
+     *       }
+     *       $attributes = $lookup;
+     *   }
+     *
+     * The ternary key `is_string($k) ? $k : $v` handles both forms:
+     *   - Sequential: ['id', 'title']         → int key, string value → use value
+     *   - Associative: ['author' => ['name']] → string key, array value → use key
+     *
+     * @return Stmt[]
+     */
+    private function buildAttributesLookupStmts(): array
+    {
+        $lookupKey = new Expr\Ternary(new FuncCall(new Name('is_string'), [new Arg(
+            new Variable('k'),
+        )]), new Variable('k'), new Variable('v'));
+
+        $foreach = new Foreach_(new CastArray(new Variable('attributes')), new Variable('v'), [
+            'keyVar' => new Variable('k'),
+            'stmts' => [
+                new Expression(
+                    new Assign(new ArrayDimFetch(new Variable('lookup'), $lookupKey), new ConstFetch(new Name('true'))),
+                ),
+            ],
+        ]);
+
+        return [
+            new If_(new NotIdentical(new Variable('attributes'), new ConstFetch(new Name('null'))), [
+                'stmts' => [
+                    new Expression(new Assign(new Variable('lookup'), new Array_([], ['kind' => Array_::KIND_SHORT]))),
+                    $foreach,
+                    new Expression(new Assign(new Variable('attributes'), new Variable('lookup'))),
+                ],
+            ]),
+        ];
     }
 
     /**

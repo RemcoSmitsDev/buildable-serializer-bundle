@@ -49,6 +49,7 @@ use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\ElseIf_;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
@@ -359,6 +360,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         }
 
         // $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+        // $attributesLookup = $attributes !== null ? array_fill_keys([...], true) : null;
         if ($hasAttributes) {
             $stmts[] = new Expression(
                 new Assign(
@@ -372,6 +374,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                     ),
                 ),
             );
+            array_push($stmts, ...$this->buildAttributesLookupStmts());
         }
 
         // $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
@@ -747,24 +750,13 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         if ($hasAttributes) {
             $phpName = $property->getName();
 
-            // if ($attributes === null || in_array('phpName', (array) $attributes, true) || array_key_exists('phpName', (array) $attributes)) { ... }
-            $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
+            // if ($attributesLookup === null || isset($attributesLookup['phpName'])) { ... }
+            $attributesNull = new Identical(new Variable('attributesLookup'), new ConstFetch(new Name('null')));
 
-            $attributesInArray = new FuncCall(new Name('in_array'), [
-                new Arg(new String_($phpName)),
-                new Arg(new CastArray(new Variable('attributes'))),
-                new Arg(new ConstFetch(new Name('true'))),
-            ]);
-
-            $attributesKeyExists = new FuncCall(new Name('array_key_exists'), [
-                new Arg(new String_($phpName)),
-                new Arg(new CastArray(new Variable('attributes'))),
-            ]);
-
-            $attributesCondition = new Expr\BinaryOp\BooleanOr(
-                $attributesNull,
-                new Expr\BinaryOp\BooleanOr($attributesInArray, $attributesKeyExists),
-            );
+            $attributesCondition = new Expr\BinaryOp\BooleanOr($attributesNull, new Isset_([new ArrayDimFetch(
+                new Variable('attributesLookup'),
+                new String_($phpName),
+            )]));
 
             return [new If_($attributesCondition, ['stmts' => $coreStmts])];
         }
@@ -1323,5 +1315,60 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         }
 
         throw new UnexpectedValueException();
+    }
+
+    /**
+     * Builds the AST statements that convert the $attributes allowlist into an
+     * O(1) hash-map stored in $attributesLookup, leaving $attributes untouched
+     * so that nested-value builders can still read sub-arrays from it (e.g.
+     * $attributes['author'] === ['name', 'email']) for child-context building.
+     *
+     * Generated:
+     *   $attributesLookup = null;
+     *   if ($attributes !== null) {
+     *       $attributesLookup = [];
+     *       foreach ((array) $attributes as $k => $v) {
+     *           $attributesLookup[is_string($k) ? $k : $v] = true;
+     *       }
+     *   }
+     *
+     * A single foreach pass handles both forms callers can pass:
+     *   - Sequential: ['id', 'title']          → string values become keys
+     *   - Associative: ['author' => ['name']]  → string keys become keys
+     *
+     * @return Stmt[]
+     */
+    private function buildAttributesLookupStmts(): array
+    {
+        $lookupVar = new Variable('attributesLookup');
+        $null = new ConstFetch(new Name('null'));
+        $true = new ConstFetch(new Name('true'));
+
+        // $attributesLookup = null;
+        $initNull = new Expression(new Assign($lookupVar, $null));
+
+        // is_string($k) ? $k : $v
+        $kVar = new Variable('k');
+        $vVar = new Variable('v');
+        $keyExpr = new Expr\Ternary(new FuncCall(new Name('is_string'), [new Arg($kVar)]), $kVar, $vVar);
+
+        // $attributesLookup[is_string($k) ? $k : $v] = true;
+        $bodyStmt = new Expression(new Assign(new ArrayDimFetch($lookupVar, $keyExpr), $true));
+
+        // if ($attributes !== null) {
+        //     $attributesLookup = [];
+        //     foreach ((array) $attributes as $k => $v) { ... }
+        // }
+        $ifStmt = new If_(new NotIdentical(new Variable('attributes'), $null), [
+            'stmts' => [
+                new Expression(new Assign($lookupVar, new Array_([], ['kind' => Array_::KIND_SHORT]))),
+                new Foreach_(new CastArray(new Variable('attributes')), $vVar, [
+                    'keyVar' => $kVar,
+                    'stmts' => [$bodyStmt],
+                ]),
+            ],
+        ]);
+
+        return [$initNull, $ifStmt];
     }
 }
