@@ -157,7 +157,7 @@ final class MetadataFactory implements MetadataFactoryInterface
 
             $propertyMeta = $this->buildPropertyMetadataFromPromoted($reflectionClass, $param);
 
-            if ($propertyMeta === null || $propertyMeta->isIgnored()) {
+            if ($propertyMeta->isIgnored()) {
                 $registered[$param->getName()] = true;
                 continue;
             }
@@ -473,7 +473,7 @@ final class MetadataFactory implements MetadataFactoryInterface
     private function buildPropertyMetadataFromPromoted(
         \ReflectionClass $reflectionClass,
         \ReflectionParameter $param,
-    ): ?PropertyMetadata {
+    ): PropertyMetadata {
         $name = $param->getName();
 
         // Promoted params always have a matching ReflectionProperty

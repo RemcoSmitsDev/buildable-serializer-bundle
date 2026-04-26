@@ -60,15 +60,15 @@ final class RegisterGeneratedNormalizersPass implements CompilerPassInterface
             $definition->setPublic(false);
             $definition->setAutowired(false);
             $definition->setAutoconfigured(false);
-            $definition->addTag('serializer.normalizer', ['priority' => self::DEFAULT_PRIORITY]);
+            $definition->addTag(self::NORMALIZER_TAG, ['priority' => self::DEFAULT_PRIORITY]);
             $definition->setFile($filePath);
-            $container->setDefinition('serializer.normalizer.' . $fqcn, $definition);
+            $container->setDefinition(self::NORMALIZER_TAG . '.' . $fqcn, $definition);
 
             $classmap[$fqcn] = $filePath;
         }
 
         $serializerDef = $container->getDefinition(self::SERIALIZER_SERVICE);
 
-        $serializerDef->replaceArgument(0, $this->findAndSortTaggedServices('serializer.normalizer', $container));
+        $serializerDef->replaceArgument(0, $this->findAndSortTaggedServices(self::NORMALIZER_TAG, $container));
     }
 }
