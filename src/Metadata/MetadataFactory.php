@@ -177,7 +177,7 @@ final class MetadataFactory implements MetadataFactoryInterface
 
             $propertyMeta = $this->buildPropertyMetadataFromProperty($reflectionClass, $reflProperty);
 
-            if ($propertyMeta === null || $propertyMeta->isIgnored()) {
+            if ($propertyMeta->isIgnored()) {
                 $registered[$name] = true;
                 continue;
             }
@@ -214,7 +214,7 @@ final class MetadataFactory implements MetadataFactoryInterface
 
             $propertyMeta = $this->buildPropertyMetadataFromGetter($reflectionClass, $method, $propertyName);
 
-            if ($propertyMeta === null || $propertyMeta->isIgnored()) {
+            if ($propertyMeta->isIgnored()) {
                 $registered[$propertyName] = true;
                 continue;
             }
@@ -531,7 +531,7 @@ final class MetadataFactory implements MetadataFactoryInterface
     private function buildPropertyMetadataFromProperty(
         \ReflectionClass $reflectionClass,
         \ReflectionProperty $reflProperty,
-    ): ?PropertyMetadata {
+    ): PropertyMetadata {
         $name = $reflProperty->getName();
 
         // Collect attribute data
@@ -584,7 +584,7 @@ final class MetadataFactory implements MetadataFactoryInterface
         \ReflectionClass $reflectionClass,
         \ReflectionMethod $method,
         string $propertyName,
-    ): ?PropertyMetadata {
+    ): PropertyMetadata {
         // Collect attribute data
         $attrData = $this->createEmptyAttributeData();
 
