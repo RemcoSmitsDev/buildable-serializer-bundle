@@ -40,7 +40,7 @@ final class MetadataFactory implements MetadataFactoryInterface
     /**
      * PHP built-in scalar / pseudo-types that are NOT treated as nested objects.
      *
-     * @var list<string>
+     * @var array<string, true>
      */
     private const SCALAR_TYPES = [
         'int' => true,
@@ -92,6 +92,7 @@ final class MetadataFactory implements MetadataFactoryInterface
     public function getMetadataFor(string $className): ClassMetadata
     {
         if (isset($this->cache[$className])) {
+            /** @var ClassMetadata<TValue> */
             return $this->cache[$className];
         }
 

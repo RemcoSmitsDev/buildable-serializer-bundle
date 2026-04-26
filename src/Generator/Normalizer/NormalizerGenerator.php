@@ -1145,6 +1145,8 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
     /**
      * Compute which features are actually active for the given class.
      *
+     * @param ClassMetadata<object> $metadata
+     *
      * @return array{
      *     groups: bool,
      *     max_depth: bool,
