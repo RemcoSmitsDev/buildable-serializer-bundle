@@ -6,6 +6,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Metadata;
 
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\AccessorType;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\BlogWithAuthor;
@@ -39,7 +40,7 @@ final class MetadataFactoryTest extends TestCase
             accessExtractors: [$reflection],
         );
 
-        return new MetadataFactory($extractor);
+        return new MetadataFactory($extractor, new ConstructorMetadataExtractor($extractor));
     }
 
     public function testHasMetadataForReturnsFalseForUnknownClass(): void

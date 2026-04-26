@@ -11,6 +11,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Generator\Denormalizer\DenormalizerW
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerPathResolver;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
@@ -57,7 +58,7 @@ abstract class AbstractTestCase extends TestCase
             accessExtractors: [$reflection],
         );
 
-        return new MetadataFactory($extractor);
+        return new MetadataFactory($extractor, new ConstructorMetadataExtractor($extractor));
     }
 
     protected function makeGenerator(string $namespace = self::GENERATED_NAMESPACE): NormalizerGenerator

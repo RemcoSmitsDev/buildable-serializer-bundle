@@ -71,16 +71,10 @@ final class MetadataFactory implements MetadataFactoryInterface
      */
     private array $cache = [];
 
-    private readonly ConstructorMetadataExtractor $constructorMetadataExtractor;
-
     public function __construct(
         private readonly PropertyInfoExtractorInterface $propertyInfoExtractor,
-        ?ConstructorMetadataExtractor $constructorMetadataExtractor = null,
-    ) {
-        $this->constructorMetadataExtractor = $constructorMetadataExtractor ?? new ConstructorMetadataExtractor(
-            $propertyInfoExtractor,
-        );
-    }
+        private readonly ConstructorMetadataExtractor $constructorMetadataExtractor,
+    ) {}
 
     /**
      * Build and return fully-populated metadata for the given class name.

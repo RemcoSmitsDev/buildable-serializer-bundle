@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Discovery;
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Discovery\FinderClassDiscovery;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Discovery\AnotherSerializableModel;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Discovery\Commands\CommandHandler;
@@ -35,11 +36,12 @@ final class FinderClassDiscoveryTest extends TestCase
         $this->fixturesDir = realpath(__DIR__ . '/../../Fixtures/Discovery');
 
         $reflection = new ReflectionExtractor();
-        $this->metadataFactory = new MetadataFactory(new PropertyInfoExtractor(
+        $extractor = new PropertyInfoExtractor(
             listExtractors: [$reflection],
             typeExtractors: [$reflection],
             accessExtractors: [$reflection],
-        ));
+        );
+        $this->metadataFactory = new MetadataFactory($extractor, new ConstructorMetadataExtractor($extractor));
     }
 
     /**

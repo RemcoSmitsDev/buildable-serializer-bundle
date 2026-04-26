@@ -12,6 +12,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\GeneratedNormal
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerPathResolver;
 use RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerWriter;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -375,7 +376,10 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
         );
 
         // Create MetadataFactory
-        $metadataFactory = new MetadataFactory($propertyInfoExtractor);
+        $metadataFactory = new MetadataFactory(
+            $propertyInfoExtractor,
+            new ConstructorMetadataExtractor($propertyInfoExtractor),
+        );
 
         // Create FinderClassDiscovery
         $discovery = new FinderClassDiscovery($metadataFactory, $paths);

@@ -6,6 +6,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Metadata;
 
 use PHPUnit\Framework\TestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ClassMetadata;
+use RemcoSmitsDev\BuildableSerializerBundle\Metadata\ConstructorMetadataExtractor;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\MutatorType;
 use RemcoSmitsDev\BuildableSerializerBundle\Metadata\PropertyMetadata;
@@ -48,7 +49,7 @@ final class MetadataFactoryMutatorDiscoveryTest extends TestCase
             accessExtractors: [$reflection],
         );
 
-        $this->factory = new MetadataFactory($extractor);
+        $this->factory = new MetadataFactory($extractor, new ConstructorMetadataExtractor($extractor));
     }
 
     public function testMetadataCarriesHasConstructorFlagForClassWithConstructor(): void
