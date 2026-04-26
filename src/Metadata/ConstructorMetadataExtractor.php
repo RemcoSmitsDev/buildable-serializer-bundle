@@ -56,25 +56,25 @@ final class ConstructorMetadataExtractor
      * @var list<string>
      */
     private const SCALAR_TYPES = [
-        'int',
-        'integer',
-        'float',
-        'double',
-        'string',
-        'bool',
-        'boolean',
-        'null',
-        'array',
-        'iterable',
-        'callable',
-        'resource',
-        'mixed',
-        'void',
-        'never',
-        'object',
-        'self',
-        'static',
-        'parent',
+        'int' => true,
+        'integer' => true,
+        'float' => true,
+        'double' => true,
+        'string' => true,
+        'bool' => true,
+        'boolean' => true,
+        'null' => true,
+        'array' => true,
+        'iterable' => true,
+        'callable' => true,
+        'resource' => true,
+        'mixed' => true,
+        'void' => true,
+        'never' => true,
+        'object' => true,
+        'self' => true,
+        'static' => true,
+        'parent' => true,
     ];
 
     public function __construct(
@@ -536,6 +536,6 @@ final class ConstructorMetadataExtractor
      */
     private function isScalarTypeName(string $typeName): bool
     {
-        return \in_array(strtolower($typeName), self::SCALAR_TYPES, true);
+        return isset(self::SCALAR_TYPES[strtolower($typeName)]);
     }
 }
