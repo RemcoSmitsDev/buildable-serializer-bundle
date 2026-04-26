@@ -11,7 +11,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Metadata;
  * and Symfony PropertyInfo extraction. They are consumed by the code generator
  * to produce optimised normalizer classes at build time.
  */
-final class PropertyMetadata implements \Stringable
+final class PropertyMetadata
 {
     /**
      * @param string $name The property's original name as declared in the PHP class.
@@ -298,20 +298,5 @@ final class PropertyMetadata implements \Stringable
     public function getSerializedKey(): string
     {
         return $this->serializedName ?? $this->name;
-    }
-
-    /**
-     * Returns a human-readable representation useful for debugging.
-     */
-    public function __toString(): string
-    {
-        return sprintf(
-            'PropertyMetadata(%s %s%s, accessor=%s::%s)',
-            $this->type ?? 'mixed',
-            $this->nullable ? '?' : '',
-            $this->name,
-            $this->accessorType->value,
-            $this->accessor,
-        );
     }
 }
