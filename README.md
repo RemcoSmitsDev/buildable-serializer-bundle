@@ -381,7 +381,7 @@ The bundle writes one normalizer per model into the configured `/var/cache/%kern
  *
  * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
  */
-final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
+final class N67c521d5_UserNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
 {
     use NormalizerAwareTrait;
     /**
@@ -406,32 +406,73 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
         } else {
             $context['circular_reference_limit_counters'][$objectHash] = 1;
         }
+        $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+        $attributesLookup = null;
+        if ($attributes !== null) {
+            $attributesLookup = [];
+            foreach ((array) $attributes as $k => $v) {
+                $attributesLookup[is_string($k) ? $k : $v] = true;
+            }
+        }
+        $ignoredAttributes = $context[AbstractNormalizer::IGNORED_ATTRIBUTES] ?? null;
+        $ignoredAttributesLookup = null;
+        if ($ignoredAttributes !== null) {
+            $ignoredAttributesLookup = array_fill_keys((array) $ignoredAttributes, true);
+        }
         $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
         $groupsLookup = array_fill_keys($groups, true);
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
-        if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
-            $data['id'] = $object->getId();
-        }
-        if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
-            $data['firstName'] = $object->getFirstName();
-        }
-        if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
-            $data['lastName'] = $object->getLastName();
-        }
-        if ($groups === [] || isset($groupsLookup['user:read'])) {
-            $data['email_address'] = $object->getEmail();
-        }
-        if ($groups === [] || isset($groupsLookup['user:read'])) {
-            $_val = $object->getAddress();
-            if ($_val !== null) {
-                $data['address'] = $this->normalizer->normalize($_val, $format, $context);
-            } elseif (!$skipNullValues) {
-                $data['address'] = null;
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['id'])) {
+            if ($attributesLookup === null || isset($attributesLookup['id'])) {
+                if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
+                    $data['id'] = $object->getId();
+                }
             }
         }
-        if ($groups === [] || isset($groupsLookup['user:read'])) {
-            $data['active'] = $object->isActive();
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['firstName'])) {
+            if ($attributesLookup === null || isset($attributesLookup['firstName'])) {
+                if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
+                    $data['firstName'] = $object->getFirstName();
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['lastName'])) {
+            if ($attributesLookup === null || isset($attributesLookup['lastName'])) {
+                if ($groups === [] || isset($groupsLookup['user:read']) || isset($groupsLookup['user:list'])) {
+                    $data['lastName'] = $object->getLastName();
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['email'])) {
+            if ($attributesLookup === null || isset($attributesLookup['email'])) {
+                if ($groups === [] || isset($groupsLookup['user:read'])) {
+                    $data['email_address'] = $object->getEmail();
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['address'])) {
+            if ($attributesLookup === null || isset($attributesLookup['address'])) {
+                if ($groups === [] || isset($groupsLookup['user:read'])) {
+                    $_val = $object->getAddress();
+                    if ($_val !== null) {
+                        $_childContext = !isset($attributes) ? $context : (is_array($attributes['address'] ?? null) ? array_replace($context, [AbstractNormalizer::ATTRIBUTES => $attributes['address']]) : array_diff_key($context, [AbstractNormalizer::ATTRIBUTES => null]));
+                        $data['address'] = $this->normalizer->normalize($_val, $format, $_childContext);
+                    } elseif (!$skipNullValues) {
+                        $data['address'] = null;
+                    }
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['active'])) {
+            if ($attributesLookup === null || isset($attributesLookup['active'])) {
+                if ($groups === [] || isset($groupsLookup['user:read'])) {
+                    $data['active'] = $object->isActive();
+                }
+            }
+        }
+        if ($data === [] && (bool) ($context[AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS] ?? false)) {
+            return new \ArrayObject();
         }
         return $data;
     }
@@ -447,7 +488,7 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
      */
     public function getSupportedTypes(?string $format): array
     {
-        return [User::class => true];
+        return ['App\Model\User' => true];
     }
 }
 ```
@@ -463,7 +504,7 @@ final class UserNormalizer implements NormalizerInterface, GeneratedNormalizerIn
  *
  * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
  */
-final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
+final class N67c521d5_PostNormalizer implements NormalizerInterface, GeneratedNormalizerInterface, NormalizerAwareInterface
 {
     use NormalizerAwareTrait;
     /**
@@ -488,30 +529,68 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
         } else {
             $context['circular_reference_limit_counters'][$objectHash] = 1;
         }
+        $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+        $attributesLookup = null;
+        if ($attributes !== null) {
+            $attributesLookup = [];
+            foreach ((array) $attributes as $k => $v) {
+                $attributesLookup[is_string($k) ? $k : $v] = true;
+            }
+        }
+        $ignoredAttributes = $context[AbstractNormalizer::IGNORED_ATTRIBUTES] ?? null;
+        $ignoredAttributesLookup = null;
+        if ($ignoredAttributes !== null) {
+            $ignoredAttributesLookup = array_fill_keys((array) $ignoredAttributes, true);
+        }
         $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
         $groupsLookup = array_fill_keys($groups, true);
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
-        if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
-            $data['id'] = $object->getId();
-        }
-        if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
-            $data['title'] = $object->getTitle();
-        }
-        if ($groups === [] || isset($groupsLookup['post:read'])) {
-            $data['content'] = $object->getContent();
-        }
-        if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
-            $_depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, 'App\Model\Post', 'author');
-            $_currentDepth = (int) ($context[$_depthKey] ?? 0);
-            // max-depth: author (limit=1)
-            if ($_currentDepth < 1) {
-                $context[$_depthKey] = $_currentDepth + 1;
-                $_val = $object->getAuthor();
-                if ($_val !== null || !$skipNullValues) {
-                    $data['author'] = $_val !== null ? $this->normalizer->normalize($_val, $format, $context) : null;
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['id'])) {
+            if ($attributesLookup === null || isset($attributesLookup['id'])) {
+                if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
+                    $data['id'] = $object->getId();
                 }
             }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['title'])) {
+            if ($attributesLookup === null || isset($attributesLookup['title'])) {
+                if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
+                    $data['title'] = $object->getTitle();
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['content'])) {
+            if ($attributesLookup === null || isset($attributesLookup['content'])) {
+                if ($groups === [] || isset($groupsLookup['post:read'])) {
+                    $data['content'] = $object->getContent();
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['author'])) {
+            if ($attributesLookup === null || isset($attributesLookup['author'])) {
+                if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
+                    $_depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, 'App\Model\Post', 'author');
+                    $_currentDepth = (int) ($context[$_depthKey] ?? 0);
+                    // max-depth: author (limit=1)
+                    if ($_currentDepth < 1) {
+                        $context[$_depthKey] = $_currentDepth + 1;
+                        $_childContext = !isset($attributes) ? $context : (is_array($attributes['author'] ?? null) ? array_replace($context, [AbstractNormalizer::ATTRIBUTES => $attributes['author']]) : array_diff_key($context, [AbstractNormalizer::ATTRIBUTES => null]));
+                        $data['author'] = $this->normalizer->normalize($object->getAuthor(), $format, $_childContext);
+                    }
+                }
+            }
+        }
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['createdAt'])) {
+            if ($attributesLookup === null || isset($attributesLookup['createdAt'])) {
+                if ($groups === [] || isset($groupsLookup['post:read']) || isset($groupsLookup['post:list'])) {
+                    $_childContext = !isset($attributes) ? array_merge($context, ['datetime_format' => 'Y-m-d']) : (is_array($attributes['createdAt'] ?? null) ? array_replace(array_merge($context, ['datetime_format' => 'Y-m-d']), [AbstractNormalizer::ATTRIBUTES => $attributes['createdAt']]) : array_diff_key(array_merge($context, ['datetime_format' => 'Y-m-d']), [AbstractNormalizer::ATTRIBUTES => null]));
+                    $data['createdAt'] = $this->normalizer->normalize($object->getCreatedAt(), $format, $_childContext);
+                }
+            }
+        }
+        if ($data === [] && (bool) ($context[AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS] ?? false)) {
+            return new \ArrayObject();
         }
         return $data;
     }
@@ -527,7 +606,7 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
      */
     public function getSupportedTypes(?string $format): array
     {
-        return [Post::class => true];
+        return ['App\Model\Post' => true];
     }
 }
 ```
@@ -543,7 +622,7 @@ final class PostNormalizer implements NormalizerInterface, GeneratedNormalizerIn
  *
  * THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
  */
-final class AddressNormalizer implements NormalizerInterface, GeneratedNormalizerInterface
+final class N67c521d5_AddressNormalizer implements NormalizerInterface, GeneratedNormalizerInterface
 {
     /**
      * @param \App\Model\Address $object
@@ -553,21 +632,53 @@ final class AddressNormalizer implements NormalizerInterface, GeneratedNormalize
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
+        $attributes = $context[AbstractNormalizer::ATTRIBUTES] ?? null;
+        $attributesLookup = null;
+        if ($attributes !== null) {
+            $attributesLookup = [];
+            foreach ((array) $attributes as $k => $v) {
+                $attributesLookup[is_string($k) ? $k : $v] = true;
+            }
+        }
+        $ignoredAttributes = $context[AbstractNormalizer::IGNORED_ATTRIBUTES] ?? null;
+        $ignoredAttributesLookup = null;
+        if ($ignoredAttributes !== null) {
+            $ignoredAttributesLookup = array_fill_keys((array) $ignoredAttributes, true);
+        }
         $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
         $groupsLookup = array_fill_keys($groups, true);
         $skipNullValues = (bool) ($context[AbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false);
         $data = [];
-        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $data['street'] = $object->street;
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['street'])) {
+            if ($attributesLookup === null || isset($attributesLookup['street'])) {
+                if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
+                    $data['street'] = $object->street;
+                }
+            }
         }
-        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $data['city'] = $object->city;
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['city'])) {
+            if ($attributesLookup === null || isset($attributesLookup['city'])) {
+                if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
+                    $data['city'] = $object->city;
+                }
+            }
         }
-        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $data['postal_code'] = $object->postalCode;
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['postalCode'])) {
+            if ($attributesLookup === null || isset($attributesLookup['postalCode'])) {
+                if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
+                    $data['postal_code'] = $object->postalCode;
+                }
+            }
         }
-        if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
-            $data['country'] = $object->country;
+        if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['country'])) {
+            if ($attributesLookup === null || isset($attributesLookup['country'])) {
+                if ($groups === [] || isset($groupsLookup['address:read']) || isset($groupsLookup['user:read'])) {
+                    $data['country'] = $object->country;
+                }
+            }
+        }
+        if ($data === [] && (bool) ($context[AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS] ?? false)) {
+            return new \ArrayObject();
         }
         return $data;
     }
@@ -583,7 +694,7 @@ final class AddressNormalizer implements NormalizerInterface, GeneratedNormalize
      */
     public function getSupportedTypes(?string $format): array
     {
-        return [Address::class => true];
+        return ['App\Model\Address' => true];
     }
 }
 ```
