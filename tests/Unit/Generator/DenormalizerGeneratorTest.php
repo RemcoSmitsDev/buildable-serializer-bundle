@@ -66,6 +66,7 @@ final class DenormalizerGeneratorTest extends AbstractTestCase
             features: [
                 'groups' => true,
                 'attributes' => true,
+                'ignored_attributes' => false,
                 'strict_types' => false,
             ],
         );

@@ -391,6 +391,7 @@ final class RegisterGeneratedNormalizersPassTest extends TestCase
             'preserve_empty_objects' => true,
             'context' => true,
             'attributes' => true,
+            'ignored_attributes' => true,
             'strict_types' => true,
         ]);
 

@@ -73,6 +73,7 @@ abstract class AbstractTestCase extends TestCase
                 'preserve_empty_objects' => true,
                 'context' => true,
                 'attributes' => true,
+                'ignored_attributes' => true,
                 'strict_types' => true,
             ],
         );
@@ -101,6 +102,7 @@ abstract class AbstractTestCase extends TestCase
             features: [
                 'groups' => true,
                 'attributes' => true,
+                'ignored_attributes' => true,
                 'strict_types' => true,
             ],
         );

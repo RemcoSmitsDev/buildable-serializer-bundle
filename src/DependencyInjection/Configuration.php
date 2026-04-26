@@ -38,6 +38,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *                 preserve_empty_objects: true
  *                 context: true
  *                 attributes: true
+ *                 ignored_attributes: true
  *                 strict_types: true
  *
  *         denormalizers:
@@ -46,6 +47,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *             features:
  *                 groups: true
  *                 attributes: true
+ *                 ignored_attributes: true
  *                 strict_types: true
  *
  */
@@ -121,6 +123,15 @@ final class Configuration implements ConfigurationInterface
                 . 'properties are included in the normalized output.',
             )
             ->end()
+            ->booleanNode('ignored_attributes')
+            ->defaultTrue()
+            ->info(
+                'Emit ignored-attributes denylist filtering logic in generated normalizers. '
+                . 'When enabled, the AbstractNormalizer::IGNORED_ATTRIBUTES context key skips '
+                . 'properties whose PHP name appears in the list. Applied at every level of '
+                . 'nested structures.',
+            )
+            ->end()
             ->booleanNode('strict_types')
             ->defaultTrue()
             ->info('Prepend "declare(strict_types=1);" to every generated file.')
@@ -161,6 +172,14 @@ final class Configuration implements ConfigurationInterface
                 'Emit attribute-allowlist filtering logic in generated denormalizers. '
                 . 'When enabled, the AbstractNormalizer::ATTRIBUTES context key limits which '
                 . 'properties are read from the input payload.',
+            )
+            ->end()
+            ->booleanNode('ignored_attributes')
+            ->defaultTrue()
+            ->info(
+                'Emit ignored-attribute denylist filtering logic in generated denormalizers. '
+                . 'When enabled, the AbstractNormalizer::IGNORED_ATTRIBUTES context key skips '
+                . 'listed properties from being read during denormalization.',
             )
             ->end()
             ->booleanNode('strict_types')

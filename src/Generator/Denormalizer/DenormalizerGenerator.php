@@ -83,6 +83,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
      *     groups: bool,
      *     strict_types: bool,
      *     attributes: bool,
+     *     ignored_attributes: bool,
      * } $features Active code-generation feature flags.
      */
     public function __construct(
@@ -347,6 +348,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
         $targetFqcn = $metadata->getClassName();
         $shortName = $this->shortName($targetFqcn);
         $hasAttributes = $this->features['attributes'];
+        $hasIgnoredAttributes = $this->features['ignored_attributes'];
 
         $stmts = [];
 
@@ -375,6 +377,24 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                 array_push($stmts, ...$this->buildAttributesLookupStmts());
             }
 
+            if ($hasIgnoredAttributes) {
+                // $ignoredAttributes = $context[AbstractNormalizer::IGNORED_ATTRIBUTES] ?? null;
+                $stmts[] = new Expression(
+                    new Assign(
+                        new Variable('ignoredAttributes'),
+                        new Coalesce(
+                            new ArrayDimFetch(
+                                new Variable('context'),
+                                new ClassConstFetch(new Name('AbstractNormalizer'), 'IGNORED_ATTRIBUTES'),
+                            ),
+                            new ConstFetch(new Name('null')),
+                        ),
+                    ),
+                );
+                // $ignoredAttributesLookup = $ignoredAttributes !== null ? array_fill_keys((array) $ignoredAttributes, true) : null;
+                array_push($stmts, ...$this->buildIgnoredAttributesLookupStmts());
+            }
+
             foreach ($metadata->getConstructorParameters() as $param) {
                 if ($param->isVariadic()) {
                     // Variadic parameters cannot be populated from a flat array
@@ -390,6 +410,48 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                     $args[] = new Arg(
                         value: $this->buildDefaultValueExpr($param),
                         name: new Identifier($param->getName()),
+                    );
+                    continue;
+                }
+
+                if ($hasIgnoredAttributes) {
+                    // When the IGNORED_ATTRIBUTES denylist is active and this parameter's
+                    // PHP name is listed in it, always fall back to the constructor default.
+                    //
+                    // Generated:
+                    //   name: $ignoredAttributes === null || !isset($ignoredAttributesLookup['name'])
+                    //         ? $this->extractXxx(...)
+                    //         : <default>
+                    $phpName = $param->getName();
+
+                    $ignoredNull = new Identical(new Variable('ignoredAttributes'), new ConstFetch(new Name('null')));
+                    $notIgnored = new BooleanNot(new Isset_([new ArrayDimFetch(
+                        new Variable('ignoredAttributesLookup'),
+                        new String_($phpName),
+                    )]));
+                    $condition = new BooleanOr($ignoredNull, $notIgnored);
+
+                    $args[] = new Arg(
+                        value: new Expr\Ternary(
+                            $condition,
+                            // true branch: extract normally (possibly also filtered by ATTRIBUTES)
+                            $hasAttributes
+                                ? new Expr\Ternary(
+                                    new BooleanOr(
+                                        new Identical(new Variable('attributes'), new ConstFetch(new Name('null'))),
+                                        new Isset_([new ArrayDimFetch(
+                                            new Variable('attributes'),
+                                            new String_($phpName),
+                                        )]),
+                                    ),
+                                    $this->buildExtractCallForConstructorParam($param),
+                                    $this->buildDefaultValueExpr($param),
+                                )
+                                : $this->buildExtractCallForConstructorParam($param),
+                            // false branch: use default because the param is ignored
+                            $this->buildDefaultValueExpr($param),
+                        ),
+                        name: new Identifier($phpName),
                     );
                     continue;
                 }
@@ -464,6 +526,7 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
         $targetFqcn = $metadata->getClassName();
         $shortName = $this->shortName($targetFqcn);
         $hasAttributes = $this->features['attributes'];
+        $hasIgnoredAttributes = $this->features['ignored_attributes'];
 
         $stmts = [];
 
@@ -521,6 +584,23 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
             array_push($stmts, ...$this->buildAttributesLookupStmts());
         }
 
+        if ($hasIgnoredAttributes) {
+            // $ignoredAttributes = $context[AbstractNormalizer::IGNORED_ATTRIBUTES] ?? null;
+            $stmts[] = new Expression(
+                new Assign(
+                    new Variable('ignoredAttributes'),
+                    new Coalesce(
+                        new ArrayDimFetch(
+                            new Variable('context'),
+                            new ClassConstFetch(new Name('AbstractNormalizer'), 'IGNORED_ATTRIBUTES'),
+                        ),
+                        new ConstFetch(new Name('null')),
+                    ),
+                ),
+            );
+            array_push($stmts, ...$this->buildIgnoredAttributesLookupStmts());
+        }
+
         foreach ($metadata->getProperties() as $property) {
             if ($property->isIgnored()) {
                 continue;
@@ -530,7 +610,12 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
                 continue;
             }
 
-            $stmts = array_merge($stmts, $this->buildPropertyPopulation($property, $hasSkipMap, $hasAttributes));
+            $stmts = array_merge($stmts, $this->buildPropertyPopulation(
+                $property,
+                $hasSkipMap,
+                $hasAttributes,
+                $hasIgnoredAttributes,
+            ));
         }
 
         $stmts[] = new Return_(new Variable('object'));
@@ -647,8 +732,12 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
      *
      * @return Stmt[]
      */
-    private function buildPropertyPopulation(PropertyMetadata $property, bool $hasSkipMap, bool $hasAttributes): array
-    {
+    private function buildPropertyPopulation(
+        PropertyMetadata $property,
+        bool $hasSkipMap,
+        bool $hasAttributes,
+        bool $hasIgnoredAttributes = false,
+    ): array {
         $keyAliases = $this->propertyKeyAliases($property);
 
         // `array_key_exists('primary', $data) [|| array_key_exists('fallback', $data)]`
@@ -701,24 +790,44 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
 
         $populationIf = new If_($condition, ['stmts' => [$assignment]]);
 
-        if (!$hasAttributes) {
-            return [$populationIf];
+        $result = [$populationIf];
+
+        if ($hasAttributes) {
+            // Wrap the population `if` in an outer attributes allowlist check:
+            //
+            //   if ($attributes === null || isset($attributes['phpName'])) {
+            //       if (array_key_exists('key', $data) && ...) { ... }
+            //   }
+            $phpName = $property->getName();
+
+            $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
+            $attributesCondition = new BooleanOr($attributesNull, new Isset_([new ArrayDimFetch(
+                new Variable('attributes'),
+                new String_($phpName),
+            )]));
+
+            $result = [new If_($attributesCondition, ['stmts' => $result])];
         }
 
-        // Wrap the population `if` in an outer attributes allowlist check:
-        //
-        //   if ($attributes === null || isset($attributes['phpName'])) {
-        //       if (array_key_exists('key', $data) && ...) { ... }
-        //   }
-        $phpName = $property->getName();
+        if ($hasIgnoredAttributes) {
+            // Wrap the result in an outer ignored-attributes denylist check:
+            //
+            //   if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['phpName'])) {
+            //       ...
+            //   }
+            $phpName = $property->getName();
 
-        $attributesNull = new Identical(new Variable('attributes'), new ConstFetch(new Name('null')));
-        $attributesCondition = new BooleanOr($attributesNull, new Isset_([new ArrayDimFetch(
-            new Variable('attributes'),
-            new String_($phpName),
-        )]));
+            $lookupNull = new Identical(new Variable('ignoredAttributesLookup'), new ConstFetch(new Name('null')));
+            $notIgnored = new BooleanNot(new Isset_([new ArrayDimFetch(
+                new Variable('ignoredAttributesLookup'),
+                new String_($phpName),
+            )]));
+            $ignoredCondition = new BooleanOr($lookupNull, $notIgnored);
 
-        return [new If_($attributesCondition, ['stmts' => [$populationIf]])];
+            $result = [new If_($ignoredCondition, ['stmts' => $result])];
+        }
+
+        return $result;
     }
 
     /**
@@ -1042,6 +1151,37 @@ final class DenormalizerGenerator implements DenormalizerGeneratorInterface
             ->setDocComment(new Doc("/**\n * @return array<class-string|'*'|'object'|string, bool|null>\n */"));
 
         return $method->getNode();
+    }
+
+    /**
+     * Build statements that convert $ignoredAttributes into an O(1) lookup map.
+     *
+     * Generated:
+     *   $ignoredAttributesLookup = null;
+     *   if ($ignoredAttributes !== null) {
+     *       $ignoredAttributesLookup = array_fill_keys((array) $ignoredAttributes, true);
+     *   }
+     *
+     * @return Stmt[]
+     */
+    private function buildIgnoredAttributesLookupStmts(): array
+    {
+        $lookupVar = new Variable('ignoredAttributesLookup');
+        $null = new ConstFetch(new Name('null'));
+        $true = new ConstFetch(new Name('true'));
+
+        $initNull = new Expression(new Assign($lookupVar, $null));
+
+        $fillKeys = new FuncCall(new Name('array_fill_keys'), [
+            new Arg(new CastArray(new Variable('ignoredAttributes'))),
+            new Arg($true),
+        ]);
+
+        $ifStmt = new If_(new NotIdentical(new Variable('ignoredAttributes'), $null), [
+            'stmts' => [new Expression(new Assign($lookupVar, $fillKeys))],
+        ]);
+
+        return [$initNull, $ifStmt];
     }
 
     /**

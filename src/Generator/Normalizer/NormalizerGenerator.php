@@ -89,6 +89,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     context: bool,
      *     strict_types: bool,
      *     attributes: bool,
+     *     ignored_attributes: bool,
      * } $features Active code-generation feature flags.
      */
     public function __construct(
@@ -315,6 +316,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             $this->features['groups'] && $metadata->hasGroupConstraints()
             || $this->features['circular_reference'] && $metadata->hasNestedObjects()
             || $this->features['attributes']
+            || $this->features['ignored_attributes']
         );
     }
 
@@ -351,6 +353,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         $hasContext = $activeFeatures['context'];
         $hasPreserveEmptyObjects = $activeFeatures['preserve_empty_objects'];
         $hasAttributes = $activeFeatures['attributes'];
+        $hasIgnoredAttributes = $activeFeatures['ignored_attributes'];
 
         $stmts = [];
 
@@ -375,6 +378,24 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 ),
             );
             array_push($stmts, ...$this->buildAttributesLookupStmts());
+        }
+
+        // $ignoredAttributes = $context[AbstractNormalizer::IGNORED_ATTRIBUTES] ?? null;
+        // $ignoredAttributesLookup = $ignoredAttributes !== null ? array_fill_keys((array) $ignoredAttributes, true) : null;
+        if ($hasIgnoredAttributes) {
+            $stmts[] = new Expression(
+                new Assign(
+                    new Variable('ignoredAttributes'),
+                    new Coalesce(
+                        new ArrayDimFetch(
+                            new Variable('context'),
+                            new ClassConstFetch(new Name('AbstractNormalizer'), 'IGNORED_ATTRIBUTES'),
+                        ),
+                        new ConstFetch(new Name('null')),
+                    ),
+                ),
+            );
+            array_push($stmts, ...$this->buildIgnoredAttributesLookupStmts());
         }
 
         // $groups = (array) ($context[AbstractNormalizer::GROUPS] ?? []);
@@ -445,6 +466,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                     $hasMaxDepth,
                     $hasContext,
                     $hasAttributes,
+                    $hasIgnoredAttributes,
                 ));
             }
 
@@ -643,6 +665,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         bool $hasMaxDepth,
         bool $hasContext,
         bool $hasAttributes,
+        bool $hasIgnoredAttributes = false,
     ): array {
         $needsGroupBlock = $hasGroups;
         $needsMaxDepth =
@@ -746,7 +769,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             $coreStmts = [new If_($groupCondition, ['stmts' => $coreStmts])];
         }
 
-        // --- attributes wrapper (outer) --------------------------------------
+        // --- attributes wrapper ------------------------------------------
         if ($hasAttributes) {
             $phpName = $property->getName();
 
@@ -758,7 +781,22 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 new String_($phpName),
             )]));
 
-            return [new If_($attributesCondition, ['stmts' => $coreStmts])];
+            $coreStmts = [new If_($attributesCondition, ['stmts' => $coreStmts])];
+        }
+
+        // --- ignored_attributes wrapper (outermost) ----------------------
+        if ($hasIgnoredAttributes) {
+            $phpName = $property->getName();
+
+            // if ($ignoredAttributesLookup === null || !isset($ignoredAttributesLookup['phpName'])) { ... }
+            $lookupNull = new Identical(new Variable('ignoredAttributesLookup'), new ConstFetch(new Name('null')));
+            $notIgnored = new BooleanNot(new Isset_([new ArrayDimFetch(
+                new Variable('ignoredAttributesLookup'),
+                new String_($phpName),
+            )]));
+            $ignoredCondition = new Expr\BinaryOp\BooleanOr($lookupNull, $notIgnored);
+
+            return [new If_($ignoredCondition, ['stmts' => $coreStmts])];
         }
 
         return $coreStmts;
@@ -1115,6 +1153,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
      *     preserve_empty_objects: bool,
      *     context: bool,
      *     attributes: bool,
+     *     ignored_attributes: bool,
      * }
      */
     private function resolveActiveFeatures(ClassMetadata $metadata): array
@@ -1127,6 +1166,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             'preserve_empty_objects' => $this->features['preserve_empty_objects'],
             'context' => $this->features['context'],
             'attributes' => $this->features['attributes'],
+            'ignored_attributes' => $this->features['ignored_attributes'],
         ];
     }
 
@@ -1315,6 +1355,40 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
         }
 
         throw new UnexpectedValueException();
+    }
+
+    /**
+     * Build statements that convert $ignoredAttributes into an O(1) lookup map.
+     *
+     * Generated:
+     *   $ignoredAttributesLookup = null;
+     *   if ($ignoredAttributes !== null) {
+     *       $ignoredAttributesLookup = array_fill_keys((array) $ignoredAttributes, true);
+     *   }
+     *
+     * @return Stmt[]
+     */
+    private function buildIgnoredAttributesLookupStmts(): array
+    {
+        $lookupVar = new Variable('ignoredAttributesLookup');
+        $null = new ConstFetch(new Name('null'));
+        $true = new ConstFetch(new Name('true'));
+
+        // $ignoredAttributesLookup = null;
+        $initNull = new Expression(new Assign($lookupVar, $null));
+
+        // $ignoredAttributesLookup = array_fill_keys((array) $ignoredAttributes, true);
+        $fillKeys = new FuncCall(new Name('array_fill_keys'), [
+            new Arg(new CastArray(new Variable('ignoredAttributes'))),
+            new Arg($true),
+        ]);
+
+        // if ($ignoredAttributes !== null) { $ignoredAttributesLookup = array_fill_keys(...); }
+        $ifStmt = new If_(new NotIdentical(new Variable('ignoredAttributes'), $null), [
+            'stmts' => [new Expression(new Assign($lookupVar, $fillKeys))],
+        ]);
+
+        return [$initNull, $ifStmt];
     }
 
     /**
