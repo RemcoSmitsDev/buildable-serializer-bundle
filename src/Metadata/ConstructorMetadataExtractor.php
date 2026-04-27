@@ -53,7 +53,7 @@ final class ConstructorMetadataExtractor
      * PHP built-in scalar / pseudo-type names that are NOT treated as nested
      * classes. Kept in sync with {@see MetadataFactory::SCALAR_TYPES}.
      *
-     * @var list<string>
+     * @var array<string, true>
      */
     private const SCALAR_TYPES = [
         'int' => true,
