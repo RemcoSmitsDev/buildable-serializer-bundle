@@ -57,6 +57,25 @@ final class MaxDepthBlog
  * carry `#[MaxDepth]` annotations). `ENABLE_MAX_DEPTH` is the complementary
  * *runtime* switch.
  *
+ * ### What MAX_DEPTH_HANDLER does
+ *
+ * `AbstractObjectNormalizer::MAX_DEPTH_HANDLER` is an optional callable stored
+ * in the context. It is only consulted when `ENABLE_MAX_DEPTH` is `true` **and**
+ * the depth counter has reached the property's limit (i.e. the normal depth guard
+ * would otherwise skip the property entirely).
+ *
+ * When the handler is present its return value replaces the property's normal
+ * normalized output — even `null` is used as-is. When no handler is present the
+ * property is simply omitted from the output, matching Symfony's default
+ * behaviour.
+ *
+ * The callable receives five arguments, matching Symfony's contract exactly:
+ *   1. `mixed  $attributeValue` — the raw (un-normalized) property value
+ *   2. `object $object`         — the object being normalized
+ *   3. `string $attributeName`  — the PHP property name
+ *   4. `string|null $format`    — the requested format
+ *   5. `array  $context`        — the full serialization context
+ *
  * ### Fixture anatomy ({@see MaxDepthBlog}, {@see Author})
  *
  * `MaxDepthBlog` has two properties:
@@ -65,21 +84,28 @@ final class MaxDepthBlog
  *
  * ### Coverage
  *
- *   1. Generated source contains the depth-check infrastructure variables.
- *   2. Generated source gates the guard on `ENABLE_MAX_DEPTH`.
- *   3. Generated source hard-codes the `MaxDepth(1)` limit as a literal `< 1`.
- *   4. Generated source contains the max-depth comment.
- *   5. Without `ENABLE_MAX_DEPTH` the author is always normalized (no guard).
- *   6. With `ENABLE_MAX_DEPTH => false` the author is always normalized (no guard).
- *   7. With `ENABLE_MAX_DEPTH => true` and depth counter at the limit (1),
- *      the author is omitted and the delegate normalizer is never called.
- *   8. With `ENABLE_MAX_DEPTH => true` and depth counter below the limit (0),
- *      the author is normalized normally.
- *   9. Scalar properties (`$title`) are always present regardless of depth state.
- *  10. The generated class implements `NormalizerAwareInterface`.
- *  11. `supportsNormalization()` returns `true` for `MaxDepthBlog`.
- *  12. `supportsNormalization()` returns `false` for other objects.
- *  13. `getSupportedTypes()` includes `MaxDepthBlog`.
+ *   1.  Generated source contains the depth-check infrastructure variables.
+ *   2.  Generated source gates the guard on `ENABLE_MAX_DEPTH`.
+ *   3.  Generated source hard-codes the `MaxDepth(1)` limit as a literal `< 1`.
+ *   4.  Generated source contains the max-depth comment.
+ *   5.  Generated source references `MAX_DEPTH_HANDLER`.
+ *   6.  Without `ENABLE_MAX_DEPTH` the author is always normalized (no guard).
+ *   7.  With `ENABLE_MAX_DEPTH => false` the author is always normalized (no guard).
+ *   8.  With `ENABLE_MAX_DEPTH => true` and depth at the limit, property is omitted
+ *       when no handler is set.
+ *   9.  With `ENABLE_MAX_DEPTH => true` and depth below the limit, the author is
+ *       normalized normally.
+ *  10.  `ENABLE_MAX_DEPTH => true`, depth at limit, handler present — handler return
+ *       value is used as the property value.
+ *  11.  Handler receives the correct five arguments in the correct order.
+ *  12.  Handler returning `null` results in `null` being stored (not omitted).
+ *  13.  Handler is NOT called when depth is within the limit.
+ *  14.  Handler is NOT called when `ENABLE_MAX_DEPTH` is `false`.
+ *  15.  Scalar properties (`$title`) are always present regardless of depth state.
+ *  16.  The generated class implements `NormalizerAwareInterface`.
+ *  17.  `supportsNormalization()` returns `true` for `MaxDepthBlog`.
+ *  18.  `supportsNormalization()` returns `false` for other objects.
+ *  19.  `getSupportedTypes()` includes `MaxDepthBlog`.
  *
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator
  * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory
@@ -145,6 +171,16 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertTrue(
             str_contains($source, 'ENABLE_MAX_DEPTH'),
             'Generated source must gate the depth guard on AbstractObjectNormalizer::ENABLE_MAX_DEPTH.',
+        );
+    }
+
+    public function testGeneratedCodeReferencesMaxDepthHandler(): void
+    {
+        $source = (string) file_get_contents($this->generatedFilePath);
+
+        $this->assertTrue(
+            str_contains($source, 'MAX_DEPTH_HANDLER'),
+            'Generated source must reference AbstractObjectNormalizer::MAX_DEPTH_HANDLER for the handler branch.',
         );
     }
 
@@ -352,6 +388,184 @@ final class MaxDepthTest extends AbstractTestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('title', $result);
         $this->assertSame('Scalar Test', $result['title']);
+    }
+
+    public function testHandlerReturnValueIsUsedWhenDepthLimitExceeded(): void
+    {
+        // When ENABLE_MAX_DEPTH is true, depth is at the limit, and a handler
+        // is present, the handler's return value must become the property value.
+        $author = new Author(1, 'Alice', 'alice@example.com');
+        $blog = new MaxDepthBlog('Handler Blog', $author);
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturn([]);
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+        $handlerValue = ['id' => 1, 'name' => 'stub'];
+
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            AbstractObjectNormalizer::MAX_DEPTH_HANDLER => static fn() => $handlerValue,
+            $depthKey => 1,
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('author', $result);
+        $this->assertSame($handlerValue, $result['author']);
+    }
+
+    public function testHandlerReceivesCorrectArguments(): void
+    {
+        // Verify all five arguments are forwarded to the handler in the right order.
+        $author = new Author(2, 'Bob', 'bob@example.com');
+        $blog = new MaxDepthBlog('Args Blog', $author);
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturn([]);
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+        $capturedArgs = null;
+        $capturedContext = null;
+
+        $handler = static function (
+            mixed $attributeValue,
+            object $object,
+            string $attributeName,
+            ?string $format,
+            array $context,
+        ) use (&$capturedArgs, &$capturedContext, $author, $blog): array {
+            $capturedArgs = [
+                'attributeValue' => $attributeValue,
+                'object' => $object,
+                'attributeName' => $attributeName,
+                'format' => $format,
+            ];
+            $capturedContext = $context;
+
+            return [];
+        };
+
+        $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            AbstractObjectNormalizer::MAX_DEPTH_HANDLER => $handler,
+            $depthKey => 1,
+        ]);
+
+        $this->assertNotNull($capturedArgs, 'Handler must have been called.');
+        $this->assertSame($author, $capturedArgs['attributeValue'], 'First arg must be the raw attribute value.');
+        $this->assertSame($blog, $capturedArgs['object'], 'Second arg must be the object being normalized.');
+        $this->assertSame('author', $capturedArgs['attributeName'], 'Third arg must be the PHP property name.');
+        $this->assertSame('json', $capturedArgs['format'], 'Fourth arg must be the format string.');
+        $this->assertIsArray($capturedContext, 'Fifth arg must be the context array.');
+    }
+
+    public function testHandlerReturningNullStoresNullNotOmitsProperty(): void
+    {
+        // A handler returning null must result in null being stored under the key,
+        // NOT the property being omitted (Symfony's contract: return value is used
+        // even if null).
+        $author = new Author(3, 'Carol', 'carol@example.com');
+        $blog = new MaxDepthBlog('Null Handler Blog', $author);
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturn([]);
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            AbstractObjectNormalizer::MAX_DEPTH_HANDLER => static fn() => null,
+            $depthKey => 1,
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey(
+            'author',
+            $result,
+            'Property must be present (with null value) when handler returns null.',
+        );
+        $this->assertNull($result['author']);
+    }
+
+    public function testHandlerIsNotCalledWhenDepthIsWithinLimit(): void
+    {
+        // When depth is within the limit the handler must never be invoked;
+        // the property should be normalized normally.
+        $author = new Author(4, 'Dave', 'dave@example.com');
+        $blog = new MaxDepthBlog('Within Limit Blog', $author);
+
+        $handlerCalled = false;
+        $normalizeCalls = 0;
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use (&$normalizeCalls): array {
+            ++$normalizeCalls;
+
+            return ['id' => 4];
+        });
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            AbstractObjectNormalizer::MAX_DEPTH_HANDLER => static function () use (&$handlerCalled): array {
+                $handlerCalled = true;
+
+                return ['stub' => true];
+            },
+            $depthKey => 0, // within limit
+        ]);
+
+        $this->assertFalse($handlerCalled, 'Handler must not be called when depth is within the limit.');
+        $this->assertGreaterThan(
+            0,
+            $normalizeCalls,
+            'The nested normalizer must be called when depth is within the limit.',
+        );
+        $this->assertSame(['id' => 4], $result['author']);
+    }
+
+    public function testHandlerIsNotCalledWhenEnableMaxDepthIsFalse(): void
+    {
+        // When ENABLE_MAX_DEPTH is false the guard is bypassed entirely;
+        // the handler must never be called even if depth is at the limit.
+        $author = new Author(5, 'Eve', 'eve@example.com');
+        $blog = new MaxDepthBlog('Disabled Guard Blog', $author);
+
+        $handlerCalled = false;
+        $normalizeCalls = 0;
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use (&$normalizeCalls): array {
+            ++$normalizeCalls;
+
+            return ['id' => 5];
+        });
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => false,
+            AbstractObjectNormalizer::MAX_DEPTH_HANDLER => static function () use (&$handlerCalled): array {
+                $handlerCalled = true;
+
+                return ['stub' => true];
+            },
+            $depthKey => 1, // at limit, but guard is disabled
+        ]);
+
+        $this->assertFalse($handlerCalled, 'Handler must not be called when ENABLE_MAX_DEPTH is false.');
+        $this->assertGreaterThan(
+            0,
+            $normalizeCalls,
+            'The nested normalizer must be called when the guard is disabled.',
+        );
+        $this->assertSame(['id' => 5], $result['author']);
     }
 
     public function testScalarPropertiesArePresentWhenDepthLimitExceeded(): void

@@ -705,7 +705,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 ),
             );
 
-            // Three-way structure:
+            // Four-way structure:
             //
             //   if (!($context[ENABLE_MAX_DEPTH] ?? false)) {
             //       // Guard disabled — always normalize, no depth tracking.
@@ -714,8 +714,11 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
             //       // Guard enabled, within limit — normalize and increment counter.
             //       $context[$_depthKey] = $_currentDepth + 1;
             //       <assign>
+            //   } elseif (isset($context[MAX_DEPTH_HANDLER])) {
+            //       // Guard enabled, limit exceeded, handler present — call it.
+            //       $data['key'] = ($context[MAX_DEPTH_HANDLER])($rawValue, $object, 'name', $format, $context);
             //   }
-            //   // else: guard enabled, limit exceeded — property is omitted.
+            //   // else: guard enabled, limit exceeded, no handler — property omitted.
 
             // ($context[AbstractObjectNormalizer::ENABLE_MAX_DEPTH] ?? false)
             $enableMaxDepthExpr = new Coalesce(
@@ -761,6 +764,34 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 ),
             );
 
+            // isset($context[AbstractObjectNormalizer::MAX_DEPTH_HANDLER])
+            $handlerIsset = new Isset_([
+                new ArrayDimFetch(
+                    new Variable('context'),
+                    new ClassConstFetch(new Name('AbstractObjectNormalizer'), 'MAX_DEPTH_HANDLER'),
+                ),
+            ]);
+
+            // ($context[AbstractObjectNormalizer::MAX_DEPTH_HANDLER])($rawValue, $object, 'propName', $format, $context)
+            $handlerCall = new Expr\FuncCall(
+                new ArrayDimFetch(
+                    new Variable('context'),
+                    new ClassConstFetch(new Name('AbstractObjectNormalizer'), 'MAX_DEPTH_HANDLER'),
+                ),
+                [
+                    new Arg($rawValueExpr),
+                    new Arg(new Variable('object')),
+                    new Arg(new String_($property->getName())),
+                    new Arg(new Variable('format')),
+                    new Arg(new Variable('context')),
+                ],
+            );
+
+            // $data['key'] = ($context[MAX_DEPTH_HANDLER])(...);
+            $handlerAssign = [
+                new Expression(new Assign(new ArrayDimFetch(new Variable('data'), $keyExpr), $handlerCall)),
+            ];
+
             $maxDepthIf = new If_($guardDisabledCondition, [
                 'stmts' => $assignWithoutIncrement,
                 'elseifs' => [
@@ -768,6 +799,7 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                         new Smaller(new Variable('_currentDepth'), new Int_((int) $property->getMaxDepth())),
                         $assignWithIncrement,
                     ),
+                    new Stmt\ElseIf_($handlerIsset, $handlerAssign),
                 ],
             ]);
             $maxDepthIf->setAttribute('comments', [
