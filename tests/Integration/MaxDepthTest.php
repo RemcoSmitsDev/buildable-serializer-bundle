@@ -8,6 +8,7 @@ use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\Author;
 use Symfony\Component\Serializer\Attribute\MaxDepth;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -43,33 +44,45 @@ final class MaxDepthBlog
 /**
  * Integration tests for #[MaxDepth] support in generated normalizers.
  *
- * Generates a normalizer for MaxDepthBlog (which has a #[MaxDepth(1)] author
- * property) and verifies that:
+ * ### What ENABLE_MAX_DEPTH does
  *
- *   - The generated source contains the depth-check infrastructure emitted by
- *     the generator (DEPTH_KEY_PREFIX / $_depthKey / $_currentDepth variables).
- *   - The generated source hard-codes the configured MaxDepth limit (1) as a
- *     literal comparison value.
- *   - When no depth context is present (the common first-call scenario), the
- *     nested author property IS delegated to the inner normalizer.
- *   - Scalar properties are always present regardless of any depth state.
+ * `AbstractObjectNormalizer::ENABLE_MAX_DEPTH` is a runtime context flag that
+ * gates whether the `#[MaxDepth]` metadata on a property is actually enforced.
+ * When the flag is absent or `false` the depth guard is bypassed entirely and
+ * the property is always normalized — matching Symfony's own behaviour in
+ * `AbstractObjectNormalizer::isMaxDepthReached()`.
  *
- * NOTE on DEPTH_KEY_PREFIX
- * -------------------------
- * The generator emits `AbstractObjectNormalizer::DEPTH_KEY_PREFIX . '...'` into
- * the generated file. In Symfony ^6.4|^7.0 the constant exposed on
- * AbstractObjectNormalizer is DEPTH_KEY_PATTERN (a sprintf-style pattern), not
- * DEPTH_KEY_PREFIX.  Attempting to evaluate `::DEPTH_KEY_PREFIX` at runtime
- * therefore raises an "Undefined constant" error.
+ * The `max_depth` **feature flag** at code-generation time still controls
+ * whether the depth-checking infrastructure is emitted at all (for classes that
+ * carry `#[MaxDepth]` annotations). `ENABLE_MAX_DEPTH` is the complementary
+ * *runtime* switch.
  *
- * Tests that need to set a pre-existing depth counter in the context must
- * therefore compute the context key themselves using the DEPTH_KEY_PATTERN
- * constant so that the value they inject matches exactly what the generated
- * normalizer will look up when DEPTH_KEY_PREFIX is eventually resolved.
+ * ### Fixture anatomy ({@see MaxDepthBlog}, {@see Author})
  *
- * The "already at limit" scenario (depth counter == MaxDepth value) is covered
- * by testMaxDepthLimitsNestingDepth, which passes the pre-built key string
- * directly into the context instead of relying on the constant.
+ * `MaxDepthBlog` has two properties:
+ *   - `$title`  — plain string, no depth constraint.
+ *   - `$author` — nested `Author` object annotated with `#[MaxDepth(1)]`.
+ *
+ * ### Coverage
+ *
+ *   1. Generated source contains the depth-check infrastructure variables.
+ *   2. Generated source gates the guard on `ENABLE_MAX_DEPTH`.
+ *   3. Generated source hard-codes the `MaxDepth(1)` limit as a literal `< 1`.
+ *   4. Generated source contains the max-depth comment.
+ *   5. Without `ENABLE_MAX_DEPTH` the author is always normalized (no guard).
+ *   6. With `ENABLE_MAX_DEPTH => false` the author is always normalized (no guard).
+ *   7. With `ENABLE_MAX_DEPTH => true` and depth counter at the limit (1),
+ *      the author is omitted and the delegate normalizer is never called.
+ *   8. With `ENABLE_MAX_DEPTH => true` and depth counter below the limit (0),
+ *      the author is normalized normally.
+ *   9. Scalar properties (`$title`) are always present regardless of depth state.
+ *  10. The generated class implements `NormalizerAwareInterface`.
+ *  11. `supportsNormalization()` returns `true` for `MaxDepthBlog`.
+ *  12. `supportsNormalization()` returns `false` for other objects.
+ *  13. `getSupportedTypes()` includes `MaxDepthBlog`.
+ *
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Generator\Normalizer\NormalizerGenerator
+ * @covers \RemcoSmitsDev\BuildableSerializerBundle\Metadata\MetadataFactory
  */
 final class MaxDepthTest extends AbstractTestCase
 {
@@ -95,8 +108,8 @@ final class MaxDepthTest extends AbstractTestCase
 
         $this->normalizerFqcn = $pathResolver->resolveNormalizerFqcn($metadata);
 
-        // Always generate the file so that the path is valid and readable.
-        // write() is idempotent — it overwrites the file safely.
+        // Always (re)generate so that the file path is valid and readable for
+        // the source-inspection tests.
         $this->generatedFilePath = $writer->write($metadata);
 
         if (!class_exists($this->normalizerFqcn, false)) {
@@ -111,33 +124,35 @@ final class MaxDepthTest extends AbstractTestCase
         $this->removeTempDir($this->tempDir);
     }
 
-    public function testGeneratedCodeContainsDepthCheck(): void
+    public function testGeneratedCodeContainsDepthCheckVariables(): void
     {
-        $source = file_get_contents($this->generatedFilePath);
+        $source = (string) file_get_contents($this->generatedFilePath);
 
-        $this->assertIsString($source);
-
-        // The generator writes:
-        //   $_depthKey = AbstractObjectNormalizer::DEPTH_KEY_PREFIX . '...';
-        //   $_currentDepth = (int) ($context[$_depthKey] ?? 0);
         $this->assertTrue(
-            str_contains($source, '_depthKey') || str_contains($source, 'DEPTH_KEY_PREFIX'),
-            'Generated source must reference DEPTH_KEY_PREFIX or $_depthKey for the max-depth guard.',
+            str_contains($source, '_depthKey'),
+            'Generated source must contain the $_depthKey variable for the depth counter lookup.',
         );
-
         $this->assertTrue(
             str_contains($source, '_currentDepth'),
             'Generated source must track the current depth in a $_currentDepth variable.',
         );
     }
 
+    public function testGeneratedCodeGatesDepthCheckOnEnableMaxDepth(): void
+    {
+        $source = (string) file_get_contents($this->generatedFilePath);
+
+        $this->assertTrue(
+            str_contains($source, 'ENABLE_MAX_DEPTH'),
+            'Generated source must gate the depth guard on AbstractObjectNormalizer::ENABLE_MAX_DEPTH.',
+        );
+    }
+
     public function testGeneratedCodeContainsMaxDepthLimit(): void
     {
-        $source = file_get_contents($this->generatedFilePath);
+        $source = (string) file_get_contents($this->generatedFilePath);
 
-        $this->assertIsString($source);
-
-        // The generator emits: `if ($_currentDepth < 1) {`  for MaxDepth(1)
+        // The generator emits the literal comparison `< 1` for #[MaxDepth(1)].
         $this->assertTrue(
             str_contains($source, '< 1'),
             'Generated source must contain the literal max-depth comparison "< 1" for MaxDepth(1).',
@@ -146,249 +161,226 @@ final class MaxDepthTest extends AbstractTestCase
 
     public function testGeneratedCodeContainsMaxDepthComment(): void
     {
-        $source = file_get_contents($this->generatedFilePath);
+        $source = (string) file_get_contents($this->generatedFilePath);
 
-        $this->assertIsString($source);
-
-        // Generator emits: `} // max-depth: author (limit=1)`
         $this->assertTrue(
             str_contains($source, 'max-depth'),
             'Generated source must contain a "max-depth" comment to aid readability.',
         );
     }
 
-    public function testMaxDepthAllowsNormalizationWithNoDepthContext(): void
+    public function testWithoutEnableMaxDepthNestedPropertyIsAlwaysNormalized(): void
     {
+        // When ENABLE_MAX_DEPTH is absent the depth guard is bypassed; the
+        // nested author must always be delegated to the inner normalizer.
         $author = new Author(3, 'Carol', 'carol@example.com');
         $blog = new MaxDepthBlog('Fresh Blog', $author);
 
-        $mockData = [
-            'id' => 3,
-            'name' => 'Carol',
-            'email' => 'carol@example.com',
-        ];
+        $mockData = ['id' => 3, 'name' => 'Carol', 'email' => 'carol@example.com'];
         $normalizeCalls = 0;
-        $mockNormalizer = $this->createMock(NormalizerInterface::class);
-        $mockNormalizer
-            ->method('normalize')
-            ->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
-                ++$normalizeCalls;
-                return $mockData;
-            });
 
-        $this->normalizer->setNormalizer($mockNormalizer);
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
+            ++$normalizeCalls;
 
-        // No depth key in context — simulates the very first normalization call.
-        // The generated code initialises $_currentDepth to 0, which is < 1, so
-        // the author block executes and delegates to the mock normalizer.
-        $result = null;
-        $undefinedConst = false;
+            return $mockData;
+        });
+        $this->normalizer->setNormalizer($mock);
 
-        try {
-            $result = $this->normalizer->normalize($blog, 'json', []);
-        } catch (\Error $e) {
-            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
-                $undefinedConst = true;
-            } else {
-                throw $e;
-            }
-        }
-
-        if ($undefinedConst) {
-            $this->markTestIncomplete(
-                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
-                . 'in this Symfony version. Cannot exercise depth-zero delegation until the '
-                . 'generator is updated to use DEPTH_KEY_PATTERN.',
-            );
-        }
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertIsArray($result);
         $this->assertGreaterThan(
             0,
             $normalizeCalls,
-            'The nested normalizer must be called when no depth context key is present.',
+            'The nested normalizer must be called when ENABLE_MAX_DEPTH is absent.',
         );
         $this->assertArrayHasKey('author', $result);
         $this->assertSame($mockData, $result['author']);
     }
 
-    public function testMaxDepthLimitsNestingDepth(): void
+    public function testWithEnableMaxDepthFalseNestedPropertyIsAlwaysNormalized(): void
     {
+        // Explicitly passing ENABLE_MAX_DEPTH => false must also bypass the guard,
+        // even when the depth counter is already at the limit.
+        $author = new Author(4, 'Dave', 'dave@example.com');
+        $blog = new MaxDepthBlog('False Flag Blog', $author);
+
+        $mockData = ['id' => 4, 'name' => 'Dave', 'email' => 'dave@example.com'];
+        $normalizeCalls = 0;
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
+            ++$normalizeCalls;
+
+            return $mockData;
+        });
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => false,
+            $depthKey => 1, // counter at the limit — guard must still be skipped
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertGreaterThan(
+            0,
+            $normalizeCalls,
+            'The nested normalizer must be called when ENABLE_MAX_DEPTH is false, regardless of depth counter.',
+        );
+        $this->assertArrayHasKey('author', $result);
+    }
+
+    public function testWithEnableMaxDepthTrueAndDepthAtLimitPropertyIsOmitted(): void
+    {
+        // ENABLE_MAX_DEPTH => true + depth counter already at the limit (1 == MaxDepth(1)):
+        // the guard fires and the author property must be omitted entirely.
         $author = new Author(1, 'Alice', 'alice@example.com');
         $blog = new MaxDepthBlog('My Blog', $author);
 
         $normalizeCalls = 0;
-        $mockNormalizer = $this->createMock(NormalizerInterface::class);
-        $mockNormalizer
-            ->method('normalize')
-            ->willReturnCallback(static function () use (&$normalizeCalls): array {
-                ++$normalizeCalls;
 
-                return [
-                    'id' => 1,
-                    'name' => 'Alice',
-                    'email' => 'alice@example.com',
-                ];
-            });
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use (&$normalizeCalls): array {
+            ++$normalizeCalls;
 
-        $this->normalizer->setNormalizer($mockNormalizer);
+            return ['id' => 1, 'name' => 'Alice', 'email' => 'alice@example.com'];
+        });
+        $this->normalizer->setNormalizer($mock);
 
-        // Compute the context key exactly as AbstractObjectNormalizer does using
-        // DEPTH_KEY_PATTERN so we can inject the pre-built counter without
-        // evaluating the undefined DEPTH_KEY_PREFIX constant.
         $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
 
-        // Inject counter already at the limit (1 == MaxDepth(1)).
-        // The guard condition in the generated code is:  if ($_currentDepth < 1)
-        // With counter == 1 the condition is false, so the author block is skipped.
-        $context = [$depthKey => 1];
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            $depthKey => 1,
+        ]);
 
-        // The generated normalizer looks up $_depthKey using DEPTH_KEY_PREFIX,
-        // which is undefined in this Symfony version. We catch the resulting
-        // Error so we can still assert on what happened before it was raised,
-        // but we also accept a clean return (in case a future generator fix
-        // aligns the constant name).
-        $result = null;
-        $undefinedConstant = false;
-
-        try {
-            $result = $this->normalizer->normalize($blog, 'json', $context);
-        } catch (\Error $e) {
-            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
-                // The generator references an undefined constant — this is a
-                // known generator issue. We verify the generated source structure
-                // via testGeneratedCodeContainsDepthCheck instead.
-                $undefinedConstant = true;
-            } else {
-                throw $e;
-            }
-        }
-
-        if ($undefinedConstant) {
-            // Guard: the generated code crashes before it can delegate — confirm
-            // the mock was never reached.
-            $this->assertSame(
-                0,
-                $normalizeCalls,
-                'The mock normalizer must not be called when the depth guard crashes.',
-            );
-
-            // Mark test as incomplete so it is visible in CI without failing the suite.
-            $this->markTestIncomplete(
-                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
-                . 'in this Symfony version. The depth guard cannot be exercised at runtime until '
-                . 'the generator is updated to use DEPTH_KEY_PATTERN.',
-            );
-        }
-
-        // If we reach here the constant was defined (future Symfony or fixed generator).
         $this->assertIsArray($result);
         $this->assertSame(
             0,
             $normalizeCalls,
-            'The nested normalizer must not be called when max depth is already reached.',
+            'The nested normalizer must not be called when ENABLE_MAX_DEPTH is true and max depth is reached.',
         );
         $this->assertArrayNotHasKey(
             'author',
             $result,
-            'The author property must be omitted when its max depth is exceeded.',
+            'The author property must be omitted when ENABLE_MAX_DEPTH is true and its max depth is exceeded.',
         );
     }
 
-    public function testMaxDepthAllowsNormalizationWithinLimit(): void
+    public function testWithEnableMaxDepthTrueAndDepthBelowLimitPropertyIsNormalized(): void
     {
+        // ENABLE_MAX_DEPTH => true + depth counter at 0 — within the MaxDepth(1) limit:
+        // the guard passes and the author must be delegated normally.
         $author = new Author(2, 'Bob', 'bob@example.com');
         $blog = new MaxDepthBlog('Another Blog', $author);
 
         $mockData = ['id' => 2, 'name' => 'Bob', 'email' => 'bob@example.com'];
         $normalizeCalls = 0;
-        $mockNormalizer = $this->createMock(NormalizerInterface::class);
-        $mockNormalizer
-            ->method('normalize')
-            ->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
-                ++$normalizeCalls;
 
-                return $mockData;
-            });
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
+            ++$normalizeCalls;
 
-        $this->normalizer->setNormalizer($mockNormalizer);
+            return $mockData;
+        });
+        $this->normalizer->setNormalizer($mock);
 
-        // depth counter at 0 — within the MaxDepth(1) limit.
         $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
-        $context = [$depthKey => 0];
 
-        $result = null;
-        $undefinedConstant = false;
-
-        try {
-            $result = $this->normalizer->normalize($blog, 'json', $context);
-        } catch (\Error $e) {
-            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
-                $undefinedConstant = true;
-            } else {
-                throw $e;
-            }
-        }
-
-        if ($undefinedConstant) {
-            $this->markTestIncomplete(
-                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
-                . 'in this Symfony version. Cannot exercise within-limit delegation until the '
-                . 'generator is updated to use DEPTH_KEY_PATTERN.',
-            );
-        }
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            $depthKey => 0,
+        ]);
 
         $this->assertIsArray($result);
         $this->assertGreaterThan(
             0,
             $normalizeCalls,
-            'The nested normalizer must be called when depth is within the allowed limit.',
+            'The nested normalizer must be called when ENABLE_MAX_DEPTH is true and depth is within the limit.',
         );
         $this->assertArrayHasKey('author', $result);
         $this->assertSame($mockData, $result['author']);
     }
 
-    public function testScalarPropertiesAreAlwaysPresent(): void
+    public function testWithEnableMaxDepthTrueAndNoDepthContextCounterDefaultsToZero(): void
+    {
+        // When ENABLE_MAX_DEPTH is true but no depth counter exists in context,
+        // the generated code defaults $_currentDepth to 0, which is < 1 (the limit),
+        // so the author must be normalized.
+        $author = new Author(5, 'Eve', 'eve@example.com');
+        $blog = new MaxDepthBlog('Eve Blog', $author);
+
+        $mockData = ['id' => 5, 'name' => 'Eve', 'email' => 'eve@example.com'];
+        $normalizeCalls = 0;
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturnCallback(static function () use ($mockData, &$normalizeCalls): array {
+            ++$normalizeCalls;
+
+            return $mockData;
+        });
+        $this->normalizer->setNormalizer($mock);
+
+        // No depth counter in context — defaults to 0, which is within the limit.
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertGreaterThan(
+            0,
+            $normalizeCalls,
+            'The nested normalizer must be called when ENABLE_MAX_DEPTH is true and no prior depth counter exists.',
+        );
+        $this->assertArrayHasKey('author', $result);
+    }
+
+    public function testScalarPropertiesArePresentWhenEnableMaxDepthAbsent(): void
     {
         $author = new Author(1, 'Alice', 'alice@example.com');
         $blog = new MaxDepthBlog('Scalar Test', $author);
 
-        $mockNormalizer = $this->createMock(NormalizerInterface::class);
-        $mockNormalizer->method('normalize')->willReturn([]);
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturn([]);
+        $this->normalizer->setNormalizer($mock);
 
-        $this->normalizer->setNormalizer($mockNormalizer);
-
-        $result = null;
-        $undefinedConstant = false;
-
-        try {
-            $result = $this->normalizer->normalize($blog, 'json', []);
-        } catch (\Error $e) {
-            if (str_contains($e->getMessage(), 'DEPTH_KEY_PREFIX')) {
-                $undefinedConstant = true;
-            } else {
-                throw $e;
-            }
-        }
-
-        if ($undefinedConstant) {
-            $this->markTestIncomplete(
-                'Generator emits AbstractObjectNormalizer::DEPTH_KEY_PREFIX which is undefined '
-                . 'in this Symfony version. Cannot verify scalar output until the generator is fixed.',
-            );
-        }
+        $result = $this->normalizer->normalize($blog, 'json', []);
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('title', $result);
         $this->assertSame('Scalar Test', $result['title']);
     }
 
+    public function testScalarPropertiesArePresentWhenDepthLimitExceeded(): void
+    {
+        // Even when the depth guard fires and omits 'author', scalar properties
+        // must still be present in the output.
+        $author = new Author(1, 'Alice', 'alice@example.com');
+        $blog = new MaxDepthBlog('Scalar With Limit', $author);
+
+        $mock = $this->createMock(NormalizerInterface::class);
+        $mock->method('normalize')->willReturn([]);
+        $this->normalizer->setNormalizer($mock);
+
+        $depthKey = sprintf(AbstractObjectNormalizer::DEPTH_KEY_PATTERN, MaxDepthBlog::class, 'author');
+
+        $result = $this->normalizer->normalize($blog, 'json', [
+            AbstractObjectNormalizer::ENABLE_MAX_DEPTH => true,
+            $depthKey => 1,
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('title', $result);
+        $this->assertSame('Scalar With Limit', $result['title']);
+        $this->assertArrayNotHasKey('author', $result);
+    }
+
     public function testNormalizerImplementsNormalizerAwareInterface(): void
     {
-        $this->assertInstanceOf(
-            \Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface::class,
-            $this->normalizer,
-        );
+        $this->assertInstanceOf(NormalizerAwareInterface::class, $this->normalizer);
     }
 
     public function testNormalizerImplementsNormalizerInterface(): void

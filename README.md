@@ -714,7 +714,7 @@ A few things worth noting in the generated output:
 | Feature | Default | Description |
 |---|---|---|
 | `groups` | `true` | Honours the `groups` serialization context key |
-| `max_depth` | `true` | Enforces the `max_depth` context constraint |
+| `max_depth` | `true` | Emits `#[MaxDepth]` depth-checking infrastructure. The guard only fires at runtime when `AbstractObjectNormalizer::ENABLE_MAX_DEPTH` is `true` in the context, matching Symfony's behaviour. |
 | `circular_reference` | `true` | Detects and handles circular object references |
 | `skip_null_values` | `true` | Omits `null` properties when the context flag is set |
 | `preserve_empty_objects` | `true` | Returns `\ArrayObject` (JSON `{}`) instead of `[]` for empty results when the `preserve_empty_objects` context flag is set |
@@ -746,6 +746,7 @@ following context keys at runtime (matching Symfony's built-in normalizers):
 | `AbstractNormalizer::GROUPS` | `groups` feature | Restrict the output to properties belonging to the given groups. |
 | `AbstractNormalizer::ATTRIBUTES` | `attributes` feature | Allowlist of **PHP property names** to include during (de)normalization. An empty array produces an empty result. When a nested object is listed as an array-map value (e.g. `['id', 'author' => ['name']]`), the sub-array is forwarded as the child's `ATTRIBUTES` context, limiting which of the nested object's properties are processed. When omitted or `null`, all properties are included. |
 | `AbstractNormalizer::IGNORED_ATTRIBUTES` | `ignored_attributes` feature | Denylist of **PHP property names** to skip during (de)normalization. Unlike `ATTRIBUTES`, this list is applied at every level of nested structures — properties named in it are excluded wherever they appear in the object graph. An empty array or `null` disables the filter entirely. |
+| `AbstractObjectNormalizer::ENABLE_MAX_DEPTH` | `max_depth` feature | When `true`, activates the runtime depth guard for properties annotated with `#[MaxDepth]`. When absent or `false`, all such properties are normalized unconditionally regardless of any depth counter already present in the context. Requires the property to be annotated with `#[MaxDepth]` and the `max_depth` feature to be enabled at code-generation time. |
 | `AbstractNormalizer::CIRCULAR_REFERENCE_LIMIT` / `CIRCULAR_REFERENCE_HANDLER` | `circular_reference` feature | Control the circular-reference guard's limit and fallback handler. |
 | `AbstractObjectNormalizer::SKIP_NULL_VALUES` | `skip_null_values` feature | When `true`, properties whose value is `null` are omitted from the output. |
 | `AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS` | `preserve_empty_objects` feature | When `true` and the normalized result would otherwise be an empty array (`[]`), an `\ArrayObject` is returned instead so the value is encoded as an empty JSON object (`{}`). |

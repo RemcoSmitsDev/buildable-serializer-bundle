@@ -705,15 +705,32 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 ),
             );
 
-            // if ($_currentDepth < LIMIT) { $context[$_depthKey]++; <assign> }
-            $maxDepthBody = [];
-            $maxDepthBody[] = new Expression(
-                new Assign(
-                    new ArrayDimFetch(new Variable('context'), new Variable('_depthKey')),
-                    new Plus(new Variable('_currentDepth'), new Int_(1)),
+            // Three-way structure:
+            //
+            //   if (!($context[ENABLE_MAX_DEPTH] ?? false)) {
+            //       // Guard disabled — always normalize, no depth tracking.
+            //       <assign>
+            //   } elseif ($_currentDepth < LIMIT) {
+            //       // Guard enabled, within limit — normalize and increment counter.
+            //       $context[$_depthKey] = $_currentDepth + 1;
+            //       <assign>
+            //   }
+            //   // else: guard enabled, limit exceeded — property is omitted.
+
+            // ($context[AbstractObjectNormalizer::ENABLE_MAX_DEPTH] ?? false)
+            $enableMaxDepthExpr = new Coalesce(
+                new ArrayDimFetch(
+                    new Variable('context'),
+                    new ClassConstFetch(new Name('AbstractObjectNormalizer'), 'ENABLE_MAX_DEPTH'),
                 ),
+                new ConstFetch(new Name('false')),
             );
-            $maxDepthBody = array_merge($maxDepthBody, $this->buildValueAssignment(
+
+            // !($context[AbstractObjectNormalizer::ENABLE_MAX_DEPTH] ?? false)
+            $guardDisabledCondition = new BooleanNot($enableMaxDepthExpr);
+
+            // Unconditional assign (used when guard is disabled — no counter increment).
+            $assignWithoutIncrement = $this->buildValueAssignment(
                 $property,
                 $rawValueExpr,
                 $keyExpr,
@@ -721,12 +738,38 @@ final class NormalizerGenerator implements NormalizerGeneratorInterface
                 $hasGroups,
                 $hasContext,
                 $hasAttributes,
-            ));
-
-            $maxDepthIf = new If_(
-                new Smaller(new Variable('_currentDepth'), new Int_((int) $property->getMaxDepth())),
-                ['stmts' => $maxDepthBody],
             );
+
+            // Assign with counter increment (used when guard is enabled and within limit).
+            $assignWithIncrement = array_merge(
+                [
+                    new Expression(
+                        new Assign(
+                            new ArrayDimFetch(new Variable('context'), new Variable('_depthKey')),
+                            new Plus(new Variable('_currentDepth'), new Int_(1)),
+                        ),
+                    ),
+                ],
+                $this->buildValueAssignment(
+                    $property,
+                    $rawValueExpr,
+                    $keyExpr,
+                    $hasSkipNull,
+                    $hasGroups,
+                    $hasContext,
+                    $hasAttributes,
+                ),
+            );
+
+            $maxDepthIf = new If_($guardDisabledCondition, [
+                'stmts' => $assignWithoutIncrement,
+                'elseifs' => [
+                    new Stmt\ElseIf_(
+                        new Smaller(new Variable('_currentDepth'), new Int_((int) $property->getMaxDepth())),
+                        $assignWithIncrement,
+                    ),
+                ],
+            ]);
             $maxDepthIf->setAttribute('comments', [
                 new Comment('// max-depth: ' . $property->getName() . ' (limit=' . $property->getMaxDepth() . ')'),
             ]);
