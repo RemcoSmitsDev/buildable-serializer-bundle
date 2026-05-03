@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Trait;
 
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\AddressFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\TagFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Trait\ObjectExtractorTrait;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 /**
@@ -246,7 +245,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractRequiredObjectThrowsOnNullValue(): void
     {
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractRequiredObject(
             data: ['address' => null],
@@ -284,10 +283,10 @@ final class ObjectExtractorTraitTest extends TestCase
                 format: null,
                 context: [],
             );
-            $this->fail('Expected UnexpectedNullException.');
-        } catch (UnexpectedNullException $e) {
-            $this->assertSame('address', $e->getFieldName());
-            $this->assertSame(AddressFixture::class, $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('address', $e->getPath());
+            $this->assertSame(AddressFixture::class, $e->getExpectedTypes()[0]);
         }
     }
 
@@ -365,7 +364,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractArrayOfObjectsThrowsTypeMismatchForScalar(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractArrayOfObjects(
             data: ['tags' => 'not-an-array'],
@@ -390,11 +389,11 @@ final class ObjectExtractorTraitTest extends TestCase
                 format: null,
                 context: [],
             );
-            $this->fail('Expected TypeMismatchException.');
-        } catch (TypeMismatchException $e) {
-            $this->assertSame('tags', $e->getFieldName());
-            $this->assertStringContainsString('array', $e->getExpectedType());
-            $this->assertStringContainsString(TagFixture::class, $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('tags', $e->getPath());
+            $this->assertStringContainsString('array', $e->getExpectedTypes()[0]);
+            $this->assertStringContainsString(TagFixture::class, $e->getExpectedTypes()[0]);
         }
     }
 
@@ -576,7 +575,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractNullableArrayOfObjectsThrowsTypeMismatchForScalar(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractNullableArrayOfObjects(
             data: ['tags' => 'nope'],
@@ -702,7 +701,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractMapOfObjectsThrowsTypeMismatchForScalar(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractMapOfObjects(
             data: ['tags' => 'nope'],
@@ -746,11 +745,11 @@ final class ObjectExtractorTraitTest extends TestCase
                 format: null,
                 context: [],
             );
-            $this->fail('Expected TypeMismatchException.');
-        } catch (TypeMismatchException $e) {
-            $this->assertSame('tags', $e->getFieldName());
-            $this->assertStringContainsString('array<string,', $e->getExpectedType());
-            $this->assertStringContainsString(TagFixture::class, $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('tags', $e->getPath());
+            $this->assertStringContainsString('array<string,', $e->getExpectedTypes()[0]);
+            $this->assertStringContainsString(TagFixture::class, $e->getExpectedTypes()[0]);
         }
     }
 

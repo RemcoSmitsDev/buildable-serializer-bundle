@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SerializedNameFixture;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -344,9 +343,9 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
     {
         try {
             $this->denormalizer->denormalize(['id' => 1, 'email_address' => 42], SerializedNameFixture::class);
-            $this->fail('Expected TypeMismatchException.');
-        } catch (TypeMismatchException $e) {
-            $this->assertSame('email_address', $e->getFieldName());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('email_address', $e->getPath());
             $this->assertStringContainsString('email_address', $e->getMessage());
         }
     }
@@ -368,9 +367,9 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
         // actually used and therefore the key they can act on.
         try {
             $this->denormalizer->denormalize(['id' => 1, 'emailAddress' => 42], SerializedNameFixture::class);
-            $this->fail('Expected TypeMismatchException.');
-        } catch (TypeMismatchException $e) {
-            $this->assertSame('emailAddress', $e->getFieldName());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('emailAddress', $e->getPath());
             $this->assertStringContainsString('emailAddress', $e->getMessage());
         }
     }
@@ -379,10 +378,10 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
     {
         try {
             $this->denormalizer->denormalize(['id' => 1, 'email_address' => null], SerializedNameFixture::class);
-            $this->fail('Expected UnexpectedNullException.');
-        } catch (UnexpectedNullException $e) {
-            $this->assertSame('email_address', $e->getFieldName());
-            $this->assertSame('string', $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('email_address', $e->getPath());
+            $this->assertSame('string', $e->getExpectedTypes()[0]);
         }
     }
 

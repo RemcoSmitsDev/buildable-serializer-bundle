@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\PersonFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SetterFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 /**
@@ -21,7 +20,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
  *   - When the flag is absent or false (the default), the denormalizer
  *     runs in **strict mode**: any mismatch between the declared property
  *     type and the payload value surfaces as a
- *     {@see TypeMismatchException}.
+ *     {@see NotNormalizableValueException}.
  *   - When the flag is true, the denormalizer runs in **lenient mode**:
  *     values are coerced to the expected type whenever the rules
  *     documented on
@@ -71,7 +70,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
         // reject a wrongly-typed payload value.
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(['id' => '42', 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
     }
@@ -80,7 +79,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(
             ['id' => '42', 'title' => 'T', 'content' => 'C'],
@@ -94,7 +93,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(['id' => 1, 'title' => 42, 'content' => 'C'], SimpleBlog::class);
     }
@@ -103,7 +102,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(['id' => true, 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
     }
@@ -114,11 +113,11 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
 
         try {
             $denormalizer->denormalize(['id' => '42', 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
-            $this->fail('Expected TypeMismatchException.');
-        } catch (TypeMismatchException $e) {
-            $this->assertSame('id', $e->getFieldName());
-            $this->assertSame('int', $e->getExpectedType());
-            $this->assertSame('string', $e->getActualType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('id', $e->getPath());
+            $this->assertSame('int', $e->getExpectedTypes()[0]);
+            $this->assertSame('string', $e->getCurrentType());
         }
     }
 
@@ -143,7 +142,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
         // string is NOT accepted — which proves strict mode is active.
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(
             ['id' => 'oops', 'title' => 'T', 'content' => 'C'],
@@ -204,7 +203,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
         // information, so even in lenient mode the denormalizer must throw.
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(
             ['id' => 1.5, 'title' => 'T', 'content' => 'C'],
@@ -218,7 +217,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(
             ['id' => 'hello', 'title' => 'T', 'content' => 'C'],
@@ -312,7 +311,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
         // lenient mode.
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(
             ['id' => 1, 'title' => ['not', 'stringable'], 'content' => 'C'],
@@ -383,7 +382,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
             $this->tempDir,
         );
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $userDenormalizer->denormalize(
             ['id' => 1, 'name' => 'A', 'email' => 'a@b.c', 'active' => 'true'],
@@ -398,7 +397,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
             $this->tempDir,
         );
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $userDenormalizer->denormalize(
             ['id' => 1, 'name' => 'A', 'email' => 'a@b.c', 'active' => 'maybe'],
@@ -412,7 +411,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(['id' => null, 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
     }
@@ -424,7 +423,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
         // safe coercion path.
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(
             ['id' => null, 'title' => 'T', 'content' => 'C'],
@@ -440,10 +439,10 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
 
         try {
             $denormalizer->denormalize(['id' => null, 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
-            $this->fail('Expected UnexpectedNullException.');
-        } catch (UnexpectedNullException $e) {
-            $this->assertSame('id', $e->getFieldName());
-            $this->assertSame('int', $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('id', $e->getPath());
+            $this->assertSame('int', $e->getExpectedTypes()[0]);
         }
     }
 
@@ -488,7 +487,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(['id' => '42', 'title' => 'T', 'content' => 'C'], SimpleBlog::class, null, [
             AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => 0,
@@ -521,7 +520,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
 
         $existing = new PersonFixture('Carol', 25);
 
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $denormalizer->denormalize(['age' => '99'], PersonFixture::class, null, [
             \Symfony\Component\Serializer\Normalizer\AbstractNormalizer::OBJECT_TO_POPULATE => $existing,
@@ -545,10 +544,10 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
 
         // `tags` is a typed collection (array<TagFixture>), which uses
         // extractArrayOfObjects rather than extractArray. That helper
-        // raises TypeMismatchException for a scalar regardless of the
+        // raises NotNormalizableValueException for a scalar regardless of the
         // enforcement flag (there is no meaningful coercion for
         // "scalar → array of objects"). This keeps behaviour predictable.
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $userDenormalizer->denormalize(
             ['id' => 1, 'name' => 'A', 'email' => 'a@b.c', 'tags' => 'not-an-array'],

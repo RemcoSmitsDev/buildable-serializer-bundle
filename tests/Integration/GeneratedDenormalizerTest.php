@@ -278,7 +278,7 @@ final class GeneratedDenormalizerTest extends AbstractTestCase
 
     public function testDenormalizeThrowsTypeMismatchForWrongScalarType(): void
     {
-        $this->expectException(\RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException::class);
+        $this->expectException(\Symfony\Component\Serializer\Exception\NotNormalizableValueException::class);
 
         $this->denormalizer->denormalize(['id' => 'not-a-number', 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
     }
@@ -300,9 +300,9 @@ final class GeneratedDenormalizerTest extends AbstractTestCase
     public function testDenormalizeUnexpectedNullExceptionForNonNullableField(): void
     {
         // `id` is a required, non-nullable int — passing null must surface
-        // an UnexpectedNullException (distinct from a plain type mismatch)
+        // a NotNormalizableValueException (distinct from a plain type mismatch)
         // so callers can distinguish "missing/null" from "wrong type".
-        $this->expectException(\RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException::class);
+        $this->expectException(\Symfony\Component\Serializer\Exception\NotNormalizableValueException::class);
 
         $this->denormalizer->denormalize(['id' => null, 'title' => 'T', 'content' => 'C'], SimpleBlog::class);
     }

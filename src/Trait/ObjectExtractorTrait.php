@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Trait;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 /**
@@ -154,7 +153,13 @@ trait ObjectExtractorTrait
         $value = $data[$key];
 
         if ($value === null) {
-            throw new UnexpectedNullException($key, $className);
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('The field "%s" expects a non-null value of type "%s", but null was given.', $key, $className),
+                null,
+                [$className],
+                $key,
+                true,
+            );
         }
 
         if (is_object($value) && is_a($value, $className)) {
@@ -220,7 +225,18 @@ trait ObjectExtractorTrait
         }
 
         if (!is_array($value)) {
-            throw new TypeMismatchException($key, sprintf('array<%s>', $className), get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "array<%s>", but "%s" was given.',
+                    $key,
+                    $className,
+                    get_debug_type($value),
+                ),
+                $value,
+                [sprintf('array<%s>', $className)],
+                $key,
+                true,
+            );
         }
 
         $result = [];
@@ -290,7 +306,18 @@ trait ObjectExtractorTrait
         }
 
         if (!is_array($value)) {
-            throw new TypeMismatchException($key, sprintf('array<%s>', $className), get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "array<%s>", but "%s" was given.',
+                    $key,
+                    $className,
+                    get_debug_type($value),
+                ),
+                $value,
+                [sprintf('array<%s>', $className)],
+                $key,
+                true,
+            );
         }
 
         $result = [];
@@ -360,7 +387,18 @@ trait ObjectExtractorTrait
         }
 
         if (!is_array($value)) {
-            throw new TypeMismatchException($key, sprintf('array<string, %s>', $className), get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "array<string, %s>", but "%s" was given.',
+                    $key,
+                    $className,
+                    get_debug_type($value),
+                ),
+                $value,
+                [sprintf('array<string, %s>', $className)],
+                $key,
+                true,
+            );
         }
 
         $result = [];

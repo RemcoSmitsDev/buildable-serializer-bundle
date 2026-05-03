@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Trait;
 
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Trait\TypeExtractorTrait;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 /**
@@ -85,14 +84,14 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractIntThrowsUnexpectedNullOnNullValue(): void
     {
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => null], 'age', false, 18, []);
     }
 
     public function testExtractIntThrowsTypeMismatchInStrictModeForString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => '42'], 'age', false, null, []);
     }
@@ -115,14 +114,14 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractIntThrowsOnFractionalFloatEvenInLenientMode(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => 1.5], 'age', false, null, $this->lenient);
     }
 
     public function testExtractIntThrowsInLenientModeForNonNumericString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => 'hello'], 'age', false, null, $this->lenient);
     }
@@ -192,14 +191,14 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractFloatThrowsUnexpectedNullOnNullValue(): void
     {
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractFloat(['ratio' => null], 'ratio', false, 1.5, []);
     }
 
     public function testExtractFloatThrowsTypeMismatchInStrictModeForString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractFloat(['ratio' => '1.5'], 'ratio', false, null, []);
     }
@@ -217,7 +216,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractFloatThrowsInLenientModeForNonNumericString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractFloat(['ratio' => 'hello'], 'ratio', false, null, $this->lenient);
     }
@@ -277,14 +276,14 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractStringThrowsUnexpectedNullOnNullValue(): void
     {
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractString(['name' => null], 'name', false, 'user', []);
     }
 
     public function testExtractStringThrowsTypeMismatchInStrictModeForInt(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractString(['name' => 42], 'name', false, null, []);
     }
@@ -325,7 +324,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractStringThrowsInLenientModeForUnsupportedValue(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractString(['name' => ['not', 'stringable']], 'name', false, null, $this->lenient);
     }
@@ -386,14 +385,14 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractBoolThrowsUnexpectedNullOnNullValue(): void
     {
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractBool(['active' => null], 'active', false, false, []);
     }
 
     public function testExtractBoolThrowsTypeMismatchInStrictModeForInt(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractBool(['active' => 1], 'active', false, null, []);
     }
@@ -434,7 +433,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractBoolThrowsInLenientModeForUnrecognisedString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractBool(['active' => 'maybe'], 'active', false, null, $this->lenient);
     }
@@ -483,14 +482,14 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractArrayThrowsUnexpectedNullOnNullValue(): void
     {
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractArray(['tags' => null], 'tags', false, [], []);
     }
 
     public function testExtractArrayThrowsTypeMismatchInStrictModeForScalar(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractArray(['tags' => 'foo'], 'tags', false, null, []);
     }
@@ -517,7 +516,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractNullableArrayThrowsTypeMismatchInStrictModeForScalar(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractNullableArray(['tags' => 'foo'], 'tags', false, null, []);
     }
@@ -543,7 +542,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testCoerceToIntThrowsOnFractionalFloat(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToInt(1.5, 'k');
     }
@@ -555,21 +554,21 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testCoerceToIntThrowsOnFractionalNumericString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToInt('1.5', 'k');
     }
 
     public function testCoerceToIntThrowsOnNonNumericString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToInt('hello', 'k');
     }
 
     public function testCoerceToIntThrowsOnArray(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToInt([], 'k');
     }
@@ -587,7 +586,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testCoerceToFloatThrowsOnNonNumericString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToFloat('hello', 'k');
     }
@@ -622,7 +621,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testCoerceToStringThrowsOnArray(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToString(['a'], 'k');
     }
@@ -646,21 +645,21 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testCoerceToBoolThrowsOnUnrecognisedString(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToBool('maybe', 'k');
     }
 
     public function testCoerceToBoolThrowsOnArray(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->coerceToBool([], 'k');
     }
 
     public function testExplicitFalseFlagIsStrict(): void
     {
-        $this->expectException(TypeMismatchException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => '42'], 'age', false, null, [
             AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => false,
@@ -681,10 +680,10 @@ final class TypeExtractorTraitTest extends TestCase
     {
         try {
             $this->host->extractInt(['age' => 'nope'], 'age', false, null, []);
-            $this->fail('Expected TypeMismatchException.');
-        } catch (TypeMismatchException $e) {
-            $this->assertSame('age', $e->getFieldName());
-            $this->assertSame('int', $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('age', $e->getPath());
+            $this->assertSame('int', $e->getExpectedTypes()[0]);
         }
     }
 
@@ -702,10 +701,10 @@ final class TypeExtractorTraitTest extends TestCase
     {
         try {
             $this->host->extractBool(['active' => null], 'active', false, false, []);
-            $this->fail('Expected UnexpectedNullException.');
-        } catch (UnexpectedNullException $e) {
-            $this->assertSame('active', $e->getFieldName());
-            $this->assertSame('bool', $e->getExpectedType());
+            $this->fail('Expected NotNormalizableValueException.');
+        } catch (NotNormalizableValueException $e) {
+            $this->assertSame('active', $e->getPath());
+            $this->assertSame('bool', $e->getExpectedTypes()[0]);
         }
     }
 
@@ -817,8 +816,8 @@ final class TypeExtractorTraitTest extends TestCase
     {
         // The short-circuit only applies when the key is ABSENT. When the
         // key is present with a wrong-typed value, the default is ignored
-        // and the usual strict-mode TypeMismatchException is thrown.
-        $this->expectException(TypeMismatchException::class);
+        // and the usual strict-mode NotNormalizableValueException is thrown.
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => 'oops'], 'age', required: true, default: 42, context: []);
     }
@@ -826,9 +825,9 @@ final class TypeExtractorTraitTest extends TestCase
     public function testNonNullDefaultDoesNotSuppressUnexpectedNullWhenKeyIsPresent(): void
     {
         // Likewise, an explicit null in a non-nullable field still throws
-        // UnexpectedNullException — the default is only used when the key
+        // NotNormalizableValueException — the default is only used when the key
         // is entirely missing.
-        $this->expectException(UnexpectedNullException::class);
+        $this->expectException(NotNormalizableValueException::class);
 
         $this->host->extractInt(['age' => null], 'age', required: true, default: 42, context: []);
     }

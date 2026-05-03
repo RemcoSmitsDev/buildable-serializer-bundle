@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Trait;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 /**
@@ -17,7 +16,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
  * context flag:
  *
  *   - Strict mode (default): a value whose type does not match the expected
- *     scalar type causes a {@see TypeMismatchException}.
+ *     scalar type causes a {@see NotNormalizableValueException}.
  *   - Lenient mode: the value is coerced to the expected type when possible,
  *     following the rules documented in the denormalizer plan.
  *
@@ -98,7 +97,13 @@ trait TypeExtractorTrait
         $value = $data[$key];
 
         if ($value === null) {
-            throw new UnexpectedNullException($key, 'int');
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('The field "%s" expects a non-null value of type "int", but null was given.', $key),
+                null,
+                ['int'],
+                $key,
+                true,
+            );
         }
 
         if (is_int($value)) {
@@ -106,7 +111,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'int', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "int", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['int'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToInt($value, $key);
@@ -146,7 +161,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'int', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "int", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['int'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToInt($value, $key);
@@ -178,7 +203,13 @@ trait TypeExtractorTrait
         $value = $data[$key];
 
         if ($value === null) {
-            throw new UnexpectedNullException($key, 'float');
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('The field "%s" expects a non-null value of type "float", but null was given.', $key),
+                null,
+                ['float'],
+                $key,
+                true,
+            );
         }
 
         if (is_float($value)) {
@@ -191,7 +222,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'float', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "float", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['float'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToFloat($value, $key);
@@ -240,7 +281,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'float', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "float", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['float'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToFloat($value, $key);
@@ -272,7 +323,13 @@ trait TypeExtractorTrait
         $value = $data[$key];
 
         if ($value === null) {
-            throw new UnexpectedNullException($key, 'string');
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('The field "%s" expects a non-null value of type "string", but null was given.', $key),
+                null,
+                ['string'],
+                $key,
+                true,
+            );
         }
 
         if (is_string($value)) {
@@ -280,7 +337,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'string', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "string", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['string'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToString($value, $key);
@@ -325,7 +392,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'string', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "string", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['string'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToString($value, $key);
@@ -357,7 +434,13 @@ trait TypeExtractorTrait
         $value = $data[$key];
 
         if ($value === null) {
-            throw new UnexpectedNullException($key, 'bool');
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('The field "%s" expects a non-null value of type "bool", but null was given.', $key),
+                null,
+                ['bool'],
+                $key,
+                true,
+            );
         }
 
         if (is_bool($value)) {
@@ -365,7 +448,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'bool', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "bool", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['bool'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToBool($value, $key);
@@ -410,7 +503,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'bool', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "bool", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['bool'],
+                $key,
+                true,
+            );
         }
 
         return $this->coerceToBool($value, $key);
@@ -444,7 +547,13 @@ trait TypeExtractorTrait
         $value = $data[$key];
 
         if ($value === null) {
-            throw new UnexpectedNullException($key, 'array');
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('The field "%s" expects a non-null value of type "array", but null was given.', $key),
+                null,
+                ['array'],
+                $key,
+                true,
+            );
         }
 
         if (is_array($value)) {
@@ -452,7 +561,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'array', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "array", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['array'],
+                $key,
+                true,
+            );
         }
 
         // Lenient: wrap scalar in array
@@ -500,7 +619,17 @@ trait TypeExtractorTrait
         }
 
         if (!$this->isTypeEnforcementDisabled($context)) {
-            throw new TypeMismatchException($key, 'array', get_debug_type($value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "array", but "%s" was given.',
+                    $key,
+                    get_debug_type($value),
+                ),
+                $value,
+                ['array'],
+                $key,
+                true,
+            );
         }
 
         return [$value];
@@ -524,10 +653,16 @@ trait TypeExtractorTrait
 
         if (is_float($value)) {
             if ((float) (int) $value !== $value) {
-                throw new TypeMismatchException(
+                throw NotNormalizableValueException::createForUnexpectedDataType(
+                    sprintf(
+                        'The field "%s" expects a value of type "int", but a float (%s) with a fractional part was given.',
+                        $key,
+                        (string) $value,
+                    ),
+                    $value,
+                    ['int'],
                     $key,
-                    'int',
-                    sprintf('float (%s) with fractional part', (string) $value),
+                    true,
                 );
             }
 
@@ -545,10 +680,26 @@ trait TypeExtractorTrait
                 return (int) $floatVal;
             }
 
-            throw new TypeMismatchException($key, 'int', sprintf('string ("%s") with fractional part', $value));
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf(
+                    'The field "%s" expects a value of type "int", but a string ("%s") with a fractional part was given.',
+                    $key,
+                    $value,
+                ),
+                $value,
+                ['int'],
+                $key,
+                true,
+            );
         }
 
-        throw new TypeMismatchException($key, 'int', get_debug_type($value));
+        throw NotNormalizableValueException::createForUnexpectedDataType(
+            sprintf('The field "%s" expects a value of type "int", but "%s" was given.', $key, get_debug_type($value)),
+            $value,
+            ['int'],
+            $key,
+            true,
+        );
     }
 
     private function coerceToFloat(mixed $value, string $key): float
@@ -561,7 +712,17 @@ trait TypeExtractorTrait
             return (float) $value;
         }
 
-        throw new TypeMismatchException($key, 'float', get_debug_type($value));
+        throw NotNormalizableValueException::createForUnexpectedDataType(
+            sprintf(
+                'The field "%s" expects a value of type "float", but "%s" was given.',
+                $key,
+                get_debug_type($value),
+            ),
+            $value,
+            ['float'],
+            $key,
+            true,
+        );
     }
 
     private function coerceToString(mixed $value, string $key): string
@@ -578,7 +739,17 @@ trait TypeExtractorTrait
             return (string) $value;
         }
 
-        throw new TypeMismatchException($key, 'string', get_debug_type($value));
+        throw NotNormalizableValueException::createForUnexpectedDataType(
+            sprintf(
+                'The field "%s" expects a value of type "string", but "%s" was given.',
+                $key,
+                get_debug_type($value),
+            ),
+            $value,
+            ['string'],
+            $key,
+            true,
+        );
     }
 
     private function coerceToBool(mixed $value, string $key): bool
@@ -603,6 +774,12 @@ trait TypeExtractorTrait
             }
         }
 
-        throw new TypeMismatchException($key, 'bool', get_debug_type($value));
+        throw NotNormalizableValueException::createForUnexpectedDataType(
+            sprintf('The field "%s" expects a value of type "bool", but "%s" was given.', $key, get_debug_type($value)),
+            $value,
+            ['bool'],
+            $key,
+            true,
+        );
     }
 }
