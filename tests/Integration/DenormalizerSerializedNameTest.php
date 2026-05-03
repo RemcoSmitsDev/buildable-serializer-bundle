@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SerializedNameFixture;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -331,11 +331,11 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
     {
         try {
             $this->denormalizer->denormalize(['id' => 1], SerializedNameFixture::class);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (MissingRequiredFieldException $e) {
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (MissingConstructorArgumentsException $e) {
             // The exception must surface the canonical alias, not the PHP
             // name, because that is the key the API consumer knows about.
-            $this->assertSame('email_address', $e->getFieldName());
+            $this->assertSame('email_address', $e->getMissingConstructorArguments()[0]);
             $this->assertStringContainsString('email_address', $e->getMessage());
         }
     }
@@ -398,7 +398,7 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
         //   3. The outer `extractString($data, 'email_address', required: true, default: null, ...)`
         //      call finds the canonical key missing and (because the
         //      default is null) enforces the required flag, throwing a
-        //      MissingRequiredFieldException that quotes the CANONICAL key.
+        //      MissingConstructorArgumentsException that quotes the CANONICAL key.
         //
         // This is a quirk of the chained-call architecture: the caller's
         // intent was "explicit null for the email field", but at the
@@ -407,9 +407,9 @@ final class DenormalizerSerializedNameTest extends AbstractTestCase
         // under the canonical name.
         try {
             $this->denormalizer->denormalize(['id' => 1, 'emailAddress' => null], SerializedNameFixture::class);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (MissingRequiredFieldException $e) {
-            $this->assertSame('email_address', $e->getFieldName());
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (MissingConstructorArgumentsException $e) {
+            $this->assertSame('email_address', $e->getMissingConstructorArguments()[0]);
         }
     }
 

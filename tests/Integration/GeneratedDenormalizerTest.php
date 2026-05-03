@@ -261,7 +261,7 @@ final class GeneratedDenormalizerTest extends AbstractTestCase
 
     public function testDenormalizeThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(\RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException::class);
+        $this->expectException(\Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException::class);
 
         $this->denormalizer->denormalize(['title' => 'T', 'content' => 'C'], SimpleBlog::class);
     }
@@ -270,9 +270,9 @@ final class GeneratedDenormalizerTest extends AbstractTestCase
     {
         try {
             $this->denormalizer->denormalize(['title' => 'T', 'content' => 'C'], SimpleBlog::class);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (\RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException $e) {
-            $this->assertSame('id', $e->getFieldName());
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (\Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException $e) {
+            $this->assertSame('id', $e->getMissingConstructorArguments()[0]);
         }
     }
 

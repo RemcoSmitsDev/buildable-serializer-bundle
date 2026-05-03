@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Trait;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 /**
@@ -21,7 +21,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
  *   - Lenient mode: the value is coerced to the expected type when possible,
  *     following the rules documented in the denormalizer plan.
  *
- * Missing required fields always throw {@see MissingRequiredFieldException},
+ * Missing required fields always throw {@see MissingConstructorArgumentsException},
  * regardless of the type-enforcement flag — EXCEPT when the caller supplied
  * a non-null `$default` (see below).
  *
@@ -84,7 +84,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return 0;
@@ -119,7 +124,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return null;
@@ -154,7 +164,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return 0.0;
@@ -199,7 +214,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return null;
@@ -238,7 +258,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return '';
@@ -278,7 +303,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return null;
@@ -313,7 +343,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return false;
@@ -353,7 +388,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return null;
@@ -390,7 +430,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return [];
@@ -433,7 +478,12 @@ trait TypeExtractorTrait
             }
 
             if ($required) {
-                throw new MissingRequiredFieldException($key);
+                throw new MissingConstructorArgumentsException(
+                    sprintf('Cannot create object because the required field "%s" is missing.', $key),
+                    0,
+                    null,
+                    [$key],
+                );
             }
 
             return null;

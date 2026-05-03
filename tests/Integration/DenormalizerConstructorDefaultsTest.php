@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\PersonFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\SimpleBlog;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\StatusFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\WitherFixture;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
@@ -35,7 +35,7 @@ use Symfony\Component\Serializer\Serializer;
  *   - `UnitEnum` defaults are emitted as fully-qualified class constants
  *     and produce the original enum instance at runtime.
  *   - Required parameters (no default, not nullable) throw
- *     {@see MissingRequiredFieldException} when absent from the payload.
+ *     {@see MissingConstructorArgumentsException} when absent from the payload.
  *   - Nullable parameters without a default are still considered optional
  *     (Symfony ObjectNormalizer semantics): they accept either a null value
  *     or an entirely missing key.
@@ -183,20 +183,20 @@ final class DenormalizerConstructorDefaultsTest extends AbstractTestCase
         // PersonFixture::$name has no default and is not nullable.
         $denormalizer = $this->loadDenormalizerFor(PersonFixture::class, $this->tempDir);
 
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $denormalizer->denormalize([], PersonFixture::class);
     }
 
-    public function testMissingRequiredFieldExceptionCarriesFieldName(): void
+    public function testMissingConstructorArgumentsExceptionCarriesFieldName(): void
     {
         $denormalizer = $this->loadDenormalizerFor(PersonFixture::class, $this->tempDir);
 
         try {
             $denormalizer->denormalize([], PersonFixture::class);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (MissingRequiredFieldException $e) {
-            $this->assertSame('name', $e->getFieldName());
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (MissingConstructorArgumentsException $e) {
+            $this->assertSame('name', $e->getMissingConstructorArguments()[0]);
         }
     }
 
@@ -204,7 +204,7 @@ final class DenormalizerConstructorDefaultsTest extends AbstractTestCase
     {
         $denormalizer = $this->loadDenormalizerFor(PersonFixture::class, $this->tempDir);
 
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $denormalizer->denormalize(['age' => 30, 'nickname' => 'Al'], PersonFixture::class);
     }
@@ -226,11 +226,14 @@ final class DenormalizerConstructorDefaultsTest extends AbstractTestCase
 
             try {
                 $denormalizer->denormalize($payload, SimpleBlog::class);
-            } catch (MissingRequiredFieldException) {
+            } catch (MissingConstructorArgumentsException) {
                 $thrown = true;
             }
 
-            $this->assertTrue($thrown, sprintf('Expected MissingRequiredFieldException for payload "%s".', $name));
+            $this->assertTrue($thrown, sprintf(
+                'Expected MissingConstructorArgumentsException for payload "%s".',
+                $name,
+            ));
         }
     }
 
@@ -248,7 +251,7 @@ final class DenormalizerConstructorDefaultsTest extends AbstractTestCase
     {
         // WitherFixture has only optional parameters (all carry defaults).
         // Denormalizing an empty payload must therefore succeed without any
-        // MissingRequiredFieldException and produce a fully-initialised
+        // MissingConstructorArgumentsException and produce a fully-initialised
         // instance.
         $denormalizer = $this->loadDenormalizerFor(WitherFixture::class, $this->tempDir);
 

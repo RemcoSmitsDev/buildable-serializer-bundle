@@ -654,7 +654,7 @@ final class DenormalizerGeneratorTest extends AbstractTestCase
         // chained-call pattern must surface `required: true` on the OUTER
         // call — otherwise a payload missing both keys would silently
         // produce an empty string instead of the expected
-        // MissingRequiredFieldException.
+        // MissingConstructorArgumentsException.
         $code = $this->generate(SerializedNameFixture::class);
 
         $this->assertMatchesRegularExpression("/extractString\\(\\\$data, 'email_address', required: true,/", $code);
@@ -668,7 +668,7 @@ final class DenormalizerGeneratorTest extends AbstractTestCase
         // outer call's required / default decision).
         //
         // It also MUST use `required: false` so the inner call itself
-        // does not throw MissingRequiredFieldException when the fallback
+        // does not throw MissingConstructorArgumentsException when the fallback
         // key is missing — that decision belongs to the outer call, which
         // will re-evaluate it against the canonical key.
         $code = $this->generate(SerializedNameFixture::class);

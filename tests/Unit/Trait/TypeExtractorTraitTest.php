@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Trait;
 
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Trait\TypeExtractorTrait;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 /**
@@ -68,7 +68,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractIntThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractInt([], 'age', true, null, []);
     }
@@ -149,7 +149,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractNullableIntThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractNullableInt([], 'age', true, null, []);
     }
@@ -175,7 +175,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractFloatThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractFloat([], 'ratio', true, null, []);
     }
@@ -260,7 +260,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractStringThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractString([], 'name', true, null, []);
     }
@@ -368,7 +368,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractBoolThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractBool([], 'active', true, null, []);
     }
@@ -466,7 +466,7 @@ final class TypeExtractorTraitTest extends TestCase
 
     public function testExtractArrayThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractArray([], 'tags', true, null, []);
     }
@@ -688,13 +688,13 @@ final class TypeExtractorTraitTest extends TestCase
         }
     }
 
-    public function testMissingRequiredFieldExceptionCarriesFieldName(): void
+    public function testMissingConstructorArgumentsExceptionCarriesFieldName(): void
     {
         try {
             $this->host->extractString([], 'email', true, null, []);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (MissingRequiredFieldException $e) {
-            $this->assertSame('email', $e->getFieldName());
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (MissingConstructorArgumentsException $e) {
+            $this->assertSame('email', $e->getMissingConstructorArguments()[0]);
         }
     }
 
@@ -722,7 +722,7 @@ final class TypeExtractorTraitTest extends TestCase
     public function testExtractIntNonNullDefaultShortCircuitsRequiredCheck(): void
     {
         // Even with `required: true`, a non-null default must suppress the
-        // MissingRequiredFieldException that would otherwise be thrown for
+        // MissingConstructorArgumentsException that would otherwise be thrown for
         // a missing key.
         $this->assertSame(18, $this->host->extractInt([], 'age', required: true, default: 18, context: []));
     }
@@ -731,7 +731,7 @@ final class TypeExtractorTraitTest extends TestCase
     {
         // With a null default we must fall through to the original
         // behaviour and throw when the key is missing and required=true.
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractInt([], 'age', required: true, default: null, context: []);
     }
@@ -808,7 +808,7 @@ final class TypeExtractorTraitTest extends TestCase
         // pattern relies on: the inner nullable call returns `null` when
         // its fallback key is missing, and that `null` drives the outer
         // call's required / default decision.
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractNullableInt([], 'age', required: true, default: null, context: []);
     }
@@ -873,9 +873,9 @@ final class TypeExtractorTraitTest extends TestCase
 
         try {
             $this->host->extractString([], 'email_address', required: true, default: $inner, context: []);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (MissingRequiredFieldException $e) {
-            $this->assertSame('email_address', $e->getFieldName());
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (MissingConstructorArgumentsException $e) {
+            $this->assertSame('email_address', $e->getMissingConstructorArguments()[0]);
         }
     }
 }

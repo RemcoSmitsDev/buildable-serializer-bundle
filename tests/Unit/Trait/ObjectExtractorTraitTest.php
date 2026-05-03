@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Unit\Trait;
 
 use PHPUnit\Framework\TestCase;
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\TypeMismatchException;
 use RemcoSmitsDev\BuildableSerializerBundle\Exception\UnexpectedNullException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\AddressFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\TagFixture;
 use RemcoSmitsDev\BuildableSerializerBundle\Trait\ObjectExtractorTrait;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 /**
@@ -118,7 +118,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractObjectThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractObject(
             data: [],
@@ -233,7 +233,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractRequiredObjectThrowsOnMissingField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractRequiredObject(
             data: [],
@@ -333,7 +333,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractArrayOfObjectsThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractArrayOfObjects(
             data: [],
@@ -538,7 +538,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractNullableArrayOfObjectsThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractNullableArrayOfObjects(
             data: [],
@@ -670,7 +670,7 @@ final class ObjectExtractorTraitTest extends TestCase
 
     public function testExtractMapOfObjectsThrowsOnMissingRequiredField(): void
     {
-        $this->expectException(MissingRequiredFieldException::class);
+        $this->expectException(MissingConstructorArgumentsException::class);
 
         $this->host->extractMapOfObjects(
             data: [],

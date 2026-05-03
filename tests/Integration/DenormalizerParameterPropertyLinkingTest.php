@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace RemcoSmitsDev\BuildableSerializerBundle\Tests\Integration;
 
-use RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\AbstractTestCase;
 use RemcoSmitsDev\BuildableSerializerBundle\Tests\Fixtures\Model\NonPromotedAddressFixture;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 /**
@@ -148,12 +148,12 @@ final class DenormalizerParameterPropertyLinkingTest extends AbstractTestCase
                 'city' => 'Berlin',
                 'country' => 'DE',
             ], NonPromotedAddressFixture::class);
-            $this->fail('Expected MissingRequiredFieldException.');
-        } catch (MissingRequiredFieldException $e) {
+            $this->fail('Expected MissingConstructorArgumentsException.');
+        } catch (MissingConstructorArgumentsException $e) {
             // The error must quote the canonical (serialized) alias even
             // though the attribute lives on the property, not the
             // parameter.
-            $this->assertSame('postal_code', $e->getFieldName());
+            $this->assertSame('postal_code', $e->getMissingConstructorArguments()[0]);
             $this->assertStringContainsString('postal_code', $e->getMessage());
         }
     }

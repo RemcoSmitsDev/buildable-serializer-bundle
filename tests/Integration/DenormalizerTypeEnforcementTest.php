@@ -561,7 +561,7 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
     public function testRequiredFieldErrorIsOrthogonalToEnforcementMode(): void
     {
         // A missing required field is NOT a type mismatch and therefore
-        // must throw MissingRequiredFieldException (not TypeMismatch) in
+        // must throw MissingConstructorArgumentsException (not TypeMismatch) in
         // both modes.
         $denormalizer = $this->loadDenormalizerFor(SimpleBlog::class, $this->tempDir);
 
@@ -575,9 +575,9 @@ final class DenormalizerTypeEnforcementTest extends AbstractTestCase
             }
 
             $this->assertInstanceOf(
-                \RemcoSmitsDev\BuildableSerializerBundle\Exception\MissingRequiredFieldException::class,
+                \Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException::class,
                 $thrown,
-                'Missing required field must surface as MissingRequiredFieldException in every enforcement mode.',
+                'Missing required field must surface as MissingConstructorArgumentsException in every enforcement mode.',
             );
         }
     }
