@@ -68,8 +68,6 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerAwareTrait;
  */
 trait ObjectExtractorTrait
 {
-    use DenormalizerAwareTrait;
-
     /**
      * Extract a single (possibly nullable) object value for the given key and
      * delegate its conversion to the serializer chain.
