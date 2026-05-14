@@ -7,6 +7,7 @@ namespace RemcoSmitsDev\BuildableSerializerBundle\Trait;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerAwareTrait;
 
 /**
  * Trait providing object and collection extraction helpers for generated
@@ -67,6 +68,8 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
  */
 trait ObjectExtractorTrait
 {
+    use DenormalizerAwareTrait;
+
     /**
      * Extract a single (possibly nullable) object value for the given key and
      * delegate its conversion to the serializer chain.
