@@ -19,18 +19,7 @@ final class NormalizerCacheWarmer implements CacheWarmerInterface
         private readonly ClassDiscoveryInterface $discovery,
     ) {}
 
-    /**
-     * Generate normalizer PHP files for all discovered classes.
-     *
-     * The $cacheDir parameter supplied by the framework is intentionally ignored
-     * here: we always write to the bundle's own configured cache directory so
-     * that the compiler pass can reliably find the generated files regardless of
-     * which Symfony environment is active.
-     *
-     * @param string $cacheDir Symfony's application cache directory (unused; see above).
-     *
-     * @return list<string> Absolute paths of all generated files (may be empty).
-     */
+    /** @inheritdoc */
     public function warmUp(string $cacheDir, ?string $buildDir = null): array
     {
         $classes = $this->discovery->discoverClasses();
